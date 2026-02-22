@@ -14,9 +14,11 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
 import { useToast } from './hooks/useToast'
 import { useVersionCheck } from './hooks/useVersionCheck'
+import { useScheduleGenerator } from './hooks/useScheduleGenerator'
 import VersionConflictBanner from './components/VersionConflictBanner'
+import ErrorBanner from './components/ErrorBanner'
 import { config } from './config/env'
-import type { ScheduleConflict, CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig } from './models'
+import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig } from './models'
 
 type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config'
 
@@ -43,8 +45,9 @@ function generateNextDays(n: number): string[] {
 function AppContent() {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
-  const [conflicts] = useState<ScheduleConflict[]>([])
   const scheduleDates = generateNextDays(30)
+  const today = new Date().toISOString().split('T')[0]
+  const scheduleEnd = scheduleDates[scheduleDates.length - 1] ?? today
 
   useEffect(() => {
     const onHashChange = () => setSection(getHashSection())
@@ -52,10 +55,11 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, reload } =
+  const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, error, reload } =
     useDataService(config.spreadsheetId)
   const { toasts, addToast, removeToast } = useToast()
   const { isStale } = useVersionCheck(ds, 'Soldiers')
+  const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
 
   async function handleDischarge(soldierId: string) {
     try { await ds?.soldierService.discharge(soldierId, 'user'); reload(); addToast('Soldier discharged', 'success') }
@@ -100,13 +104,10 @@ function AppContent() {
   async function handleGenerateSchedule() {
     if (!ds) return
     try {
-      const today = new Date().toISOString().split('T')[0]
-      const days = generateNextDays(30)
-      const end = days[days.length - 1] ?? today
-      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(today, end, 'user')
-      await ds.scheduleService.generateTaskSchedule('user')
+      await runSchedule()
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
+      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(today, scheduleEnd, 'user')
       for (const assignment of leaveSchedule.assignments) {
         if (!existingIds.has(assignment.id)) {
           await ds.fairnessUpdate.applyLeaveAssignment(
@@ -132,6 +133,7 @@ function AppContent() {
   return (
     <AppShell>
       <VersionConflictBanner isStale={isStale} onReload={reload} />
+      <ErrorBanner error={error} onRetry={reload} />
       <ToastList toasts={toasts} onRemove={removeToast} />
       {section === 'dashboard' && (
         <Dashboard
@@ -149,6 +151,8 @@ function AppContent() {
           onDischarge={handleDischarge}
           onAddSoldier={handleAddSoldier}
           onAdjustFairness={handleAdjustFairness}
+          configData={configData}
+          leaveAssignments={leaveAssignments}
         />
       )}
 

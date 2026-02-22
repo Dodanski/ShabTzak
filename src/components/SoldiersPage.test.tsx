@@ -2,8 +2,20 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SoldiersPage from './SoldiersPage'
-import type { Soldier } from '../models'
+import type { Soldier, AppConfig, LeaveAssignment } from '../models'
 import React from 'react'
+
+const BASE_CONFIG: AppConfig = {
+  leaveRatioDaysInBase: 10,
+  leaveRatioDaysHome: 4,
+  longLeaveMaxDays: 4,
+  weekendDays: ['Friday', 'Saturday'],
+  minBasePresence: 20,
+  minBasePresenceByRole: {} as AppConfig['minBasePresenceByRole'],
+  maxDrivingHours: 8,
+  defaultRestPeriod: 6,
+  taskTypeRestPeriods: {},
+}
 
 const SOLDIERS: Soldier[] = [
   {
@@ -90,6 +102,55 @@ describe('SoldiersPage', () => {
     await userEvent.type(reasonInput, 'Extra duty')
     await userEvent.click(screen.getByRole('button', { name: /apply/i }))
     expect(onAdjustFairness).toHaveBeenCalledWith('s1', 2, 'Extra duty')
+  })
+
+  it('shows Quota column header when configData is provided', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[]} />)
+    expect(screen.getByText('Quota')).toBeInTheDocument()
+  })
+
+  it('does not show Quota column when configData is null', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    expect(screen.queryByText('Quota')).not.toBeInTheDocument()
+  })
+
+  it('shows entitlement and used days in quota column', () => {
+    const la: LeaveAssignment = {
+      id: 'la1', soldierId: 's1', startDate: '2026-03-01', endDate: '2026-03-03',
+      leaveType: 'Long', isWeekend: false, isLocked: false, createdAt: '',
+    }
+    render(<SoldiersPage soldiers={[SOLDIERS[0]]} onDischarge={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[la]} />)
+    // s1: 365 days / 14 cycle * 4 = floor(104.28) = 104 entitlement; 2 days used
+    expect(screen.getByText(/104/)).toBeInTheDocument()
+    expect(screen.getByText(/2\s*used/i)).toBeInTheDocument()
+  })
+
+  it('renders a name filter input', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    expect(screen.getByPlaceholderText(/search soldiers/i)).toBeInTheDocument()
+  })
+
+  it('filters soldiers by name', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.type(screen.getByPlaceholderText(/search soldiers/i), 'David')
+    expect(screen.getByText('David Cohen')).toBeInTheDocument()
+    expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
+  })
+
+  it('filters soldiers by role', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    const roleFilter = screen.getByRole('combobox', { name: /filter by role/i })
+    await userEvent.selectOptions(roleFilter, 'Medic')
+    expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
+    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+  })
+
+  it('shows all soldiers when filter is cleared', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.type(screen.getByPlaceholderText(/search soldiers/i), 'David')
+    await userEvent.clear(screen.getByPlaceholderText(/search soldiers/i))
+    expect(screen.getByText('David Cohen')).toBeInTheDocument()
+    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })
 
   it('calls onAddSoldier with form data when add form is submitted', async () => {

@@ -44,6 +44,29 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /sign in with google/i })).toBeInTheDocument()
   })
 
+  it('shows conflicts on Dashboard after schedule generation', async () => {
+    const reload = vi.fn()
+    const mockDs = {
+      scheduleService: {
+        generateLeaveSchedule: vi.fn().mockResolvedValue({
+          assignments: [],
+          conflicts: [{ type: 'INSUFFICIENT_BASE_PRESENCE', message: 'Not enough soldiers', affectedSoldierIds: [], suggestions: [] }],
+        }),
+        generateTaskSchedule: vi.fn().mockResolvedValue({ assignments: [], conflicts: [] }),
+      },
+      fairnessUpdate: { applyLeaveAssignment: vi.fn().mockResolvedValue(undefined) },
+    }
+    vi.mocked(useAuth).mockReturnValue({
+      auth: { isAuthenticated: true, accessToken: 'tok' },
+      signIn: vi.fn(), signOut: vi.fn(),
+    })
+    vi.mocked(useDataService).mockReturnValue({ ...EMPTY_DS_RESULT, ds: mockDs as any, reload })
+
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: /generate schedule/i }))
+    await waitFor(() => expect(screen.getByText('Not enough soldiers')).toBeInTheDocument())
+  })
+
   it('calls fairnessUpdate.applyLeaveAssignment for new leave assignments after generate', async () => {
     const applyLeaveAssignment = vi.fn().mockResolvedValue(undefined)
     const reload = vi.fn()

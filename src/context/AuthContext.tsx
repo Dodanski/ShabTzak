@@ -4,6 +4,7 @@ import { config } from '../config/env'
 export interface AuthState {
   isAuthenticated: boolean
   accessToken: string | null
+  error: string | null
 }
 
 export interface AuthContextValue {
@@ -14,7 +15,7 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
-const INITIAL_AUTH: AuthState = { isAuthenticated: false, accessToken: null }
+const INITIAL_AUTH: AuthState = { isAuthenticated: false, accessToken: null, error: null }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState>(INITIAL_AUTH)
@@ -27,8 +28,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       client_id: config.googleClientId,
       scope: 'https://www.googleapis.com/auth/spreadsheets',
       callback: (response: TokenResponse) => {
-        if (response.error) return
-        setAuth({ isAuthenticated: true, accessToken: response.access_token })
+        if (response.error) {
+          setAuth({ isAuthenticated: false, accessToken: null, error: response.error })
+          return
+        }
+        setAuth({ isAuthenticated: true, accessToken: response.access_token, error: null })
       },
     })
   }, [])

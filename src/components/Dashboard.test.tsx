@@ -56,6 +56,24 @@ describe('Dashboard', () => {
     expect(screen.getByText('Not enough drivers for Guard duty')).toBeInTheDocument()
   })
 
+  it('shows fairness summary section when soldiers have fairness data', () => {
+    const s1 = { ...ACTIVE, id: 's1', currentFairness: 3.0 }
+    const s2 = { ...ACTIVE, id: 's2', currentFairness: 1.0 }
+    render(<Dashboard soldiers={[s1, s2]} leaveRequests={[]} taskAssignments={[]} conflicts={[]} onGenerateSchedule={vi.fn()} />)
+    expect(screen.getByText(/fairness/i)).toBeInTheDocument()
+    expect(screen.getByText(/avg/i)).toBeInTheDocument()
+  })
+
+  it('shows correct avg, min and max fairness values', () => {
+    const s1 = { ...ACTIVE, id: 's1', currentFairness: 6.0 }
+    const s2 = { ...ACTIVE, id: 's2', currentFairness: 2.0 }
+    render(<Dashboard soldiers={[s1, s2]} leaveRequests={[]} taskAssignments={[]} conflicts={[]} onGenerateSchedule={vi.fn()} />)
+    // avg = 4.0, min = 2.0, max = 6.0
+    expect(screen.getByText('4.0')).toBeInTheDocument()
+    expect(screen.getByText('2.0')).toBeInTheDocument()
+    expect(screen.getByText('6.0')).toBeInTheDocument()
+  })
+
   it('calls onGenerateSchedule when Generate Schedule button clicked', async () => {
     const onGenerateSchedule = vi.fn()
     render(<Dashboard soldiers={[ACTIVE]} leaveRequests={[]} taskAssignments={[]} conflicts={[]} onGenerateSchedule={onGenerateSchedule} />)

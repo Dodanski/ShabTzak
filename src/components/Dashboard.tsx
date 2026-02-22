@@ -14,6 +14,13 @@ export default function Dashboard({
   const activeSoldiers = soldiers.filter(s => s.status === 'Active')
   const pendingRequests = leaveRequests.filter(r => r.status === 'Pending')
 
+  const fairnessValues = soldiers.map(s => s.currentFairness)
+  const avgFairness = fairnessValues.length
+    ? fairnessValues.reduce((a, b) => a + b, 0) / fairnessValues.length
+    : 0
+  const minFairness = fairnessValues.length ? Math.min(...fairnessValues) : 0
+  const maxFairness = fairnessValues.length ? Math.max(...fairnessValues) : 0
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -46,6 +53,17 @@ export default function Dashboard({
           </p>
         </div>
       </div>
+
+      {soldiers.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Fairness Summary</h3>
+          <div className="flex gap-6 text-sm text-gray-600">
+            <span>Avg: <span className="font-mono font-semibold text-gray-800">{avgFairness.toFixed(1)}</span></span>
+            <span>Min: <span className="font-mono font-semibold text-green-700">{minFairness.toFixed(1)}</span></span>
+            <span>Max: <span className="font-mono font-semibold text-red-700">{maxFairness.toFixed(1)}</span></span>
+          </div>
+        </div>
+      )}
 
       {conflicts.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">

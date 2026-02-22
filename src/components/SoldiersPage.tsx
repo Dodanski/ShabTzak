@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { ROLES } from '../constants'
-import type { Soldier, CreateSoldierInput, SoldierRole } from '../models'
+import type { Soldier, CreateSoldierInput, SoldierRole, AppConfig, LeaveAssignment } from '../models'
 import FairnessBar from './FairnessBar'
+import { calculateLeaveEntitlement, countUsedLeaveDays } from '../utils/leaveQuota'
 
 interface SoldiersPageProps {
   soldiers: Soldier[]
@@ -9,6 +10,8 @@ interface SoldiersPageProps {
   onDischarge: (soldierId: string) => void
   onAddSoldier: (input: CreateSoldierInput) => void
   onAdjustFairness?: (soldierId: string, delta: number, reason: string) => void
+  configData?: AppConfig | null
+  leaveAssignments?: LeaveAssignment[]
 }
 
 const EMPTY_FORM: CreateSoldierInput = {
@@ -18,12 +21,14 @@ const EMPTY_FORM: CreateSoldierInput = {
   serviceEnd: '',
 }
 
-export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSoldier, onAdjustFairness }: SoldiersPageProps) {
+export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSoldier, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
   const [adjustDelta, setAdjustDelta] = useState('')
   const [adjustReason, setAdjustReason] = useState('')
+  const [nameFilter, setNameFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -46,6 +51,12 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
     return <div className="p-4 text-gray-500">Loading soldiers…</div>
   }
 
+  const filteredSoldiers = soldiers.filter(s => {
+    const nameMatch = nameFilter === '' || s.name.toLowerCase().includes(nameFilter.toLowerCase())
+    const roleMatch = roleFilter === '' || s.role === roleFilter
+    return nameMatch && roleMatch
+  })
+
   const avgFairness = soldiers.length
     ? soldiers.reduce((sum, s) => sum + s.currentFairness, 0) / soldiers.length
     : 0
@@ -60,6 +71,24 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
         >
           Add Soldier
         </button>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          placeholder="Search soldiers"
+          value={nameFilter}
+          onChange={e => setNameFilter(e.target.value)}
+          className="border rounded px-3 py-1.5 text-sm flex-1"
+        />
+        <select
+          value={roleFilter}
+          onChange={e => setRoleFilter(e.target.value)}
+          aria-label="Filter by role"
+          className="border rounded px-3 py-1.5 text-sm"
+        >
+          <option value="">All roles</option>
+          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
       </div>
 
       {showForm && (
@@ -137,11 +166,12 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                 <th className="text-left px-4 py-2">Status</th>
                 <th className="text-left px-4 py-2">Fairness</th>
                 <th className="text-left px-4 py-2">Hours</th>
+                {configData && <th className="text-left px-4 py-2">Quota</th>}
                 <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
-              {soldiers.map(s => (
+              {filteredSoldiers.map(s => (
                 <React.Fragment key={s.id}>
                 <tr className="border-t">
                   <td className="px-4 py-2">{s.name}</td>
@@ -161,6 +191,12 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                   <td className="px-4 py-2 text-gray-500 text-xs">
                     {s.hoursWorked}h
                   </td>
+                  {configData && (
+                    <td className="px-4 py-2 text-gray-500 text-xs">
+                      <span>{calculateLeaveEntitlement(s, configData)}</span>
+                      {' '}<span className="text-gray-400">{countUsedLeaveDays(s.id, leaveAssignments)} used</span>
+                    </td>
+                  )}
                   <td className="px-4 py-2 text-right space-x-2">
                     <button
                       onClick={() => setAdjustingId(id => id === s.id ? null : s.id)}
@@ -180,7 +216,7 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                 </tr>
                   {adjustingId === s.id && (
                     <tr className="bg-blue-50 border-t">
-                      <td colSpan={6} className="px-4 py-2">
+                      <td colSpan={configData ? 7 : 6} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <label className="text-xs text-gray-600" htmlFor={`delta-${s.id}`}>Delta</label>
                           <input

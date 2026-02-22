@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
-  const { signIn } = useAuth()
+  const { auth, signIn } = useAuth()
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -10,6 +10,11 @@ export default function LoginPage() {
         <p className="text-gray-500 text-sm text-center">
           Soldier scheduling made simple
         </p>
+        {auth.error && (
+          <div role="alert" className="w-full bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+            {auth.error}
+          </div>
+        )}
         <button
           onClick={signIn}
           className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
