@@ -109,6 +109,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
                 <th className="text-left px-4 py-2">Start</th>
                 <th className="text-left px-4 py-2">End</th>
                 <th className="text-left px-4 py-2">Duration (h)</th>
+                <th className="text-left px-4 py-2">Roles</th>
               </tr>
             </thead>
             <tbody>
@@ -118,6 +119,15 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
                   <td className="px-4 py-2 text-gray-500 text-xs">{t.startTime}</td>
                   <td className="px-4 py-2 text-gray-500 text-xs">{t.endTime}</td>
                   <td className="px-4 py-2 text-gray-500">{t.durationHours}</td>
+                  <td className="px-4 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      {t.roleRequirements.map((r, i) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+                          {r.role} ×{r.count}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

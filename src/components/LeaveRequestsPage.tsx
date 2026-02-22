@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Soldier, LeaveRequest } from '../models'
 
 interface LeaveRequestsPageProps {
@@ -13,18 +14,35 @@ const STATUS_CLASSES: Record<string, string> = {
   Denied: 'bg-red-100 text-red-600',
 }
 
+type StatusFilter = 'All' | 'Pending' | 'Approved' | 'Denied'
+
 export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, onDeny }: LeaveRequestsPageProps) {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
   const soldierMap = new Map(soldiers.map(s => [s.id, s]))
+  const filtered = statusFilter === 'All' ? leaveRequests : leaveRequests.filter(r => r.status === statusFilter)
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800">Leave Requests</h2>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-xl font-semibold text-gray-800">Leave Requests</h2>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+          aria-label="Filter by status"
+          className="border rounded px-3 py-1.5 text-sm"
+        >
+          <option value="All">All</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Denied">Denied</option>
+        </select>
+      </div>
 
-      {leaveRequests.length === 0 && (
+      {filtered.length === 0 && (
         <p className="text-gray-400 text-sm">No leave requests found.</p>
       )}
 
-      {leaveRequests.length > 0 && (
+      {filtered.length > 0 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600">
@@ -38,7 +56,7 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
               </tr>
             </thead>
             <tbody>
-              {leaveRequests.map(req => {
+              {filtered.map(req => {
                 const soldier = soldierMap.get(req.soldierId)
                 return (
                   <tr key={req.id} className="border-t">

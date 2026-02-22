@@ -68,4 +68,15 @@ describe('TasksPage', () => {
     render(<TasksPage tasks={[]} onAddTask={vi.fn()} loading />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
+
+  it('shows Roles column header when tasks have role requirements', () => {
+    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    expect(screen.getByText('Roles')).toBeInTheDocument()
+  })
+
+  it('renders role requirements as text badges', () => {
+    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    expect(screen.getByText(/driver.*1/i)).toBeInTheDocument()
+    expect(screen.getByText(/medic.*2/i)).toBeInTheDocument()
+  })
 })

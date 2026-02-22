@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import ScheduleCalendar from './ScheduleCalendar'
-import { formatScheduleAsText, exportToPdf } from '../utils/exportUtils'
+import { formatScheduleAsText, exportToPdf, exportToCsv, downloadCsv } from '../utils/exportUtils'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment, ScheduleConflict } from '../models'
 
 interface SchedulePageProps {
@@ -15,9 +16,19 @@ interface SchedulePageProps {
 export default function SchedulePage({
   soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, onGenerate,
 }: SchedulePageProps) {
+  const [copied, setCopied] = useState(false)
+
   function handleCopyWhatsApp() {
     const text = formatScheduleAsText(leaveAssignments, soldiers)
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  function handleExportCsv() {
+    const csv = exportToCsv(soldiers, leaveAssignments)
+    downloadCsv('schedule.csv', csv)
   }
 
   return (
@@ -28,7 +39,13 @@ export default function SchedulePage({
           onClick={handleCopyWhatsApp}
           className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          Copy for WhatsApp
+          {copied ? 'Copied!' : 'Copy for WhatsApp'}
+        </button>
+        <button
+          onClick={handleExportCsv}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Export CSV
         </button>
         <button
           onClick={exportToPdf}

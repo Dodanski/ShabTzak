@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import React from 'react'
 import HistoryPage from './HistoryPage'
 import type { HistoryEntry } from '../services/historyService'
@@ -55,5 +56,52 @@ describe('HistoryPage', () => {
   it('shows loading state', () => {
     render(<HistoryPage entries={[]} loading />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
+  })
+
+  it('renders a search input', () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument()
+  })
+
+  it('filters entries by search text in details', async () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    await userEvent.type(screen.getByPlaceholderText(/search/i), 'David')
+    expect(screen.getByText('Created soldier David Cohen')).toBeInTheDocument()
+    expect(screen.queryByText('Approved leave for Moshe Levi')).not.toBeInTheDocument()
+  })
+
+  it('filters entries by search text in action', async () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    await userEvent.type(screen.getByPlaceholderText(/search/i), 'approve')
+    expect(screen.queryByText('Created soldier David Cohen')).not.toBeInTheDocument()
+    expect(screen.getByText('Approved leave for Moshe Levi')).toBeInTheDocument()
+  })
+
+  it('shows all entries when search cleared', async () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    const input = screen.getByPlaceholderText(/search/i)
+    await userEvent.type(input, 'David')
+    await userEvent.clear(input)
+    expect(screen.getByText('Created soldier David Cohen')).toBeInTheDocument()
+    expect(screen.getByText('Approved leave for Moshe Levi')).toBeInTheDocument()
+  })
+
+  it('renders an action type filter dropdown', () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    expect(screen.getByRole('combobox', { name: /filter by action/i })).toBeInTheDocument()
+  })
+
+  it('populates dropdown with unique action types from entries', () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    const select = screen.getByRole('combobox', { name: /filter by action/i })
+    expect(select).toContainElement(screen.getByRole('option', { name: 'create' }))
+    expect(select).toContainElement(screen.getByRole('option', { name: 'approve' }))
+  })
+
+  it('filters entries by selected action type', async () => {
+    render(<HistoryPage entries={ENTRIES} />)
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by action/i }), 'create')
+    expect(screen.getByText('Created soldier David Cohen')).toBeInTheDocument()
+    expect(screen.queryByText('Approved leave for Moshe Levi')).not.toBeInTheDocument()
   })
 })

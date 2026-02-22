@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { formatScheduleAsText, exportToPdf } from './exportUtils'
+import { formatScheduleAsText, exportToPdf, exportToCsv, downloadCsv } from './exportUtils'
 import type { Soldier, LeaveAssignment } from '../models'
 
 const SOLDIERS: Soldier[] = [
@@ -70,5 +70,50 @@ describe('exportToPdf', () => {
   it('calls window.print()', () => {
     exportToPdf()
     expect(printSpy).toHaveBeenCalledOnce()
+  })
+})
+
+describe('exportToCsv', () => {
+  it('returns a CSV string with header row', () => {
+    const csv = exportToCsv(SOLDIERS, ASSIGNMENTS)
+    const lines = csv.trim().split('\n')
+    expect(lines[0]).toMatch(/soldier|name/i)
+  })
+
+  it('includes soldier name and dates in output', () => {
+    const csv = exportToCsv(SOLDIERS, ASSIGNMENTS)
+    expect(csv).toContain('David Cohen')
+    expect(csv).toContain('2026-03-01')
+  })
+
+  it('returns only header when no assignments', () => {
+    const csv = exportToCsv(SOLDIERS, [])
+    const lines = csv.trim().split('\n')
+    expect(lines).toHaveLength(1)
+  })
+
+  it('falls back to soldier id when soldier not found', () => {
+    const csv = exportToCsv([], ASSIGNMENTS)
+    expect(csv).toContain('s1')
+  })
+})
+
+describe('downloadCsv', () => {
+  it('creates a temporary anchor and triggers click', () => {
+    const clickSpy = vi.fn()
+    const createSpy = vi.spyOn(document, 'createElement').mockReturnValue({
+      setAttribute: vi.fn(),
+      click: clickSpy,
+      style: {},
+    } as unknown as HTMLElement)
+    const appendSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(n => n)
+    const removeSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(n => n)
+
+    downloadCsv('test.csv', 'a,b\n1,2')
+
+    expect(clickSpy).toHaveBeenCalledOnce()
+    createSpy.mockRestore()
+    appendSpy.mockRestore()
+    removeSpy.mockRestore()
   })
 })

@@ -91,6 +91,12 @@ describe('SchedulePage', () => {
     expect(writeTextMock).toHaveBeenCalledOnce()
   })
 
+  it('shows Copied! confirmation after WhatsApp copy', async () => {
+    render(<SchedulePage {...BASE_PROPS} />)
+    await userEvent.click(screen.getByRole('button', { name: /copy for whatsapp/i }))
+    expect(await screen.findByText(/copied/i)).toBeInTheDocument()
+  })
+
   it('renders Print button', () => {
     render(<SchedulePage {...BASE_PROPS} />)
     expect(screen.getByRole('button', { name: /print/i })).toBeInTheDocument()
@@ -100,5 +106,32 @@ describe('SchedulePage', () => {
     render(<SchedulePage {...BASE_PROPS} />)
     await userEvent.click(screen.getByRole('button', { name: /print/i }))
     expect(printSpy).toHaveBeenCalledOnce()
+  })
+
+  it('renders Export CSV button', () => {
+    render(<SchedulePage {...BASE_PROPS} />)
+    expect(screen.getByRole('button', { name: /export csv/i })).toBeInTheDocument()
+  })
+
+  it('triggers CSV download when Export CSV clicked', async () => {
+    // Render first so React's createElement calls complete before mocking
+    render(<SchedulePage {...BASE_PROPS} />)
+
+    const clickSpy = vi.fn()
+    const originalCreate = document.createElement.bind(document)
+    const createSpy = vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'a') {
+        return { setAttribute: vi.fn(), click: clickSpy, style: {} } as unknown as HTMLElement
+      }
+      return originalCreate(tag)
+    })
+    vi.spyOn(document.body, 'appendChild').mockImplementation(n => n)
+    vi.spyOn(document.body, 'removeChild').mockImplementation(n => n)
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+
+    await userEvent.click(screen.getByRole('button', { name: /export csv/i }))
+    expect(clickSpy).toHaveBeenCalledOnce()
+    createSpy.mockRestore()
   })
 })

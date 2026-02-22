@@ -22,6 +22,7 @@ const PENDING: LeaveRequest = {
 }
 
 const APPROVED: LeaveRequest = { ...PENDING, id: 'lr2', status: 'Approved' }
+const DENIED: LeaveRequest = { ...PENDING, id: 'lr3', status: 'Denied' }
 
 describe('LeaveRequestsPage', () => {
   it('renders soldier name for a request', () => {
@@ -36,7 +37,7 @@ describe('LeaveRequestsPage', () => {
 
   it('shows Pending status badge for pending request', () => {
     render(<LeaveRequestsPage leaveRequests={[PENDING]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
-    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getByText('Pending', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('shows Approve and Deny buttons only for pending requests', () => {
@@ -62,5 +63,26 @@ describe('LeaveRequestsPage', () => {
   it('shows empty state when no requests', () => {
     render(<LeaveRequestsPage leaveRequests={[]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
     expect(screen.getByText(/no leave requests/i)).toBeInTheDocument()
+  })
+
+  it('renders status filter dropdown', () => {
+    render(<LeaveRequestsPage leaveRequests={[PENDING, APPROVED, DENIED]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
+    expect(screen.getByRole('combobox', { name: /filter by status/i })).toBeInTheDocument()
+  })
+
+  it('filters to show only pending when Pending selected', async () => {
+    render(<LeaveRequestsPage leaveRequests={[PENDING, APPROVED, DENIED]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Pending')
+    // lr1 (Pending) visible; lr2 (Approved) and lr3 (Denied) rows not visible
+    expect(screen.getAllByText('David Cohen')).toHaveLength(1)
+    expect(screen.queryByText('Approved', { selector: 'span' })).not.toBeInTheDocument()
+  })
+
+  it('shows all requests when All selected after filter', async () => {
+    render(<LeaveRequestsPage leaveRequests={[PENDING, APPROVED]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
+    const select = screen.getByRole('combobox', { name: /filter by status/i })
+    await userEvent.selectOptions(select, 'Pending')
+    await userEvent.selectOptions(select, 'All')
+    expect(screen.getAllByText('David Cohen')).toHaveLength(2)
   })
 })
