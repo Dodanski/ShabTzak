@@ -43,6 +43,11 @@ describe('AppShell', () => {
     expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
   })
 
+  it('shows Config nav link when authenticated', () => {
+    renderWithAuth(true)
+    expect(screen.getByRole('link', { name: /config/i })).toBeInTheDocument()
+  })
+
   it('calls signOut when sign-out button is clicked', async () => {
     const signOut = vi.fn()
     renderWithAuth(true, signOut)

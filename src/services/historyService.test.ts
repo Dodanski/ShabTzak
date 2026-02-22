@@ -44,6 +44,19 @@ describe('HistoryService', () => {
     expect(range).toContain('History')
   })
 
+  it('listAll returns all history entries', async () => {
+    vi.spyOn(mockSheets, 'getValues').mockResolvedValue([
+      ['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details'],
+      ['2026-02-22T10:00:00', 'CREATE', 'Soldier', 'soldier-1', 'admin', 'Created'],
+      ['2026-02-22T11:00:00', 'UPDATE', 'Task', 'task-1', 'admin', 'Updated task'],
+    ])
+
+    const entries = await service.listAll()
+    expect(entries).toHaveLength(2)
+    expect(entries[0].entityType).toBe('Soldier')
+    expect(entries[1].entityType).toBe('Task')
+  })
+
   it('getRecent returns history rows for an entity', async () => {
     vi.spyOn(mockSheets, 'getValues').mockResolvedValue([
       ['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details'],

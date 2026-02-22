@@ -24,6 +24,7 @@ export default function AppShell({ children }: AppShellProps) {
             <a href="#leave" className="hover:text-blue-600">Leave</a>
             <a href="#schedule" className="hover:text-blue-600">Schedule</a>
             <a href="#history" className="hover:text-blue-600">History</a>
+            <a href="#config" className="hover:text-blue-600">Config</a>
           </nav>
           <button
             onClick={signOut}

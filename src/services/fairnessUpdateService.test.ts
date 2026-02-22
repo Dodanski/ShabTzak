@@ -96,4 +96,34 @@ describe('FairnessUpdateService', () => {
       )
     })
   })
+
+  describe('applyManualAdjustment()', () => {
+    it('adds positive delta to currentFairness', async () => {
+      mockRepo.getById.mockResolvedValue({ ...BASE_SOLDIER, currentFairness: 5.0 })
+      await service.applyManualAdjustment('s1', 2, 'Missed guard duty', 'admin')
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 's1', currentFairness: 7.0 })
+      )
+    })
+
+    it('subtracts negative delta from currentFairness', async () => {
+      mockRepo.getById.mockResolvedValue({ ...BASE_SOLDIER, currentFairness: 5.0 })
+      await service.applyManualAdjustment('s1', -3, 'Bonus for extra duty', 'admin')
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 's1', currentFairness: 2.0 })
+      )
+    })
+
+    it('logs reason to history', async () => {
+      await service.applyManualAdjustment('s1', 1, 'Penalty', 'admin')
+      expect(mockHistory.append).toHaveBeenCalledWith(
+        'MANUAL_ADJUSTMENT', 'Soldier', 's1', 'admin', expect.stringContaining('Penalty')
+      )
+    })
+
+    it('throws when soldier not found', async () => {
+      mockRepo.getById.mockResolvedValue(null)
+      await expect(service.applyManualAdjustment('ghost', 1, 'test', 'admin')).rejects.toThrow()
+    })
+  })
 })

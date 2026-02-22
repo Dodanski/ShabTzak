@@ -39,6 +39,18 @@ export class HistoryService {
     await this.sheets.appendValues(this.spreadsheetId, RANGE, [row])
   }
 
+  async listAll(): Promise<HistoryEntry[]> {
+    const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    return rows.slice(1).filter(r => r.length > 0).map(r => ({
+      timestamp: r[0] ?? '',
+      action: r[1] ?? '',
+      entityType: r[2] ?? '',
+      entityId: r[3] ?? '',
+      changedBy: r[4] ?? '',
+      details: r[5] ?? '',
+    }))
+  }
+
   async getRecent(entityType: string, entityId: string): Promise<HistoryEntry[]> {
     const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
     const dataRows = rows.slice(1).filter(r => r.length > 0)

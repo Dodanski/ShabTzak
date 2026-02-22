@@ -8,6 +8,7 @@ import LeaveRequestsPage from './components/LeaveRequestsPage'
 import SchedulePage from './components/SchedulePage'
 import TasksPage from './components/TasksPage'
 import HistoryPage from './components/HistoryPage'
+import ConfigPage from './components/ConfigPage'
 import ToastList from './components/ToastList'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
@@ -15,9 +16,9 @@ import { useToast } from './hooks/useToast'
 import { useVersionCheck } from './hooks/useVersionCheck'
 import VersionConflictBanner from './components/VersionConflictBanner'
 import { config } from './config/env'
-import type { ScheduleConflict, CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput } from './models'
+import type { ScheduleConflict, CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig } from './models'
 
-type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history'
+type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config'
 
 function getHashSection(): Section {
   const hash = window.location.hash
@@ -26,6 +27,7 @@ function getHashSection(): Section {
   if (hash === '#leave') return 'leave'
   if (hash === '#schedule') return 'schedule'
   if (hash === '#history') return 'history'
+  if (hash === '#config') return 'config'
   return 'dashboard'
 }
 
@@ -50,7 +52,7 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, loading, reload } =
+  const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, reload } =
     useDataService(config.spreadsheetId)
   const { toasts, addToast, removeToast } = useToast()
   const { isStale } = useVersionCheck(ds, 'Soldiers')
@@ -63,6 +65,11 @@ function AppContent() {
   async function handleAddSoldier(input: CreateSoldierInput) {
     try { await ds?.soldierService.create(input, 'user'); reload(); addToast('Soldier added', 'success') }
     catch { addToast('Failed to add soldier', 'error') }
+  }
+
+  async function handleAdjustFairness(soldierId: string, delta: number, reason: string) {
+    try { await ds?.fairnessUpdate.applyManualAdjustment(soldierId, delta, reason, 'user'); reload(); addToast('Fairness adjusted', 'success') }
+    catch { addToast('Failed to adjust fairness', 'error') }
   }
 
   async function handleSubmitLeave(input: CreateLeaveRequestInput) {
@@ -85,14 +92,28 @@ function AppContent() {
     catch { addToast('Failed to deny leave request', 'error') }
   }
 
+  async function handleSaveConfig(cfg: AppConfig) {
+    try { await ds?.config.write(cfg); reload(); addToast('Configuration saved', 'success') }
+    catch { addToast('Failed to save configuration', 'error') }
+  }
+
   async function handleGenerateSchedule() {
     if (!ds) return
     try {
       const today = new Date().toISOString().split('T')[0]
       const days = generateNextDays(30)
       const end = days[days.length - 1] ?? today
-      await ds.scheduleService.generateLeaveSchedule(today, end, 'user')
+      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(today, end, 'user')
       await ds.scheduleService.generateTaskSchedule('user')
+      // Update fairness for newly created leave assignments
+      const existingIds = new Set(leaveAssignments.map(a => a.id))
+      for (const assignment of leaveSchedule.assignments) {
+        if (!existingIds.has(assignment.id)) {
+          await ds.fairnessUpdate.applyLeaveAssignment(
+            assignment.soldierId, assignment.leaveType, assignment.isWeekend, 'user'
+          )
+        }
+      }
       reload()
       addToast('Schedule generated', 'success')
     } catch { addToast('Failed to generate schedule', 'error') }
@@ -127,6 +148,7 @@ function AppContent() {
           soldiers={soldiers}
           onDischarge={handleDischarge}
           onAddSoldier={handleAddSoldier}
+          onAdjustFairness={handleAdjustFairness}
         />
       )}
 
@@ -177,7 +199,11 @@ function AppContent() {
       )}
 
       {section === 'history' && (
-        <HistoryPage entries={[]} />
+        <HistoryPage entries={historyEntries} loading={loading} />
+      )}
+
+      {section === 'config' && (
+        <ConfigPage config={configData} onSave={handleSaveConfig} loading={loading} />
       )}
     </AppShell>
   )

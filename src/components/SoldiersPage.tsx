@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
 import { ROLES } from '../constants'
 import type { Soldier, CreateSoldierInput, SoldierRole } from '../models'
+import FairnessBar from './FairnessBar'
 
 interface SoldiersPageProps {
   soldiers: Soldier[]
   loading?: boolean
   onDischarge: (soldierId: string) => void
   onAddSoldier: (input: CreateSoldierInput) => void
+  onAdjustFairness?: (soldierId: string, delta: number, reason: string) => void
 }
 
 const EMPTY_FORM: CreateSoldierInput = {
@@ -16,9 +18,12 @@ const EMPTY_FORM: CreateSoldierInput = {
   serviceEnd: '',
 }
 
-export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSoldier }: SoldiersPageProps) {
+export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSoldier, onAdjustFairness }: SoldiersPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
+  const [adjustingId, setAdjustingId] = useState<string | null>(null)
+  const [adjustDelta, setAdjustDelta] = useState('')
+  const [adjustReason, setAdjustReason] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,9 +32,23 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
     setShowForm(false)
   }
 
+  function handleAdjustSubmit(soldierId: string) {
+    const delta = parseFloat(adjustDelta)
+    if (!isNaN(delta) && adjustReason.trim()) {
+      onAdjustFairness?.(soldierId, delta, adjustReason.trim())
+      setAdjustingId(null)
+      setAdjustDelta('')
+      setAdjustReason('')
+    }
+  }
+
   if (loading) {
     return <div className="p-4 text-gray-500">Loading soldiers…</div>
   }
+
+  const avgFairness = soldiers.length
+    ? soldiers.reduce((sum, s) => sum + s.currentFairness, 0) / soldiers.length
+    : 0
 
   return (
     <div className="space-y-4">
@@ -116,12 +135,15 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                 <th className="text-left px-4 py-2">Name</th>
                 <th className="text-left px-4 py-2">Role</th>
                 <th className="text-left px-4 py-2">Status</th>
+                <th className="text-left px-4 py-2">Fairness</th>
+                <th className="text-left px-4 py-2">Hours</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
               {soldiers.map(s => (
-                <tr key={s.id} className="border-t">
+                <React.Fragment key={s.id}>
+                <tr className="border-t">
                   <td className="px-4 py-2">{s.name}</td>
                   <td className="px-4 py-2 text-gray-500">{s.role}</td>
                   <td className="px-4 py-2">
@@ -133,7 +155,19 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                       {s.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2">
+                    <FairnessBar score={s.currentFairness} average={avgFairness} />
+                  </td>
+                  <td className="px-4 py-2 text-gray-500 text-xs">
+                    {s.hoursWorked}h
+                  </td>
+                  <td className="px-4 py-2 text-right space-x-2">
+                    <button
+                      onClick={() => setAdjustingId(id => id === s.id ? null : s.id)}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Adjust
+                    </button>
                     {s.status === 'Active' && (
                       <button
                         onClick={() => onDischarge(s.id)}
@@ -144,6 +178,40 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                     )}
                   </td>
                 </tr>
+                  {adjustingId === s.id && (
+                    <tr className="bg-blue-50 border-t">
+                      <td colSpan={6} className="px-4 py-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className="text-xs text-gray-600" htmlFor={`delta-${s.id}`}>Delta</label>
+                          <input
+                            id={`delta-${s.id}`}
+                            type="number"
+                            step="0.5"
+                            value={adjustDelta}
+                            onChange={e => setAdjustDelta(e.target.value)}
+                            className="w-20 border rounded px-2 py-1 text-xs"
+                            placeholder="e.g. 2 or -1"
+                          />
+                          <label className="text-xs text-gray-600" htmlFor={`reason-${s.id}`}>Reason</label>
+                          <input
+                            id={`reason-${s.id}`}
+                            type="text"
+                            value={adjustReason}
+                            onChange={e => setAdjustReason(e.target.value)}
+                            className="flex-1 border rounded px-2 py-1 text-xs min-w-[120px]"
+                            placeholder="Reason for adjustment"
+                          />
+                          <button
+                            onClick={() => handleAdjustSubmit(s.id)}
+                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

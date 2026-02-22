@@ -8,13 +8,15 @@ import { useAuth } from '../context/AuthContext'
 import { DataService } from '../services/dataService'
 import { useDataService } from './useDataService'
 
-function makeMockDs(overrides: Partial<Record<string, { list: ReturnType<typeof vi.fn> }>> = {}) {
+function makeMockDs(overrides: Record<string, unknown> = {}) {
   return {
     soldiers: { list: vi.fn().mockResolvedValue([]) },
     leaveRequests: { list: vi.fn().mockResolvedValue([]) },
     tasks: { list: vi.fn().mockResolvedValue([]) },
     taskAssignments: { list: vi.fn().mockResolvedValue([]) },
     leaveAssignments: { list: vi.fn().mockResolvedValue([]) },
+    history: { listAll: vi.fn().mockResolvedValue([]) },
+    config: { read: vi.fn().mockResolvedValue(null) },
     ...overrides,
   }
 }
@@ -84,6 +86,17 @@ describe('useDataService', () => {
     const { result } = renderHook(() => useDataService('sheet123'))
     await waitFor(() => expect(result.current.error).not.toBeNull())
     expect(result.current.error?.message).toBe('API error')
+  })
+
+  it('loads historyEntries when authenticated', async () => {
+    const ENTRIES = [{ timestamp: 't', action: 'CREATE', entityType: 'Soldier', entityId: 's1', changedBy: 'user', details: 'Created' }]
+    vi.mocked(DataService).mockImplementationOnce(
+      function () { return makeMockDs({ history: { listAll: vi.fn().mockResolvedValue(ENTRIES) } }) as any }
+    )
+    mockAuthenticated()
+    const { result } = renderHook(() => useDataService('sheet123'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.historyEntries).toEqual(ENTRIES)
   })
 
   it('reload function re-fetches data', async () => {

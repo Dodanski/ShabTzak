@@ -72,4 +72,22 @@ export class FairnessUpdateService {
       `Leave assignment: ${leaveType}, weekend=${isWeekend}`
     )
   }
+
+  async applyManualAdjustment(
+    soldierId: string,
+    delta: number,
+    reason: string,
+    changedBy: string,
+  ): Promise<void> {
+    const soldier = await this.repo.getById(soldierId)
+    if (!soldier) throw new Error(`Soldier ${soldierId} not found`)
+
+    const newFairness = soldier.currentFairness + delta
+
+    await this.repo.update({ id: soldierId, currentFairness: newFairness })
+    await this.history.append(
+      'MANUAL_ADJUSTMENT', 'Soldier', soldierId, changedBy,
+      `Manual adjustment: delta=${delta}, reason=${reason}`
+    )
+  }
 }
