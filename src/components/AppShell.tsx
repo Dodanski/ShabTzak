@@ -20,8 +20,10 @@ export default function AppShell({ children }: AppShellProps) {
           <span className="text-xl font-bold text-blue-600">ShabTzak</span>
           <nav className="flex items-center gap-4 text-sm text-gray-600">
             <a href="#soldiers" className="hover:text-blue-600">Soldiers</a>
+            <a href="#tasks" className="hover:text-blue-600">Tasks</a>
             <a href="#leave" className="hover:text-blue-600">Leave</a>
             <a href="#schedule" className="hover:text-blue-600">Schedule</a>
+            <a href="#history" className="hover:text-blue-600">History</a>
           </nav>
           <button
             onClick={signOut}

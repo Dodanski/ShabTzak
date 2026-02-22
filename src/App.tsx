@@ -6,18 +6,26 @@ import SoldiersPage from './components/SoldiersPage'
 import LeaveRequestForm from './components/LeaveRequestForm'
 import LeaveRequestsPage from './components/LeaveRequestsPage'
 import SchedulePage from './components/SchedulePage'
+import TasksPage from './components/TasksPage'
+import HistoryPage from './components/HistoryPage'
+import ToastList from './components/ToastList'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
+import { useToast } from './hooks/useToast'
+import { useVersionCheck } from './hooks/useVersionCheck'
+import VersionConflictBanner from './components/VersionConflictBanner'
 import { config } from './config/env'
-import type { ScheduleConflict, CreateLeaveRequestInput, CreateSoldierInput } from './models'
+import type { ScheduleConflict, CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput } from './models'
 
-type Section = 'dashboard' | 'soldiers' | 'leave' | 'schedule'
+type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history'
 
 function getHashSection(): Section {
   const hash = window.location.hash
   if (hash === '#soldiers') return 'soldiers'
+  if (hash === '#tasks') return 'tasks'
   if (hash === '#leave') return 'leave'
   if (hash === '#schedule') return 'schedule'
+  if (hash === '#history') return 'history'
   return 'dashboard'
 }
 
@@ -44,41 +52,50 @@ function AppContent() {
 
   const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, loading, reload } =
     useDataService(config.spreadsheetId)
+  const { toasts, addToast, removeToast } = useToast()
+  const { isStale } = useVersionCheck(ds, 'Soldiers')
 
   async function handleDischarge(soldierId: string) {
-    await ds?.soldierService.discharge(soldierId, 'user')
-    reload()
+    try { await ds?.soldierService.discharge(soldierId, 'user'); reload(); addToast('Soldier discharged', 'success') }
+    catch { addToast('Failed to discharge soldier', 'error') }
   }
 
   async function handleAddSoldier(input: CreateSoldierInput) {
-    await ds?.soldierService.create(input, 'user')
-    reload()
+    try { await ds?.soldierService.create(input, 'user'); reload(); addToast('Soldier added', 'success') }
+    catch { addToast('Failed to add soldier', 'error') }
   }
 
   async function handleSubmitLeave(input: CreateLeaveRequestInput) {
-    await ds?.leaveRequestService.submit(input, 'user')
-    setShowLeaveForm(false)
-    reload()
+    try { await ds?.leaveRequestService.submit(input, 'user'); setShowLeaveForm(false); reload(); addToast('Leave request submitted', 'success') }
+    catch { addToast('Failed to submit leave request', 'error') }
   }
 
   async function handleApprove(id: string) {
-    await ds?.leaveRequestService.approve(id, 'user')
-    reload()
+    try { await ds?.leaveRequestService.approve(id, 'user'); reload(); addToast('Leave request approved', 'success') }
+    catch { addToast('Failed to approve leave request', 'error') }
+  }
+
+  async function handleAddTask(input: CreateTaskInput) {
+    try { await ds?.taskService.create(input, 'user'); reload(); addToast('Task added', 'success') }
+    catch { addToast('Failed to add task', 'error') }
   }
 
   async function handleDeny(id: string) {
-    await ds?.leaveRequestService.deny(id, 'user')
-    reload()
+    try { await ds?.leaveRequestService.deny(id, 'user'); reload(); addToast('Leave request denied', 'success') }
+    catch { addToast('Failed to deny leave request', 'error') }
   }
 
   async function handleGenerateSchedule() {
     if (!ds) return
-    const today = new Date().toISOString().split('T')[0]
-    const days = generateNextDays(30)
-    const end = days[days.length - 1] ?? today
-    await ds.scheduleService.generateLeaveSchedule(today, end, 'user')
-    await ds.scheduleService.generateTaskSchedule('user')
-    reload()
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const days = generateNextDays(30)
+      const end = days[days.length - 1] ?? today
+      await ds.scheduleService.generateLeaveSchedule(today, end, 'user')
+      await ds.scheduleService.generateTaskSchedule('user')
+      reload()
+      addToast('Schedule generated', 'success')
+    } catch { addToast('Failed to generate schedule', 'error') }
   }
 
   if (loading) {
@@ -93,6 +110,8 @@ function AppContent() {
 
   return (
     <AppShell>
+      <VersionConflictBanner isStale={isStale} onReload={reload} />
+      <ToastList toasts={toasts} onRemove={removeToast} />
       {section === 'dashboard' && (
         <Dashboard
           soldiers={soldiers}
@@ -108,6 +127,13 @@ function AppContent() {
           soldiers={soldiers}
           onDischarge={handleDischarge}
           onAddSoldier={handleAddSoldier}
+        />
+      )}
+
+      {section === 'tasks' && (
+        <TasksPage
+          tasks={tasks}
+          onAddTask={handleAddTask}
         />
       )}
 
@@ -148,6 +174,10 @@ function AppContent() {
           conflicts={conflicts}
           onGenerate={handleGenerateSchedule}
         />
+      )}
+
+      {section === 'history' && (
+        <HistoryPage entries={[]} />
       )}
     </AppShell>
   )
