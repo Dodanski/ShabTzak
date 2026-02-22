@@ -206,7 +206,9 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                     </button>
                     {s.status === 'Active' && (
                       <button
-                        onClick={() => onDischarge(s.id)}
+                        onClick={() => {
+                          if (window.confirm(`Discharge ${s.name}?`)) onDischarge(s.id)
+                        }}
                         className="text-xs text-red-600 hover:text-red-800"
                       >
                         Discharge

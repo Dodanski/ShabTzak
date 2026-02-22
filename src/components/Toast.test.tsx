@@ -28,4 +28,28 @@ describe('ToastList', () => {
     await userEvent.click(screen.getByRole('button', { name: /dismiss/i }))
     expect(onRemove).toHaveBeenCalledWith('t1')
   })
+
+  it('applies success background class for success toasts', () => {
+    render(<ToastList toasts={[TOASTS[0]]} onRemove={vi.fn()} />)
+    const toast = screen.getByText('Soldier discharged').closest('div')
+    expect(toast?.className).toContain('bg-green-600')
+  })
+
+  it('applies error background class for error toasts', () => {
+    render(<ToastList toasts={[TOASTS[1]]} onRemove={vi.fn()} />)
+    const toast = screen.getByText('Failed to load').closest('div')
+    expect(toast?.className).toContain('bg-red-600')
+  })
+
+  it('applies info background class for info toasts', () => {
+    const infoToast: Toast = { id: 't3', message: 'Info message', type: 'info' }
+    render(<ToastList toasts={[infoToast]} onRemove={vi.fn()} />)
+    const toast = screen.getByText('Info message').closest('div')
+    expect(toast?.className).toContain('bg-blue-600')
+  })
+
+  it('renders a dismiss button for each toast', () => {
+    render(<ToastList toasts={TOASTS} onRemove={vi.fn()} />)
+    expect(screen.getAllByRole('button', { name: /dismiss/i })).toHaveLength(2)
+  })
 })

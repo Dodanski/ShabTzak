@@ -57,10 +57,12 @@ describe('SoldiersPage', () => {
   })
 
   it('calls onDischarge with soldier id when discharge is clicked', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const onDischarge = vi.fn()
     render(<SoldiersPage soldiers={SOLDIERS} onDischarge={onDischarge} onAddSoldier={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: /discharge/i }))
     expect(onDischarge).toHaveBeenCalledWith('s1')
+    vi.restoreAllMocks()
   })
 
   it('shows Fairness and Hours column headers', () => {
@@ -151,6 +153,23 @@ describe('SoldiersPage', () => {
     await userEvent.clear(screen.getByPlaceholderText(/search soldiers/i))
     expect(screen.getByText('David Cohen')).toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+  })
+
+  it('shows window.confirm before discharging', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /discharge/i }))
+    expect(confirmSpy).toHaveBeenCalledOnce()
+    confirmSpy.mockRestore()
+  })
+
+  it('does not call onDischarge when confirm is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const onDischarge = vi.fn()
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={onDischarge} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /discharge/i }))
+    expect(onDischarge).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
   })
 
   it('calls onAddSoldier with form data when add form is submitted', async () => {

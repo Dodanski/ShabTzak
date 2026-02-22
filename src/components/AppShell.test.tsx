@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthContext, AuthContextValue } from '../context/AuthContext'
 import AppShell from './AppShell'
@@ -53,5 +53,30 @@ describe('AppShell', () => {
     renderWithAuth(true, signOut)
     await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
     expect(signOut).toHaveBeenCalledOnce()
+  })
+
+  it('marks the active nav link with aria-current="page" based on hash', () => {
+    window.location.hash = '#soldiers'
+    renderWithAuth(true)
+    expect(screen.getByRole('link', { name: /soldiers/i })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: /tasks/i })).not.toHaveAttribute('aria-current', 'page')
+    window.location.hash = ''
+  })
+
+  it('updates active link when hash changes', async () => {
+    window.location.hash = '#soldiers'
+    renderWithAuth(true)
+    act(() => {
+      window.location.hash = '#tasks'
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+    })
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /^tasks$/i })).toHaveAttribute('aria-current', 'page')
+    })
+    window.location.hash = ''
+  })
+
+  afterEach(() => {
+    window.location.hash = ''
   })
 })

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import LoginPage from './LoginPage'
 
@@ -6,8 +6,24 @@ interface AppShellProps {
   children?: React.ReactNode
 }
 
+const NAV_LINKS = [
+  { href: '#soldiers', label: 'Soldiers' },
+  { href: '#tasks', label: 'Tasks' },
+  { href: '#leave', label: 'Leave' },
+  { href: '#schedule', label: 'Schedule' },
+  { href: '#history', label: 'History' },
+  { href: '#config', label: 'Config' },
+]
+
 export default function AppShell({ children }: AppShellProps) {
   const { auth, signOut } = useAuth()
+  const [hash, setHash] = useState(() => window.location.hash)
+
+  useEffect(() => {
+    const handleHashChange = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
 
   if (!auth.isAuthenticated) {
     return <LoginPage />
@@ -19,12 +35,19 @@ export default function AppShell({ children }: AppShellProps) {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <span className="text-xl font-bold text-blue-600">ShabTzak</span>
           <nav className="flex items-center gap-4 text-sm text-gray-600">
-            <a href="#soldiers" className="hover:text-blue-600">Soldiers</a>
-            <a href="#tasks" className="hover:text-blue-600">Tasks</a>
-            <a href="#leave" className="hover:text-blue-600">Leave</a>
-            <a href="#schedule" className="hover:text-blue-600">Schedule</a>
-            <a href="#history" className="hover:text-blue-600">History</a>
-            <a href="#config" className="hover:text-blue-600">Config</a>
+            {NAV_LINKS.map(({ href, label }) => {
+              const isActive = hash === href
+              return (
+                <a
+                  key={href}
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={isActive ? 'text-blue-600 font-medium' : 'hover:text-blue-600'}
+                >
+                  {label}
+                </a>
+              )
+            })}
           </nav>
           <button
             onClick={signOut}
