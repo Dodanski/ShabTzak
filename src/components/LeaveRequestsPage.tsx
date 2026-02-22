@@ -79,7 +79,9 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
                             Approve
                           </button>
                           <button
-                            onClick={() => onDeny(req.id)}
+                            onClick={() => {
+                              if (window.confirm('Deny this leave request?')) onDeny(req.id)
+                            }}
                             className="text-xs text-red-600 hover:text-red-800"
                           >
                             Deny

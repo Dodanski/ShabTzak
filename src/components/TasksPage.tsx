@@ -17,6 +17,7 @@ const EMPTY_FORM: CreateTaskInput = {
 export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateTaskInput>(EMPTY_FORM)
+  const [typeFilter, setTypeFilter] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -29,6 +30,10 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
     return <div className="p-4 text-gray-500">Loading tasks…</div>
   }
 
+  const filteredTasks = typeFilter
+    ? tasks.filter(t => t.taskType.toLowerCase().includes(typeFilter.toLowerCase()))
+    : tasks
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -40,6 +45,13 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
           Add Task
         </button>
       </div>
+
+      <input
+        placeholder="Filter by type"
+        value={typeFilter}
+        onChange={e => setTypeFilter(e.target.value)}
+        className="border rounded px-3 py-1.5 text-sm w-full max-w-xs"
+      />
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4 space-y-3">
@@ -113,7 +125,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
               </tr>
             </thead>
             <tbody>
-              {tasks.map(t => (
+              {filteredTasks.map(t => (
                 <tr key={t.id} className="border-t">
                   <td className="px-4 py-2 font-medium">{t.taskType}</td>
                   <td className="px-4 py-2 text-gray-500 text-xs">{t.startTime}</td>

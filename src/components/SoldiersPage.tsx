@@ -29,6 +29,9 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
   const [adjustReason, setAdjustReason] = useState('')
   const [nameFilter, setNameFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [sortKey, setSortKey] = useState<'name' | 'fairness' | null>(null)
+  const [sortAsc, setSortAsc] = useState(true)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -51,11 +54,29 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
     return <div className="p-4 text-gray-500">Loading soldiers…</div>
   }
 
-  const filteredSoldiers = soldiers.filter(s => {
-    const nameMatch = nameFilter === '' || s.name.toLowerCase().includes(nameFilter.toLowerCase())
-    const roleMatch = roleFilter === '' || s.role === roleFilter
-    return nameMatch && roleMatch
-  })
+  function handleSortClick(key: 'name' | 'fairness') {
+    if (sortKey === key) {
+      setSortAsc(a => !a)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const filteredSoldiers = soldiers
+    .filter(s => {
+      const nameMatch = nameFilter === '' || s.name.toLowerCase().includes(nameFilter.toLowerCase())
+      const roleMatch = roleFilter === '' || s.role === roleFilter
+      const statusMatch = statusFilter === '' || s.status === statusFilter
+      return nameMatch && roleMatch && statusMatch
+    })
+    .sort((a, b) => {
+      if (!sortKey) return 0
+      let cmp = 0
+      if (sortKey === 'name') cmp = a.name.localeCompare(b.name)
+      if (sortKey === 'fairness') cmp = a.currentFairness - b.currentFairness
+      return sortAsc ? cmp : -cmp
+    })
 
   const avgFairness = soldiers.length
     ? soldiers.reduce((sum, s) => sum + s.currentFairness, 0) / soldiers.length
@@ -88,6 +109,17 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
         >
           <option value="">All roles</option>
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          aria-label="Filter by status"
+          className="border rounded px-3 py-1.5 text-sm"
+        >
+          <option value="">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Injured">Injured</option>
+          <option value="Discharged">Discharged</option>
         </select>
       </div>
 
@@ -161,10 +193,20 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
-                <th className="text-left px-4 py-2">Name</th>
+                <th
+                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100"
+                  onClick={() => handleSortClick('name')}
+                >
+                  Name{sortKey === 'name' ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                </th>
                 <th className="text-left px-4 py-2">Role</th>
                 <th className="text-left px-4 py-2">Status</th>
-                <th className="text-left px-4 py-2">Fairness</th>
+                <th
+                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-gray-100"
+                  onClick={() => handleSortClick('fairness')}
+                >
+                  Fairness{sortKey === 'fairness' ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                </th>
                 <th className="text-left px-4 py-2">Hours</th>
                 {configData && <th className="text-left px-4 py-2">Quota</th>}
                 <th className="px-4 py-2" />

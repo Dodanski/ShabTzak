@@ -147,12 +147,56 @@ describe('SoldiersPage', () => {
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })
 
+  it('renders a status filter dropdown', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    expect(screen.getByRole('combobox', { name: /filter by status/i })).toBeInTheDocument()
+  })
+
+  it('filters soldiers by status Active', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Active')
+    expect(screen.getByText('David Cohen')).toBeInTheDocument()
+    expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
+  })
+
+  it('filters soldiers by status Injured', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Injured')
+    expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
+    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+  })
+
   it('shows all soldiers when filter is cleared', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
     await userEvent.type(screen.getByPlaceholderText(/search soldiers/i), 'David')
     await userEvent.clear(screen.getByPlaceholderText(/search soldiers/i))
     expect(screen.getByText('David Cohen')).toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+  })
+
+  it('sorts soldiers by name ascending when Name header clicked', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
+    const rows = screen.getAllByRole('row').slice(1) // skip header
+    expect(rows[0]).toHaveTextContent('David Cohen')
+    expect(rows[1]).toHaveTextContent('Moshe Levi')
+  })
+
+  it('sorts soldiers by name descending when Name header clicked twice', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
+    await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[0]).toHaveTextContent('Moshe Levi')
+    expect(rows[1]).toHaveTextContent('David Cohen')
+  })
+
+  it('sorts soldiers by fairness ascending when Fairness header clicked', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getByRole('columnheader', { name: /fairness/i }))
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[0]).toHaveTextContent('Moshe Levi') // fairness 1.0
+    expect(rows[1]).toHaveTextContent('David Cohen') // fairness 2.5
   })
 
   it('shows window.confirm before discharging', async () => {

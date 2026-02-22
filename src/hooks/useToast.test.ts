@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useToast } from './useToast'
 
@@ -31,5 +31,28 @@ describe('useToast', () => {
       result.current.addToast('Second', 'error')
     })
     expect(result.current.toasts).toHaveLength(2)
+  })
+
+  it('auto-removes toast after duration ms', () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useToast())
+    act(() => { result.current.addToast('Temporary', 'info', 3000) })
+    expect(result.current.toasts).toHaveLength(1)
+    act(() => { vi.advanceTimersByTime(3000) })
+    expect(result.current.toasts).toHaveLength(0)
+    vi.useRealTimers()
+  })
+
+  it('does not auto-remove toast when no duration given', () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useToast())
+    act(() => { result.current.addToast('Persistent', 'success') })
+    act(() => { vi.advanceTimersByTime(60000) })
+    expect(result.current.toasts).toHaveLength(1)
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 })

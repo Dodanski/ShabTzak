@@ -79,4 +79,25 @@ describe('TasksPage', () => {
     expect(screen.getByText(/driver.*1/i)).toBeInTheDocument()
     expect(screen.getByText(/medic.*2/i)).toBeInTheDocument()
   })
+
+  it('renders a type filter input', () => {
+    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    expect(screen.getByPlaceholderText(/filter by type/i)).toBeInTheDocument()
+  })
+
+  it('filters tasks by type', async () => {
+    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    await userEvent.type(screen.getByPlaceholderText(/filter by type/i), 'Guard')
+    expect(screen.getByText('Guard')).toBeInTheDocument()
+    expect(screen.queryByText('Patrol')).not.toBeInTheDocument()
+  })
+
+  it('shows all tasks when type filter is cleared', async () => {
+    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    const filter = screen.getByPlaceholderText(/filter by type/i)
+    await userEvent.type(filter, 'Guard')
+    await userEvent.clear(filter)
+    expect(screen.getByText('Guard')).toBeInTheDocument()
+    expect(screen.getByText('Patrol')).toBeInTheDocument()
+  })
 })

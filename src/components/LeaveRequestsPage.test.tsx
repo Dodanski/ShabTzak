@@ -54,10 +54,29 @@ describe('LeaveRequestsPage', () => {
   })
 
   it('calls onDeny with request id when Deny clicked', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const onDeny = vi.fn()
     render(<LeaveRequestsPage leaveRequests={[PENDING]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={onDeny} />)
     await userEvent.click(screen.getByRole('button', { name: /deny/i }))
     expect(onDeny).toHaveBeenCalledWith('lr1')
+    vi.restoreAllMocks()
+  })
+
+  it('shows window.confirm before denying', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<LeaveRequestsPage leaveRequests={[PENDING]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /deny/i }))
+    expect(confirmSpy).toHaveBeenCalledOnce()
+    confirmSpy.mockRestore()
+  })
+
+  it('does not call onDeny when confirm is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const onDeny = vi.fn()
+    render(<LeaveRequestsPage leaveRequests={[PENDING]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={onDeny} />)
+    await userEvent.click(screen.getByRole('button', { name: /deny/i }))
+    expect(onDeny).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
   })
 
   it('shows empty state when no requests', () => {
