@@ -29,4 +29,9 @@ export interface UpdateSoldierInput {
   serviceStart?: string
   serviceEnd?: string
   status?: SoldierStatus
+  hoursWorked?: number
+  weekendLeavesCount?: number
+  midweekLeavesCount?: number
+  afterLeavesCount?: number
+  currentFairness?: number
 }

@@ -61,4 +61,36 @@ describe('DataService', () => {
     expect(service.invalidateAll).toBeDefined()
     expect(() => service.invalidateAll()).not.toThrow()
   })
+
+  it('exposes soldierService', () => {
+    const service = new DataService('token', 'id')
+    expect(service.soldierService).toBeDefined()
+    expect(service.soldierService.create).toBeDefined()
+    expect(service.soldierService.discharge).toBeDefined()
+  })
+
+  it('exposes taskService', () => {
+    const service = new DataService('token', 'id')
+    expect(service.taskService).toBeDefined()
+    expect(service.taskService.create).toBeDefined()
+  })
+
+  it('exposes leaveRequestService', () => {
+    const service = new DataService('token', 'id')
+    expect(service.leaveRequestService).toBeDefined()
+    expect(service.leaveRequestService.approve).toBeDefined()
+  })
+
+  it('exposes scheduleService', () => {
+    const service = new DataService('token', 'id')
+    expect(service.scheduleService).toBeDefined()
+    expect(service.scheduleService.generateLeaveSchedule).toBeDefined()
+    expect(service.scheduleService.generateTaskSchedule).toBeDefined()
+  })
+
+  it('exposes fairnessUpdate service', () => {
+    const service = new DataService('token', 'id')
+    expect(service.fairnessUpdate).toBeDefined()
+    expect(service.fairnessUpdate.applyTaskAssignment).toBeDefined()
+  })
 })

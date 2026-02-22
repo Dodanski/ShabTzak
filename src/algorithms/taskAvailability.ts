@@ -1,4 +1,4 @@
-import type { Soldier, Task, TaskAssignment } from '../models'
+import type { Soldier, Task, TaskAssignment, AppConfig } from '../models'
 
 /**
  * Returns the ISO datetime after which the soldier can work again.
@@ -45,4 +45,29 @@ export function isTaskAvailable(
   }
 
   return true
+}
+
+/**
+ * Returns true if assigning this soldier to the task would not exceed
+ * config.maxDrivingHours for Driver-role soldiers on the same calendar day.
+ */
+export function checkDrivingHoursLimit(
+  soldier: Soldier,
+  task: Task,
+  allTasks: Task[],
+  existingAssignments: TaskAssignment[],
+  config: AppConfig,
+): boolean {
+  if (soldier.role !== 'Driver') return true
+
+  const taskDate = task.startTime.split('T')[0]
+  const myAssignments = existingAssignments.filter(a => a.soldierId === soldier.id)
+
+  const hoursAlready = myAssignments.reduce((sum, a) => {
+    const t = allTasks.find(t => t.id === a.taskId)
+    if (!t || t.startTime.split('T')[0] !== taskDate) return sum
+    return sum + t.durationHours
+  }, 0)
+
+  return hoursAlready + task.durationHours <= config.maxDrivingHours
 }

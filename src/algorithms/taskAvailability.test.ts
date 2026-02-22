@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { isTaskAvailable, getRestPeriodEnd, hasRequiredRole } from './taskAvailability'
-import type { Soldier, Task, TaskAssignment } from '../models'
+import { isTaskAvailable, getRestPeriodEnd, hasRequiredRole, checkDrivingHoursLimit } from './taskAvailability'
+import type { Soldier, Task, TaskAssignment, AppConfig } from '../models'
+
+const BASE_CONFIG: Partial<AppConfig> = { maxDrivingHours: 8 }
 
 function makeSoldier(overrides: Partial<Soldier> = {}): Soldier {
   return {
@@ -117,5 +119,50 @@ describe('Task Availability', () => {
       })
       expect(isTaskAvailable(soldier, newTask, [prevTask], [assignment])).toBe(true)
     })
+  })
+})
+
+describe('checkDrivingHoursLimit', () => {
+  const driverTask = (id: string, hours: number): Task => makeTask({
+    id,
+    startTime: '2026-03-20T08:00:00Z',
+    endTime: `2026-03-20T${(8 + hours).toString().padStart(2, '0')}:00:00Z`,
+    durationHours: hours,
+  })
+
+  it('always returns true for non-Driver soldiers', () => {
+    const medic = makeSoldier({ role: 'Medic' })
+    const task = driverTask('t1', 8)
+    expect(checkDrivingHoursLimit(medic, task, [task], [], BASE_CONFIG as AppConfig)).toBe(true)
+  })
+
+  it('returns true when Driver has no prior tasks on the same day', () => {
+    const driver = makeSoldier({ role: 'Driver' })
+    const task = driverTask('t1', 8)
+    expect(checkDrivingHoursLimit(driver, task, [task], [], BASE_CONFIG as AppConfig)).toBe(true)
+  })
+
+  it('returns false when Driver would exceed maxDrivingHours', () => {
+    const driver = makeSoldier({ role: 'Driver' })
+    const prev = driverTask('t-prev', 6) // 6h already
+    const assignment: TaskAssignment = {
+      scheduleId: 's', taskId: 't-prev', soldierId: 's1',
+      assignedRole: 'Driver', isLocked: false,
+      createdAt: '2026-02-01T00:00:00', createdBy: 'admin',
+    }
+    const newTask = driverTask('t-new', 4) // +4h → 10 total > 8
+    expect(checkDrivingHoursLimit(driver, newTask, [prev, newTask], [assignment], BASE_CONFIG as AppConfig)).toBe(false)
+  })
+
+  it('returns true when Driver stays within maxDrivingHours', () => {
+    const driver = makeSoldier({ role: 'Driver' })
+    const prev = driverTask('t-prev', 4)
+    const assignment: TaskAssignment = {
+      scheduleId: 's', taskId: 't-prev', soldierId: 's1',
+      assignedRole: 'Driver', isLocked: false,
+      createdAt: '2026-02-01T00:00:00', createdBy: 'admin',
+    }
+    const newTask = driverTask('t-new', 4) // 4+4 = 8 = limit, still OK
+    expect(checkDrivingHoursLimit(driver, newTask, [prev, newTask], [assignment], BASE_CONFIG as AppConfig)).toBe(true)
   })
 })

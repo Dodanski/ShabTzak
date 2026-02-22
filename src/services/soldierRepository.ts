@@ -84,6 +84,11 @@ export class SoldierRepository {
       ...(input.serviceStart !== undefined && { serviceStart: input.serviceStart }),
       ...(input.serviceEnd !== undefined && { serviceEnd: input.serviceEnd }),
       ...(input.status !== undefined && { status: input.status }),
+      ...(input.hoursWorked !== undefined && { hoursWorked: input.hoursWorked }),
+      ...(input.weekendLeavesCount !== undefined && { weekendLeavesCount: input.weekendLeavesCount }),
+      ...(input.midweekLeavesCount !== undefined && { midweekLeavesCount: input.midweekLeavesCount }),
+      ...(input.afterLeavesCount !== undefined && { afterLeavesCount: input.afterLeavesCount }),
+      ...(input.currentFairness !== undefined && { currentFairness: input.currentFairness }),
     }
 
     const updatedRow = serializeSoldier(updated)
