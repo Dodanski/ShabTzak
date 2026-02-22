@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Soldier, LeaveRequest, TaskAssignment, ScheduleConflict } from '../models'
 
 interface DashboardProps {

@@ -15,44 +15,44 @@ declare global {
       }
     }
   }
-}
 
-interface GoogleIdConfiguration {
-  client_id: string
-  callback: (response: CredentialResponse) => void
-  auto_select?: boolean
-  cancel_on_tap_outside?: boolean
-}
+  interface GoogleIdConfiguration {
+    client_id: string
+    callback: (response: CredentialResponse) => void
+    auto_select?: boolean
+    cancel_on_tap_outside?: boolean
+  }
 
-interface CredentialResponse {
-  credential: string
-  select_by: string
-}
+  interface CredentialResponse {
+    credential: string
+    select_by: string
+  }
 
-interface GsiButtonConfiguration {
-  type?: 'standard' | 'icon'
-  theme?: 'outline' | 'filled_blue' | 'filled_black'
-  size?: 'large' | 'medium' | 'small'
-  text?: string
-  shape?: 'rectangular' | 'pill' | 'circle' | 'square'
-}
+  interface GsiButtonConfiguration {
+    type?: 'standard' | 'icon'
+    theme?: 'outline' | 'filled_blue' | 'filled_black'
+    size?: 'large' | 'medium' | 'small'
+    text?: string
+    shape?: 'rectangular' | 'pill' | 'circle' | 'square'
+  }
 
-interface TokenClientConfig {
-  client_id: string
-  scope: string
-  callback: (response: TokenResponse) => void
-}
+  interface TokenClientConfig {
+    client_id: string
+    scope: string
+    callback: (response: TokenResponse) => void
+  }
 
-interface TokenClient {
-  requestAccessToken: () => void
-}
+  interface TokenClient {
+    requestAccessToken: () => void
+  }
 
-interface TokenResponse {
-  access_token: string
-  expires_in: number
-  scope: string
-  token_type: string
-  error?: string
+  interface TokenResponse {
+    access_token: string
+    expires_in: number
+    scope: string
+    token_type: string
+    error?: string
+  }
 }
 
 export {}

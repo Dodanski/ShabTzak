@@ -1,4 +1,3 @@
-import React from 'react'
 import { buildAvailabilityMatrix } from '../algorithms/availabilityMatrix'
 import type { AvailabilityStatus } from '../algorithms/availabilityMatrix'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
