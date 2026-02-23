@@ -73,6 +73,22 @@ describe('AuthProvider', () => {
     expect(result.current.auth.accessToken).toBe('test-token')
   })
 
+
+  it('sets error state when token callback fires with an error', () => {
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+    act(() => {
+      capturedTokenCallback?.({
+        access_token: '', expires_in: 0, scope: '', token_type: '',
+        error: 'access_denied',
+      })
+    })
+    expect(result.current.auth.isAuthenticated).toBe(false)
+    expect(result.current.auth.accessToken).toBeNull()
+    expect(result.current.auth.error).toBe('access_denied')
+  })
+
   it('signOut resets auth state', () => {
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
