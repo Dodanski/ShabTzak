@@ -209,6 +209,7 @@ function AppContent() {
       {section === 'config' && (
         <ConfigPage config={configData} onSave={handleSaveConfig} loading={loading} />
       )}
+
     </AppShell>
   )
 }
