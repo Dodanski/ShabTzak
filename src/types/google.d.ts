@@ -14,6 +14,7 @@ declare global {
         }
       }
     }
+    onGoogleLibraryLoad?: () => void
   }
 
   interface GoogleIdConfiguration {
