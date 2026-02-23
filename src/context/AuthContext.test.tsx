@@ -98,4 +98,42 @@ describe('AuthProvider', () => {
       })
     }).not.toThrow()
   })
+
+  it('registers onGoogleLibraryLoad when google is not yet loaded', () => {
+    Object.defineProperty(window, 'google', { value: undefined, writable: true, configurable: true })
+
+    renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+
+    expect(window.onGoogleLibraryLoad).toBeTypeOf('function')
+  })
+
+  it('initializes token client and enables signIn when onGoogleLibraryLoad fires', () => {
+    Object.defineProperty(window, 'google', { value: undefined, writable: true, configurable: true })
+
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+
+    // Simulate GSI script finishing load
+    setupGoogleMock()
+    act(() => { window.onGoogleLibraryLoad!() })
+
+    // signIn should now trigger requestAccessToken
+    act(() => { result.current.signIn() })
+    expect(mockRequestAccessToken).toHaveBeenCalledOnce()
+  })
+
+  it('removes onGoogleLibraryLoad on unmount', () => {
+    Object.defineProperty(window, 'google', { value: undefined, writable: true, configurable: true })
+
+    const { unmount } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+
+    expect(window.onGoogleLibraryLoad).toBeTypeOf('function')
+    unmount()
+    expect(window.onGoogleLibraryLoad).toBeUndefined()
+  })
 })
