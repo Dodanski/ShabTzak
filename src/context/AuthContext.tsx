@@ -22,19 +22,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const tokenClientRef = useRef<TokenClient | null>(null)
 
   useEffect(() => {
-    if (typeof window.google === 'undefined' || !window.google) return
+    const initClient = () => {
+      tokenClientRef.current = window.google!.accounts.oauth2.initTokenClient({
+        client_id: config.googleClientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: (response: TokenResponse) => {
+          if (response.error) {
+            setAuth({ isAuthenticated: false, accessToken: null, error: response.error })
+            return
+          }
+          setAuth({ isAuthenticated: true, accessToken: response.access_token, error: null })
+        },
+      })
+    }
 
-    tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-      client_id: config.googleClientId,
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      callback: (response: TokenResponse) => {
-        if (response.error) {
-          setAuth({ isAuthenticated: false, accessToken: null, error: response.error })
-          return
-        }
-        setAuth({ isAuthenticated: true, accessToken: response.access_token, error: null })
-      },
-    })
+    if (window.google) {
+      initClient()
+    } else {
+      window.onGoogleLibraryLoad = initClient
+    }
+
+    return () => {
+      if (window.onGoogleLibraryLoad === initClient) {
+        window.onGoogleLibraryLoad = undefined
+      }
+    }
   }, [])
 
   const signIn = useCallback(() => {
