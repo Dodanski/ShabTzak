@@ -76,13 +76,32 @@ describe('ConfigRepository', () => {
   })
 
   describe('writeAdminEmails()', () => {
-    it('appends adminEmails row to Config tab', async () => {
+    it('updates existing adminEmails row when it exists', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([
+        ['Key', 'Value'],
+        ['adminEmails', 'old@example.com'],
+      ])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+
+      await repo.writeAdminEmails(['alice@example.com'])
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        SHEET_ID,
+        expect.stringMatching(/Config!A\d+:B\d+/),
+        [['adminEmails', 'alice@example.com']]
+      )
+    })
+
+    it('appends adminEmails row when key does not exist', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([['Key', 'Value']])
       const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
-      await repo.writeAdminEmails(['alice@example.com', 'bob@example.com'])
+
+      await repo.writeAdminEmails(['alice@example.com'])
+
       expect(appendSpy).toHaveBeenCalledWith(
         SHEET_ID,
         expect.stringContaining('Config'),
-        [['adminEmails', 'alice@example.com,bob@example.com']]
+        [['adminEmails', 'alice@example.com']]
       )
     })
   })

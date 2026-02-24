@@ -19,6 +19,7 @@ import { FairnessUpdateService } from './fairnessUpdateService'
  * Wires together all repositories and services sharing one cache instance.
  */
 export class DataService {
+  readonly sheets: GoogleSheetsService
   readonly soldiers: SoldierRepository
   readonly tasks: TaskRepository
   readonly leaveRequests: LeaveRequestRepository
@@ -37,6 +38,7 @@ export class DataService {
 
   constructor(accessToken: string, spreadsheetId: string) {
     const sheets = new GoogleSheetsService(accessToken)
+    this.sheets = sheets
     this.cache = new SheetCache()
 
     this.soldiers = new SoldierRepository(sheets, spreadsheetId, this.cache)

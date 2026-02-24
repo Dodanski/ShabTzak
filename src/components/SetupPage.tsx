@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { SetupService } from '../services/setupService'
-import { GoogleSheetsService } from '../services/googleSheets'
 import type { DataService } from '../services/dataService'
 import type { AppConfig } from '../models'
 import type { TabStatus } from '../services/setupService'
@@ -20,6 +19,7 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
   const [initError, setInitError] = useState<string | null>(null)
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [adminSaving, setAdminSaving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
 
   if (!isAdmin) {
     return (
@@ -32,8 +32,7 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
 
   function getSetupService(): SetupService | null {
     if (!ds) return null
-    const sheets: GoogleSheetsService = (ds as any).soldiers.sheets
-    return new SetupService(sheets, spreadsheetId)
+    return new SetupService(ds.sheets, spreadsheetId)
   }
 
   async function handleCheckTabs() {
@@ -62,7 +61,8 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
 
   async function handleAddAdmin() {
     const email = newAdminEmail.trim()
-    if (!email || !ds) return
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email || !emailRegex.test(email) || !ds) return
     setAdminSaving(true)
     try {
       const current = configData?.adminEmails ?? []
@@ -78,9 +78,14 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
 
   async function handleRemoveAdmin(email: string) {
     if (!ds) return
-    const current = configData?.adminEmails ?? []
-    await ds.config.writeAdminEmails(current.filter(e => e !== email))
-    onReload()
+    setRemoveError(null)
+    try {
+      const current = configData?.adminEmails ?? []
+      await ds.config.writeAdminEmails(current.filter(e => e !== email))
+      onReload()
+    } catch (e) {
+      setRemoveError(e instanceof Error ? e.message : 'Failed to remove admin')
+    }
   }
 
   const extraAdmins = configData?.adminEmails ?? []
@@ -151,6 +156,8 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
             ))}
           </ul>
         )}
+
+        {removeError && <p className="text-sm text-red-600">{removeError}</p>}
 
         <div className="flex gap-2">
           <input

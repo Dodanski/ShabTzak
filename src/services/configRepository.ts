@@ -57,10 +57,24 @@ export class ConfigRepository {
   }
 
   async writeAdminEmails(emails: string[]): Promise<void> {
-    await this.sheets.appendValues(
-      this.spreadsheetId,
-      `${SHEET_TABS.CONFIG}!A:B`,
-      [['adminEmails', emails.join(',')]]
-    )
+    const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const dataRows = rows.slice(1) // skip header
+    const existingRowIndex = dataRows.findIndex(r => r[0] === 'adminEmails')
+
+    if (existingRowIndex >= 0) {
+      // Overwrite the existing row (offset by 2: 1 for header, 1 for 1-based index)
+      const rowNumber = existingRowIndex + 2
+      await this.sheets.updateValues(
+        this.spreadsheetId,
+        `${SHEET_TABS.CONFIG}!A${rowNumber}:B${rowNumber}`,
+        [['adminEmails', emails.join(',')]]
+      )
+    } else {
+      await this.sheets.appendValues(
+        this.spreadsheetId,
+        `${SHEET_TABS.CONFIG}!A:B`,
+        [['adminEmails', emails.join(',')]]
+      )
+    }
   }
 }
