@@ -27,6 +27,7 @@ const BASE_PROPS = {
   leaveAssignments: [],
   conflicts: [],
   onGenerate: vi.fn(),
+  onManualAssign: vi.fn(),
 }
 
 describe('SchedulePage', () => {

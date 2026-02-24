@@ -1,6 +1,7 @@
 import { buildAvailabilityMatrix } from '../algorithms/availabilityMatrix'
 import type { AvailabilityStatus } from '../algorithms/availabilityMatrix'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
+import { formatDisplayDate } from '../utils/dateUtils'
 
 interface ScheduleCalendarProps {
   soldiers: Soldier[]
@@ -26,38 +27,40 @@ export default function ScheduleCalendar({
   const matrix = buildAvailabilityMatrix(soldiers, tasks, taskAssignments, leaveAssignments, dates)
 
   return (
-    <div className="overflow-x-auto">
-      <table className="text-xs border-collapse">
-        <thead>
-          <tr>
-            <th className="px-2 py-1 text-left text-gray-600 font-medium sticky left-0 bg-white">
-              Soldier
-            </th>
-            {dates.map(d => (
-              <th key={d} className="px-2 py-1 text-gray-500 font-normal whitespace-nowrap">{d}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {soldiers.map(soldier => (
-            <tr key={soldier.id}>
-              <td className="px-2 py-1 font-medium text-gray-800 sticky left-0 bg-white whitespace-nowrap">
-                {soldier.name}
-              </td>
-              {dates.map(d => {
-                const status = matrix.get(d)?.get(soldier.id) ?? 'available'
-                return (
-                  <td
-                    key={d}
-                    title={status}
-                    className={`px-3 py-1 border border-gray-100 ${STATUS_CLASSES[status]}`}
-                  />
-                )
-              })}
+    <>
+      <div className="overflow-x-auto">
+        <table className="text-xs border-collapse">
+          <thead>
+            <tr>
+              <th className="px-2 py-1 text-left text-gray-600 font-medium sticky left-0 bg-white">
+                Soldier
+              </th>
+              {dates.map(d => (
+                <th key={d} className="px-2 py-1 text-gray-500 font-normal whitespace-nowrap">{formatDisplayDate(d)}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {soldiers.map(soldier => (
+              <tr key={soldier.id}>
+                <td className="px-2 py-1 font-medium text-gray-800 sticky left-0 bg-white whitespace-nowrap">
+                  {soldier.name}
+                </td>
+                {dates.map(d => {
+                  const status = matrix.get(d)?.get(soldier.id) ?? 'available'
+                  return (
+                    <td
+                      key={d}
+                      title={status}
+                      className={`px-3 py-1 border border-gray-100 ${STATUS_CLASSES[status]}`}
+                    />
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="flex gap-4 mt-2 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <span className="inline-block w-3 h-3 bg-green-100 border border-gray-200" /> Available
@@ -69,6 +72,6 @@ export default function ScheduleCalendar({
           <span className="inline-block w-3 h-3 bg-blue-200 border border-gray-200" /> On task
         </span>
       </div>
-    </div>
+    </>
   )
 }

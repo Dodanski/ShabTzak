@@ -34,7 +34,7 @@ describe('TasksPage', () => {
 
   it('renders start times', () => {
     render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
-    expect(screen.getByText('2026-03-01T06:00:00Z')).toBeInTheDocument()
+    expect(screen.getByText('06:00')).toBeInTheDocument()
   })
 
   it('shows empty state when no tasks', () => {
@@ -58,8 +58,7 @@ describe('TasksPage', () => {
     render(<TasksPage tasks={[]} onAddTask={onAddTask} />)
     await userEvent.click(screen.getByRole('button', { name: /add task/i }))
     await userEvent.type(screen.getByLabelText(/task type/i), 'Convoy')
-    await userEvent.type(screen.getByLabelText(/start time/i), '2026-03-10T08:00')
-    await userEvent.type(screen.getByLabelText(/end time/i), '2026-03-10T16:00')
+    await userEvent.type(screen.getByLabelText(/start time/i), '08:00')
     await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
     expect(onAddTask).toHaveBeenCalledOnce()
   })

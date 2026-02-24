@@ -62,7 +62,7 @@ export class TaskRepository {
       taskType: input.taskType,
       startTime: input.startTime,
       endTime: input.endTime,
-      durationHours: calcDurationHours(input.startTime, input.endTime),
+      durationHours: input.durationHours !== undefined ? input.durationHours : calcDurationHours(input.startTime, input.endTime),
       roleRequirements: input.roleRequirements,
       minRestAfter: input.minRestAfter ?? 6,
       isSpecial: input.isSpecial ?? false,

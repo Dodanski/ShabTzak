@@ -32,7 +32,7 @@ describe('LeaveRequestsPage', () => {
 
   it('renders date range for a request', () => {
     render(<LeaveRequestsPage leaveRequests={[PENDING]} soldiers={SOLDIERS} onApprove={vi.fn()} onDeny={vi.fn()} />)
-    expect(screen.getByText('2026-03-01 – 2026-03-03')).toBeInTheDocument()
+    expect(screen.getByText('01/03 – 03/03')).toBeInTheDocument()
   })
 
   it('shows Pending status badge for pending request', () => {

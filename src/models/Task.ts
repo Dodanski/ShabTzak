@@ -31,6 +31,7 @@ export interface CreateTaskInput {
   taskType: string
   startTime: string
   endTime: string
+  durationHours?: number
   roleRequirements: RoleRequirement[]
   minRestAfter?: number
   isSpecial?: boolean

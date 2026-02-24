@@ -21,6 +21,7 @@ import VersionConflictBanner from './components/VersionConflictBanner'
 import ErrorBanner from './components/ErrorBanner'
 import { config } from './config/env'
 import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig } from './models'
+import type { SoldierRole } from './constants'
 
 type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config' | 'setup'
 
@@ -107,6 +108,14 @@ function AppContent() {
   async function handleSaveConfig(cfg: AppConfig) {
     try { await ds?.config.write(cfg); reload(); addToast('Configuration saved', 'success') }
     catch { addToast('Failed to save configuration', 'error') }
+  }
+
+  async function handleManualAssign(soldierId: string, taskId: string, role: SoldierRole) {
+    try {
+      await ds?.taskAssignments.create({ taskId, soldierId, assignedRole: role, createdBy: auth.email ?? 'user' })
+      reload()
+      addToast('Assignment created', 'success')
+    } catch { addToast('Failed to create assignment', 'error') }
   }
 
   async function handleGenerateSchedule() {
@@ -207,6 +216,7 @@ function AppContent() {
           leaveAssignments={leaveAssignments}
           conflicts={conflicts}
           onGenerate={handleGenerateSchedule}
+          onManualAssign={handleManualAssign}
         />
       )}
 

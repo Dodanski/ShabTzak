@@ -75,6 +75,15 @@ export function getDateRange(startDate: Date, endDate: Date): Date[] {
 }
 
 /**
+ * Formats "YYYY-MM-DD..." as "DD/MM"
+ */
+export function formatDisplayDate(iso: string): string {
+  const date = iso.split('T')[0]
+  const [, month, day] = date.split('-')
+  return `${day}/${month}`
+}
+
+/**
  * Check if a date is within service period
  */
 export function isWithinServicePeriod(
