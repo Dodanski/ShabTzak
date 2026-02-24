@@ -8,6 +8,12 @@ import type { Soldier, CreateSoldierInput, UpdateSoldierInput } from '../models'
 const RANGE = `${SHEET_TABS.SOLDIERS}!A:L`
 const CACHE_KEY = 'soldiers'
 
+const HEADER_ROW = [
+  'ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd',
+  'InitialFairness', 'CurrentFairness', 'Status',
+  'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
+]
+
 function generateId(): string {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -59,6 +65,22 @@ export class SoldierRepository {
       weekendLeavesCount: 0,
       midweekLeavesCount: 0,
       afterLeavesCount: 0,
+    }
+
+    // Self-heal: if the sheet has no proper header row, write it before appending.
+    // This can happen when the sheet is empty and appendValues places the first
+    // soldier row at A1, leaving no room for column headers.
+    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    if (allRows[0]?.[0] !== 'ID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(
+        this.spreadsheetId,
+        `${SHEET_TABS.SOLDIERS}!A1:L1`,
+        [HEADER_ROW]
+      )
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+      }
     }
 
     const row = serializeSoldier(soldier)

@@ -99,6 +99,41 @@ describe('SoldierRepository', () => {
       expect(soldier.status).toBe('Active')
       expect(soldier.id).toBeTruthy()
     })
+
+    it('writes header row first when sheet is completely empty', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        name: 'Yoni Ben',
+        role: 'Squad Leader',
+        serviceStart: '2026-03-01',
+        serviceEnd: '2026-10-31',
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:L1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledOnce()
+    })
+
+    it('rescues existing data row and writes header when sheet has data but no header', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([SOLDIER_ROW])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        name: 'Yoni Ben',
+        role: 'Squad Leader',
+        serviceStart: '2026-03-01',
+        serviceEnd: '2026-10-31',
+      })
+
+      // Writes proper header to A1 (overwriting the misplaced data row)
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:L1', [HEADER_ROW])
+      // First append: rescued existing row; second append: new soldier
+      expect(appendSpy).toHaveBeenCalledTimes(2)
+      expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [SOLDIER_ROW])
+    })
   })
 
   describe('update()', () => {
