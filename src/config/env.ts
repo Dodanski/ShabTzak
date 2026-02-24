@@ -2,6 +2,7 @@ export const config = {
   googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
   googleApiKey: import.meta.env.VITE_GOOGLE_API_KEY || '',
   spreadsheetId: import.meta.env.VITE_SPREADSHEET_ID || '',
+  adminEmail: import.meta.env.VITE_ADMIN_EMAIL || '',
   isDevelopment: import.meta.env.DEV,
   isProduction: import.meta.env.PROD,
 } as const
