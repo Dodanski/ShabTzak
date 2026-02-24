@@ -28,6 +28,11 @@ export class ConfigRepository {
       return val !== undefined ? parseFloat(val) : fallback
     }
 
+    const adminEmailsRaw = map.get('adminEmails') ?? ''
+    const adminEmails = adminEmailsRaw
+      ? adminEmailsRaw.split(',').map((e: string) => e.trim()).filter(Boolean)
+      : []
+
     return {
       leaveRatioDaysInBase: getNum('leaveRatioDaysInBase', DEFAULT_CONFIG.leaveRatioDaysInBase),
       leaveRatioDaysHome: getNum('leaveRatioDaysHome', DEFAULT_CONFIG.leaveRatioDaysHome),
@@ -38,6 +43,7 @@ export class ConfigRepository {
       maxDrivingHours: getNum('maxDrivingHours', DEFAULT_CONFIG.maxDrivingHours),
       defaultRestPeriod: getNum('defaultRestPeriod', DEFAULT_CONFIG.defaultRestPeriod),
       taskTypeRestPeriods: {},
+      adminEmails,
     }
   }
 
@@ -47,6 +53,14 @@ export class ConfigRepository {
       this.spreadsheetId,
       `${SHEET_TABS.CONFIG}!A2:B${rows.length + 1}`,
       rows
+    )
+  }
+
+  async writeAdminEmails(emails: string[]): Promise<void> {
+    await this.sheets.appendValues(
+      this.spreadsheetId,
+      `${SHEET_TABS.CONFIG}!A:B`,
+      [['adminEmails', emails.join(',')]]
     )
   }
 }

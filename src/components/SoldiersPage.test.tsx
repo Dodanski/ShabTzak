@@ -15,6 +15,7 @@ const BASE_CONFIG: AppConfig = {
   maxDrivingHours: 8,
   defaultRestPeriod: 6,
   taskTypeRestPeriods: {},
+  adminEmails: [],
 }
 
 const SOLDIERS: Soldier[] = [

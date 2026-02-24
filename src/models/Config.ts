@@ -10,6 +10,7 @@ export interface AppConfig {
   maxDrivingHours: number
   defaultRestPeriod: number
   taskTypeRestPeriods: Record<string, number>
+  adminEmails: string[]
 }
 
 export interface VersionInfo {

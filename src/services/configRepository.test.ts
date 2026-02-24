@@ -57,4 +57,33 @@ describe('ConfigRepository', () => {
       expect(keys).toContain('leaveRatioDaysHome')
     })
   })
+
+  describe('read() adminEmails', () => {
+    it('returns parsed adminEmails from config tab', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([
+        ['Key', 'Value'],
+        ['adminEmails', 'alice@example.com,bob@example.com'],
+      ])
+      const cfg = await repo.read()
+      expect(cfg.adminEmails).toEqual(['alice@example.com', 'bob@example.com'])
+    })
+
+    it('returns empty array when adminEmails key is missing', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([['Key', 'Value']])
+      const cfg = await repo.read()
+      expect(cfg.adminEmails).toEqual([])
+    })
+  })
+
+  describe('writeAdminEmails()', () => {
+    it('appends adminEmails row to Config tab', async () => {
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+      await repo.writeAdminEmails(['alice@example.com', 'bob@example.com'])
+      expect(appendSpy).toHaveBeenCalledWith(
+        SHEET_ID,
+        expect.stringContaining('Config'),
+        [['adminEmails', 'alice@example.com,bob@example.com']]
+      )
+    })
+  })
 })
