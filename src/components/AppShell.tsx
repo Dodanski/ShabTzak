@@ -4,18 +4,19 @@ import LoginPage from './LoginPage'
 
 interface AppShellProps {
   children?: React.ReactNode
+  isAdmin?: boolean
 }
 
-const NAV_LINKS = [
-  { href: '#soldiers', label: 'Soldiers' },
-  { href: '#tasks', label: 'Tasks' },
-  { href: '#leave', label: 'Leave' },
-  { href: '#schedule', label: 'Schedule' },
-  { href: '#history', label: 'History' },
-  { href: '#config', label: 'Config' },
-]
-
-export default function AppShell({ children }: AppShellProps) {
+export default function AppShell({ children, isAdmin }: AppShellProps) {
+  const navLinks = [
+    { href: '#soldiers', label: 'Soldiers' },
+    { href: '#tasks', label: 'Tasks' },
+    { href: '#leave', label: 'Leave' },
+    { href: '#schedule', label: 'Schedule' },
+    { href: '#history', label: 'History' },
+    { href: '#config', label: 'Config' },
+    ...(isAdmin ? [{ href: '#setup', label: 'Setup' }] : []),
+  ]
   const { auth, signOut } = useAuth()
   const [hash, setHash] = useState(() => window.location.hash)
 
@@ -35,7 +36,7 @@ export default function AppShell({ children }: AppShellProps) {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <span className="text-xl font-bold text-blue-600">ShabTzak</span>
           <nav className="flex items-center gap-4 text-sm text-gray-600">
-            {NAV_LINKS.map(({ href, label }) => {
+            {navLinks.map(({ href, label }) => {
               const isActive = hash === href
               return (
                 <a

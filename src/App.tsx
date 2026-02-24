@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './context/AuthContext'
 import AppShell from './components/AppShell'
 import Dashboard from './components/Dashboard'
 import SoldiersPage from './components/SoldiersPage'
@@ -9,6 +10,7 @@ import SchedulePage from './components/SchedulePage'
 import TasksPage from './components/TasksPage'
 import HistoryPage from './components/HistoryPage'
 import ConfigPage from './components/ConfigPage'
+import SetupPage from './components/SetupPage'
 import ToastList from './components/ToastList'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
@@ -20,7 +22,7 @@ import ErrorBanner from './components/ErrorBanner'
 import { config } from './config/env'
 import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig } from './models'
 
-type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config'
+type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config' | 'setup'
 
 function getHashSection(): Section {
   const hash = window.location.hash
@@ -30,6 +32,7 @@ function getHashSection(): Section {
   if (hash === '#schedule') return 'schedule'
   if (hash === '#history') return 'history'
   if (hash === '#config') return 'config'
+  if (hash === '#setup') return 'setup'
   return 'dashboard'
 }
 
@@ -57,6 +60,11 @@ function AppContent() {
 
   const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, error, reload } =
     useDataService(config.spreadsheetId)
+  const { auth } = useAuth()
+  const isAdmin = !!auth.email && (
+    auth.email === config.adminEmail ||
+    (configData?.adminEmails ?? []).includes(auth.email)
+  )
   const { toasts, addToast, removeToast } = useToast()
   const { isStale } = useVersionCheck(ds, 'Soldiers')
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
@@ -122,7 +130,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <AppShell>
+      <AppShell isAdmin={isAdmin}>
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">Loading…</p>
         </div>
@@ -131,7 +139,7 @@ function AppContent() {
   }
 
   return (
-    <AppShell>
+    <AppShell isAdmin={isAdmin}>
       <VersionConflictBanner isStale={isStale} onReload={reload} />
       <ErrorBanner error={error} onRetry={reload} />
       <ToastList toasts={toasts} onRemove={removeToast} />
@@ -208,6 +216,16 @@ function AppContent() {
 
       {section === 'config' && (
         <ConfigPage config={configData} onSave={handleSaveConfig} loading={loading} />
+      )}
+
+      {section === 'setup' && (
+        <SetupPage
+          ds={ds}
+          isAdmin={isAdmin}
+          configData={configData}
+          spreadsheetId={config.spreadsheetId}
+          onReload={reload}
+        />
       )}
 
     </AppShell>
