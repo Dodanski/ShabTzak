@@ -66,4 +66,39 @@ describe('GoogleSheetsService', () => {
 
     vi.unstubAllGlobals()
   })
+
+  it('getSheetTitles returns tab names from spreadsheet metadata', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        sheets: [
+          { properties: { title: 'Soldiers' } },
+          { properties: { title: 'Tasks' } },
+        ],
+      }),
+    }))
+
+    const titles = await service.getSheetTitles('sheet-id')
+    expect(titles).toEqual(['Soldiers', 'Tasks'])
+    vi.unstubAllGlobals()
+  })
+
+  it('batchUpdate sends POST request to batchUpdate endpoint', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', mockFetch)
+
+    await service.batchUpdate('sheet-id', [{ addSheet: { properties: { title: 'NewTab' } } }])
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('batchUpdate'),
+      expect.objectContaining({ method: 'POST' })
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('batchUpdate throws on failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, statusText: 'Forbidden' }))
+    await expect(service.batchUpdate('sheet-id', [])).rejects.toThrow('Failed to batch update')
+    vi.unstubAllGlobals()
+  })
 })

@@ -112,4 +112,33 @@ export class GoogleSheetsService {
 
     return response.json()
   }
+
+  /**
+   * Get list of sheet (tab) titles in a spreadsheet
+   */
+  async getSheetTitles(spreadsheetId: string): Promise<string[]> {
+    const spreadsheet = await this.getSpreadsheet(spreadsheetId)
+    return (spreadsheet.sheets ?? []).map(
+      (s: { properties: { title: string } }) => s.properties.title
+    )
+  }
+
+  /**
+   * Execute a batchUpdate on a spreadsheet (e.g. add sheets)
+   */
+  async batchUpdate(spreadsheetId: string, requests: object[]): Promise<void> {
+    const url = `${SHEETS_API_BASE}/${spreadsheetId}:batchUpdate`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ requests }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to batch update: ${response.statusText}`)
+    }
+  }
 }
