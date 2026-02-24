@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, renderHook } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AuthProvider, useAuth, AuthContext } from './AuthContext'
@@ -42,6 +42,14 @@ describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setupGoogleMock()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ email: null }),
+    }))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('starts unauthenticated', () => {
@@ -60,12 +68,12 @@ describe('AuthProvider', () => {
     expect(mockRequestAccessToken).toHaveBeenCalledOnce()
   })
 
-  it('becomes authenticated after token callback fires', () => {
+  it('becomes authenticated after token callback fires', async () => {
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
     })
-    act(() => {
-      capturedTokenCallback?.({
+    await act(async () => {
+      await capturedTokenCallback?.({
         access_token: 'test-token', expires_in: 3600, scope: '', token_type: 'Bearer',
       })
     })
@@ -89,12 +97,12 @@ describe('AuthProvider', () => {
     expect(result.current.auth.error).toBe('access_denied')
   })
 
-  it('signOut resets auth state', () => {
+  it('signOut resets auth state', async () => {
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
     })
-    act(() => {
-      capturedTokenCallback?.({
+    await act(async () => {
+      await capturedTokenCallback?.({
         access_token: 'test-token', expires_in: 3600, scope: '', token_type: 'Bearer',
       })
     })
@@ -151,5 +159,50 @@ describe('AuthProvider', () => {
     expect(window.onGoogleLibraryLoad).toBeTypeOf('function')
     unmount()
     expect(window.onGoogleLibraryLoad).toBeUndefined()
+  })
+
+  it('sets email after successful sign-in by fetching userinfo', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ email: 'test@example.com' }),
+    }))
+
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+
+    await act(async () => {
+      await capturedTokenCallback?.({
+        access_token: 'tok', expires_in: 3600, scope: '', token_type: 'Bearer',
+      })
+    })
+
+    expect(result.current.auth.email).toBe('test@example.com')
+    vi.unstubAllGlobals()
+  })
+
+  it('sets email to null when userinfo fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')))
+
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+
+    await act(async () => {
+      await capturedTokenCallback?.({
+        access_token: 'tok', expires_in: 3600, scope: '', token_type: 'Bearer',
+      })
+    })
+
+    expect(result.current.auth.isAuthenticated).toBe(true)
+    expect(result.current.auth.email).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('starts with null email', () => {
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    })
+    expect(result.current.auth.email).toBeNull()
   })
 })
