@@ -8,6 +8,11 @@ import type { Task, CreateTaskInput } from '../models'
 const RANGE = `${SHEET_TABS.TASKS}!A:I`
 const CACHE_KEY = 'tasks'
 
+const HEADER_ROW = [
+  'ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours',
+  'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays',
+]
+
 function generateId(): string {
   return `task-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -62,6 +67,15 @@ export class TaskRepository {
       minRestAfter: input.minRestAfter ?? 6,
       isSpecial: input.isSpecial ?? false,
       specialDurationDays: input.specialDurationDays,
+    }
+
+    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    if (allRows[0]?.[0] !== 'ID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.TASKS}!A1:I1`, [HEADER_ROW])
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+      }
     }
 
     const row = serializeTask(task)

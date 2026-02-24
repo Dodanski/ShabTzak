@@ -6,6 +6,11 @@ import type { TaskAssignment, SoldierRole } from '../models'
 const RANGE = `${SHEET_TABS.TASK_SCHEDULE}!A:G`
 const CACHE_KEY = 'taskAssignments'
 
+const HEADER_ROW = [
+  'ScheduleID', 'TaskID', 'SoldierID', 'AssignedRole',
+  'IsLocked', 'CreatedAt', 'CreatedBy',
+]
+
 function generateId(): string {
   return `sched-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -84,6 +89,15 @@ export class TaskAssignmentRepository {
       isLocked: false,
       createdAt: new Date().toISOString(),
       createdBy: input.createdBy,
+    }
+
+    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    if (allRows[0]?.[0] !== 'ScheduleID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.TASK_SCHEDULE}!A1:G1`, [HEADER_ROW])
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+      }
     }
 
     const row = serializeAssignment(assignment)

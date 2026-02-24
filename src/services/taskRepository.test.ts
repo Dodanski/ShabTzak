@@ -102,5 +102,38 @@ describe('TaskRepository', () => {
 
       expect(task.durationHours).toBe(12)
     })
+
+    it('writes header row first when sheet is completely empty', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        taskType: 'Patrol',
+        startTime: '2026-04-01T06:00:00',
+        endTime: '2026-04-01T12:00:00',
+        roleRequirements: [{ role: 'Driver', count: 1 }],
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Tasks!A1:I1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledOnce()
+    })
+
+    it('rescues existing data row and writes header when sheet has data but no header', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([TASK_ROW_1])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        taskType: 'Patrol',
+        startTime: '2026-04-01T06:00:00',
+        endTime: '2026-04-01T12:00:00',
+        roleRequirements: [{ role: 'Driver', count: 1 }],
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Tasks!A1:I1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledTimes(2)
+      expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [TASK_ROW_1])
+    })
   })
 })

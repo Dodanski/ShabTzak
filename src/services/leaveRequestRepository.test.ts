@@ -78,6 +78,41 @@ describe('LeaveRequestRepository', () => {
       expect(req.status).toBe('Pending')
       expect(req.id).toBeTruthy()
     })
+
+    it('writes header row first when sheet is completely empty', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        soldierId: 's3',
+        startDate: '2026-04-01',
+        endDate: '2026-04-03',
+        constraintType: 'Medical',
+        priority: 5,
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'LeaveRequests!A1:H1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledOnce()
+    })
+
+    it('rescues existing data row and writes header when sheet has data but no header', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([REQ_ROW_1])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        soldierId: 's3',
+        startDate: '2026-04-01',
+        endDate: '2026-04-03',
+        constraintType: 'Medical',
+        priority: 5,
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'LeaveRequests!A1:H1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledTimes(2)
+      expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [REQ_ROW_1])
+    })
   })
 
   describe('updateStatus()', () => {

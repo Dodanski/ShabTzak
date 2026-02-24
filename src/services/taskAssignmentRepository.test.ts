@@ -74,6 +74,39 @@ describe('TaskAssignmentRepository', () => {
       expect(assignment.isLocked).toBe(false)
       expect(assignment.scheduleId).toBeTruthy()
     })
+
+    it('writes header row first when sheet is completely empty', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        taskId: 'task-3',
+        soldierId: 's4',
+        assignedRole: 'Medic',
+        createdBy: 'commander',
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'TaskSchedule!A1:G1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledOnce()
+    })
+
+    it('rescues existing data row and writes header when sheet has data but no header', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([ASSIGN_ROW_1])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        taskId: 'task-3',
+        soldierId: 's4',
+        assignedRole: 'Medic',
+        createdBy: 'commander',
+      })
+
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'TaskSchedule!A1:G1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledTimes(2)
+      expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [ASSIGN_ROW_1])
+    })
   })
 
   describe('setLocked()', () => {

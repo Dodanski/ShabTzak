@@ -8,6 +8,11 @@ import type { LeaveAssignment, LeaveType } from '../models'
 const RANGE = `${SHEET_TABS.LEAVE_SCHEDULE}!A:I`
 const CACHE_KEY = 'leaveAssignments'
 
+const HEADER_ROW = [
+  'ID', 'SoldierID', 'StartDate', 'EndDate',
+  'LeaveType', 'IsWeekend', 'IsLocked', 'RequestID', 'CreatedAt',
+]
+
 function generateId(): string {
   return `assign-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -65,6 +70,15 @@ export class LeaveAssignmentRepository {
       isLocked: false,
       requestId: input.requestId,
       createdAt: new Date().toISOString(),
+    }
+
+    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    if (allRows[0]?.[0] !== 'ID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.LEAVE_SCHEDULE}!A1:I1`, [HEADER_ROW])
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+      }
     }
 
     const row = serializeLeaveAssignment(assignment)

@@ -8,6 +8,11 @@ import type { LeaveRequest, CreateLeaveRequestInput, RequestStatus } from '../mo
 const RANGE = `${SHEET_TABS.LEAVE_REQUESTS}!A:H`
 const CACHE_KEY = 'leaveRequests'
 
+const HEADER_ROW = [
+  'ID', 'SoldierID', 'StartDate', 'EndDate',
+  'LeaveType', 'ConstraintType', 'Priority', 'Status',
+]
+
 function generateId(): string {
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -55,6 +60,15 @@ export class LeaveRequestRepository {
       constraintType: input.constraintType,
       priority: input.priority,
       status: 'Pending',
+    }
+
+    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    if (allRows[0]?.[0] !== 'ID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.LEAVE_REQUESTS}!A1:H1`, [HEADER_ROW])
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+      }
     }
 
     const row = serializeLeaveRequest(request)
