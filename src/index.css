@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #f5f2e8;
+@layer base {
+  body {
+    @apply bg-olive-50;
+  }
 }
