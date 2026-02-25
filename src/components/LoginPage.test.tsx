@@ -24,6 +24,16 @@ describe('LoginPage', () => {
     expect(screen.getByText(/ShabTzak/i)).toBeInTheDocument()
   })
 
+  it('renders IDF logo', () => {
+    renderWithMockAuth()
+    expect(screen.getByAltText('IDF')).toBeInTheDocument()
+  })
+
+  it('renders unit logo', () => {
+    renderWithMockAuth()
+    expect(screen.getByAltText('זאבי הגבעה')).toBeInTheDocument()
+  })
+
   it('renders a sign-in button', () => {
     renderWithMockAuth()
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
