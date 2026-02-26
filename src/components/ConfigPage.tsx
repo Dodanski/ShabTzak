@@ -33,10 +33,10 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800">Configuration</h2>
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4 max-w-lg">
+      <h2 className="text-xl font-semibold text-olive-800">Configuration</h2>
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-olive-200 shadow-sm p-6 space-y-4 max-w-lg">
         <div>
-          <label className="block text-sm text-gray-700 mb-1" htmlFor="cfg-base-days">
+          <label className="block text-sm text-olive-700 mb-1" htmlFor="cfg-base-days">
             Days in base (leave ratio)
           </label>
           <input
@@ -49,7 +49,7 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-700 mb-1" htmlFor="cfg-home-days">
+          <label className="block text-sm text-olive-700 mb-1" htmlFor="cfg-home-days">
             Days home (leave ratio)
           </label>
           <input
@@ -62,7 +62,7 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-700 mb-1" htmlFor="cfg-long-leave">
+          <label className="block text-sm text-olive-700 mb-1" htmlFor="cfg-long-leave">
             Long leave max days
           </label>
           <input
@@ -75,7 +75,7 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-700 mb-1" htmlFor="cfg-min-presence">
+          <label className="block text-sm text-olive-700 mb-1" htmlFor="cfg-min-presence">
             Min base presence (%)
           </label>
           <input
@@ -89,7 +89,7 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-700 mb-1" htmlFor="cfg-max-driving">
+          <label className="block text-sm text-olive-700 mb-1" htmlFor="cfg-max-driving">
             Max driving hours
           </label>
           <input
@@ -102,7 +102,7 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-700 mb-1" htmlFor="cfg-rest">
+          <label className="block text-sm text-olive-700 mb-1" htmlFor="cfg-rest">
             Default rest period (hours)
           </label>
           <input
@@ -116,7 +116,7 @@ export default function ConfigPage({ config, onSave, loading }: ConfigPageProps)
         </div>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-olive-700 text-white text-sm rounded-lg hover:bg-olive-800"
         >
           Save configuration
         </button>

@@ -25,7 +25,7 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-xl font-semibold text-gray-800">Leave Requests</h2>
+        <h2 className="text-xl font-semibold text-olive-800">Leave Requests</h2>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value as StatusFilter)}
@@ -44,9 +44,9 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
       )}
 
       {filtered.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-olive-700 text-white">
               <tr>
                 <th className="text-left px-4 py-2">Soldier</th>
                 <th className="text-left px-4 py-2">Dates</th>
@@ -62,9 +62,9 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
                 return (
                   <tr key={req.id} className="border-t">
                     <td className="px-4 py-2">{soldier?.name ?? req.soldierId}</td>
-                    <td className="px-4 py-2 text-gray-600">{formatDisplayDate(req.startDate)} – {formatDisplayDate(req.endDate)}</td>
-                    <td className="px-4 py-2 text-gray-500">{req.leaveType}</td>
-                    <td className="px-4 py-2 text-gray-500">{req.priority}</td>
+                    <td className="px-4 py-2 text-olive-600">{formatDisplayDate(req.startDate)} – {formatDisplayDate(req.endDate)}</td>
+                    <td className="px-4 py-2 text-olive-500">{req.leaveType}</td>
+                    <td className="px-4 py-2 text-olive-500">{req.priority}</td>
                     <td className="px-4 py-2">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CLASSES[req.status] ?? ''}`}>
                         {req.status}

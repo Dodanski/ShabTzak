@@ -30,7 +30,7 @@ export default function HistoryPage({ entries, loading }: HistoryPageProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800">History</h2>
+      <h2 className="text-xl font-semibold text-olive-800">History</h2>
 
       <div className="flex gap-2">
         <input
@@ -55,9 +55,9 @@ export default function HistoryPage({ entries, loading }: HistoryPageProps) {
       )}
 
       {filtered.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-olive-700 text-white">
               <tr>
                 <th className="text-left px-4 py-2">Time</th>
                 <th className="text-left px-4 py-2">Type</th>
@@ -69,15 +69,15 @@ export default function HistoryPage({ entries, loading }: HistoryPageProps) {
             <tbody>
               {filtered.map((e, i) => (
                 <tr key={i} className="border-t">
-                  <td className="px-4 py-2 text-gray-400 text-xs whitespace-nowrap">{e.timestamp}</td>
+                  <td className="px-4 py-2 text-olive-500 text-xs whitespace-nowrap">{e.timestamp}</td>
                   <td className="px-4 py-2">
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-mono">
+                    <span className="px-2 py-0.5 bg-olive-100 text-olive-600 rounded text-xs font-mono">
                       {e.entityType}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-gray-500 text-xs">{e.action}</td>
-                  <td className="px-4 py-2 text-gray-700">{e.details}</td>
-                  <td className="px-4 py-2 text-gray-500 text-xs">{e.changedBy}</td>
+                  <td className="px-4 py-2 text-olive-500 text-xs">{e.action}</td>
+                  <td className="px-4 py-2 text-olive-700">{e.details}</td>
+                  <td className="px-4 py-2 text-olive-500 text-xs">{e.changedBy}</td>
                 </tr>
               ))}
             </tbody>

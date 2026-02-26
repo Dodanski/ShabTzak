@@ -92,12 +92,12 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800">Setup</h1>
+      <h1 className="text-2xl font-bold text-olive-800">Setup</h1>
 
       {/* Tab Health */}
-      <section className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-700">Spreadsheet Tabs</h2>
-        <p className="text-sm text-gray-500">
+      <section className="bg-white rounded-xl border border-olive-200 shadow-sm p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-olive-700">Spreadsheet Tabs</h2>
+        <p className="text-sm text-olive-500">
           The app requires 8 tabs in your Google Sheet. Create any that are missing.
         </p>
 
@@ -105,14 +105,14 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
           <button
             onClick={handleCheckTabs}
             disabled={!ds}
-            className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-olive-100 text-olive-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
           >
             Check Tabs
           </button>
           <button
             onClick={handleInitialize}
             disabled={!ds || initializing}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800 disabled:opacity-50"
           >
             {initializing ? 'Initializing…' : 'Initialize Missing Tabs'}
           </button>
@@ -135,9 +135,9 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
       </section>
 
       {/* Admin Management */}
-      <section className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-700">Admin Users</h2>
-        <p className="text-sm text-gray-500">Extra admins (in addition to the primary admin):</p>
+      <section className="bg-white rounded-xl border border-olive-200 shadow-sm p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-olive-700">Admin Users</h2>
+        <p className="text-sm text-olive-500">Extra admins (in addition to the primary admin):</p>
 
         {extraAdmins.length === 0 ? (
           <p className="text-sm text-gray-400 italic">No extra admins configured.</p>
@@ -165,12 +165,12 @@ export default function SetupPage({ ds, isAdmin, configData, spreadsheetId, onRe
             value={newAdminEmail}
             onChange={e => setNewAdminEmail(e.target.value)}
             placeholder="new-admin@example.com"
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-600"
           />
           <button
             onClick={handleAddAdmin}
             disabled={!newAdminEmail.trim() || adminSaving}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800 disabled:opacity-50"
           >
             Add Admin
           </button>

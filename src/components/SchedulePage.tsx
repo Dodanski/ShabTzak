@@ -52,7 +52,7 @@ export default function SchedulePage({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <h2 className="text-xl font-semibold text-gray-800 mr-auto">Schedule</h2>
+        <h2 className="text-xl font-semibold text-olive-800 mr-auto">Schedule</h2>
         <button
           onClick={handleCopyWhatsApp}
           className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -73,7 +73,7 @@ export default function SchedulePage({
         </button>
         <button
           onClick={onGenerate}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-olive-700 text-white text-sm rounded-lg hover:bg-olive-800"
         >
           Generate Schedule
         </button>
@@ -96,9 +96,9 @@ export default function SchedulePage({
         </button>
 
         {showManual && (
-          <form onSubmit={handleManualSubmit} className="mt-3 bg-white rounded-lg shadow p-4 space-y-3">
+          <form onSubmit={handleManualSubmit} className="mt-3 bg-white rounded-lg border border-olive-200 shadow-sm p-4 space-y-3">
             <div>
-              <label htmlFor="manual-soldier" className="block text-xs text-gray-600 mb-1">Soldier</label>
+              <label htmlFor="manual-soldier" className="block text-xs text-olive-600 mb-1">Soldier</label>
               <select
                 id="manual-soldier"
                 aria-label="Soldier"
@@ -114,7 +114,7 @@ export default function SchedulePage({
               </select>
             </div>
             <div>
-              <label htmlFor="manual-task" className="block text-xs text-gray-600 mb-1">Task</label>
+              <label htmlFor="manual-task" className="block text-xs text-olive-600 mb-1">Task</label>
               <select
                 id="manual-task"
                 aria-label="Task"
@@ -130,7 +130,7 @@ export default function SchedulePage({
               </select>
             </div>
             <div>
-              <label htmlFor="manual-role" className="block text-xs text-gray-600 mb-1">Role</label>
+              <label htmlFor="manual-role" className="block text-xs text-olive-600 mb-1">Role</label>
               <select
                 id="manual-role"
                 aria-label="Role"
@@ -145,7 +145,7 @@ export default function SchedulePage({
             </div>
             <button
               type="submit"
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
             >
               Assign
             </button>
@@ -154,7 +154,7 @@ export default function SchedulePage({
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Conflicts</h3>
+        <h3 className="text-sm font-semibold text-olive-700 mb-2">Conflicts</h3>
         {conflicts.length === 0 ? (
           <p className="text-sm text-green-600">No conflicts detected.</p>
         ) : (

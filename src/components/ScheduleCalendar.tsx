@@ -14,7 +14,7 @@ interface ScheduleCalendarProps {
 const STATUS_CLASSES: Record<AvailabilityStatus, string> = {
   available: 'bg-green-100',
   'on-leave': 'bg-yellow-200',
-  'on-task': 'bg-blue-200',
+  'on-task': 'bg-olive-200',
 }
 
 export default function ScheduleCalendar({
@@ -32,18 +32,18 @@ export default function ScheduleCalendar({
         <table className="text-xs border-collapse">
           <thead>
             <tr>
-              <th className="px-2 py-1 text-left text-gray-600 font-medium sticky left-0 bg-white">
+              <th className="px-2 py-1 text-left text-olive-600 font-medium sticky left-0 bg-white">
                 Soldier
               </th>
               {dates.map(d => (
-                <th key={d} className="px-2 py-1 text-gray-500 font-normal whitespace-nowrap">{formatDisplayDate(d)}</th>
+                <th key={d} className="px-2 py-1 text-olive-500 font-normal whitespace-nowrap">{formatDisplayDate(d)}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {soldiers.map(soldier => (
               <tr key={soldier.id}>
-                <td className="px-2 py-1 font-medium text-gray-800 sticky left-0 bg-white whitespace-nowrap">
+                <td className="px-2 py-1 font-medium text-olive-800 sticky left-0 bg-white whitespace-nowrap">
                   {soldier.name}
                 </td>
                 {dates.map(d => {
@@ -61,7 +61,7 @@ export default function ScheduleCalendar({
           </tbody>
         </table>
       </div>
-      <div className="flex gap-4 mt-2 text-xs text-gray-500">
+      <div className="flex gap-4 mt-2 text-xs text-olive-500">
         <span className="flex items-center gap-1">
           <span className="inline-block w-3 h-3 bg-green-100 border border-gray-200" /> Available
         </span>
@@ -69,7 +69,7 @@ export default function ScheduleCalendar({
           <span className="inline-block w-3 h-3 bg-yellow-200 border border-gray-200" /> On leave
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 bg-blue-200 border border-gray-200" /> On task
+          <span className="inline-block w-3 h-3 bg-olive-200 border border-gray-200" /> On task
         </span>
       </div>
     </>

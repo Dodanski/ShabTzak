@@ -116,10 +116,10 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-800">Tasks</h2>
+        <h2 className="text-xl font-semibold text-olive-800">Tasks</h2>
         <button
           onClick={() => setShowForm(s => !s)}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
         >
           Add Task
         </button>
@@ -133,9 +133,9 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
       />
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-olive-200 shadow-sm p-4 space-y-3">
           <div>
-            <label htmlFor="task-type" className="block text-xs text-gray-600 mb-1">Description</label>
+            <label htmlFor="task-type" className="block text-xs text-olive-600 mb-1">Description</label>
             <input
               id="task-type"
               aria-label="Task type"
@@ -154,12 +154,12 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
               onChange={e => setForm(f => ({ ...f, isPillbox: e.target.checked, pillboxDate: '' }))}
               className="rounded"
             />
-            <label htmlFor="task-is-pillbox" className="text-sm text-gray-700">Is Pillbox</label>
+            <label htmlFor="task-is-pillbox" className="text-sm text-olive-700">Is Pillbox</label>
           </div>
 
           {form.isPillbox && (
             <div>
-              <label htmlFor="task-pillbox-date" className="block text-xs text-gray-600 mb-1">Date</label>
+              <label htmlFor="task-pillbox-date" className="block text-xs text-olive-600 mb-1">Date</label>
               <input
                 id="task-pillbox-date"
                 type="date"
@@ -172,7 +172,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
           )}
 
           <div>
-            <label htmlFor="task-start" className="block text-xs text-gray-600 mb-1">Start time</label>
+            <label htmlFor="task-start" className="block text-xs text-olive-600 mb-1">Start time</label>
             <input
               id="task-start"
               aria-label="Start time"
@@ -185,7 +185,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
           </div>
 
           <div>
-            <label htmlFor="task-duration" className="block text-xs text-gray-600 mb-1">Duration (hours)</label>
+            <label htmlFor="task-duration" className="block text-xs text-olive-600 mb-1">Duration (hours)</label>
             <input
               id="task-duration"
               aria-label="Duration hours"
@@ -199,7 +199,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
           </div>
 
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Role requirements</label>
+            <label className="block text-xs text-olive-600 mb-1">Role requirements</label>
             <div className="flex gap-2 items-center flex-wrap">
               <select
                 aria-label="Role"
@@ -220,7 +220,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
               <button
                 type="button"
                 onClick={handleAddRole}
-                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                className="px-3 py-1.5 text-sm bg-olive-100 hover:bg-gray-200 rounded"
               >
                 Add role
               </button>
@@ -228,12 +228,12 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
             {form.roleRequirements.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {form.roleRequirements.map((r, i) => (
-                  <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+                  <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
                     {r.role} ×{r.count}
                     <button
                       type="button"
                       onClick={() => handleRemoveRole(i)}
-                      className="ml-1 text-blue-400 hover:text-blue-700"
+                      className="ml-1 text-olive-600 hover:text-olive-700"
                       aria-label={`Remove ${r.role}`}
                     >
                       ×
@@ -247,14 +247,14 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
           <div className="flex gap-2">
             <button
               type="submit"
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
             >
               Add
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+              className="px-3 py-1.5 text-sm text-olive-600 hover:text-gray-900"
             >
               Cancel
             </button>
@@ -267,9 +267,9 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
       )}
 
       {tasks.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-olive-700 text-white">
               <tr>
                 <th className="text-left px-4 py-2">Type</th>
                 <th className="text-left px-4 py-2">Start</th>
@@ -281,12 +281,12 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
               {filteredTasks.map(t => (
                 <tr key={t.id} className="border-t">
                   <td className="px-4 py-2 font-medium">{t.taskType}</td>
-                  <td className="px-4 py-2 text-gray-500 text-xs">{getDisplayTime(t.startTime)}</td>
-                  <td className="px-4 py-2 text-gray-500">{t.durationHours}h</td>
+                  <td className="px-4 py-2 text-olive-500 text-xs">{getDisplayTime(t.startTime)}</td>
+                  <td className="px-4 py-2 text-olive-500">{t.durationHours}h</td>
                   <td className="px-4 py-2">
                     <div className="flex flex-wrap gap-1">
                       {t.roleRequirements.map((r, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+                        <span key={i} className="px-1.5 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
                           {r.role} ×{r.count}
                         </span>
                       ))}

@@ -8,7 +8,7 @@ interface ToastListProps {
 const TYPE_CLASSES = {
   success: 'bg-green-600',
   error: 'bg-red-600',
-  info: 'bg-blue-600',
+  info: 'bg-olive-700',
 }
 
 export default function ToastList({ toasts, onRemove }: ToastListProps) {

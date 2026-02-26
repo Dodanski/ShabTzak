@@ -9,10 +9,10 @@ describe('FairnessBar', () => {
     expect(screen.getByText('3.5')).toBeInTheDocument()
   })
 
-  it('has green bar when score is at or below average', () => {
+  it('has olive bar when score is at or below average', () => {
     const { container } = render(<FairnessBar score={2.0} average={3.0} />)
     const bar = container.querySelector('[data-testid="fairness-fill"]')
-    expect(bar?.className).toMatch(/green/)
+    expect(bar?.className).toMatch(/olive/)
   })
 
   it('has red bar when score is above average', () => {

@@ -23,11 +23,11 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4 max-w-md">
-      <h3 className="text-lg font-semibold text-gray-800">Submit Leave Request</h3>
+    <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-olive-200 shadow-sm p-6 space-y-4 max-w-md">
+      <h3 className="text-lg font-semibold text-olive-800">Submit Leave Request</h3>
 
       <div>
-        <label htmlFor="leave-soldier" className="block text-sm text-gray-600 mb-1">Soldier</label>
+        <label htmlFor="leave-soldier" className="block text-sm text-olive-600 mb-1">Soldier</label>
         <select
           id="leave-soldier"
           aria-label="Soldier"
@@ -43,7 +43,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
       </div>
 
       <div>
-        <label htmlFor="leave-start" className="block text-sm text-gray-600 mb-1">Start date</label>
+        <label htmlFor="leave-start" className="block text-sm text-olive-600 mb-1">Start date</label>
         <input
           id="leave-start"
           type="date"
@@ -55,7 +55,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
       </div>
 
       <div>
-        <label htmlFor="leave-end" className="block text-sm text-gray-600 mb-1">End date</label>
+        <label htmlFor="leave-end" className="block text-sm text-olive-600 mb-1">End date</label>
         <input
           id="leave-end"
           type="date"
@@ -67,7 +67,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
       </div>
 
       <div>
-        <label htmlFor="leave-constraint" className="block text-sm text-gray-600 mb-1">Reason</label>
+        <label htmlFor="leave-constraint" className="block text-sm text-olive-600 mb-1">Reason</label>
         <select
           id="leave-constraint"
           value={constraintType}
@@ -81,7 +81,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
       </div>
 
       <div>
-        <label htmlFor="leave-priority" className="block text-sm text-gray-600 mb-1">Priority</label>
+        <label htmlFor="leave-priority" className="block text-sm text-olive-600 mb-1">Priority</label>
         <input
           id="leave-priority"
           type="number"
@@ -96,7 +96,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-olive-700 text-white text-sm rounded-lg hover:bg-olive-800"
         >
           Submit
         </button>
@@ -104,7 +104,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            className="px-4 py-2 text-sm text-olive-600 hover:text-gray-900"
           >
             Cancel
           </button>

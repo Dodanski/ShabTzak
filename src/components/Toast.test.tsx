@@ -45,7 +45,7 @@ describe('ToastList', () => {
     const infoToast: Toast = { id: 't3', message: 'Info message', type: 'info' }
     render(<ToastList toasts={[infoToast]} onRemove={vi.fn()} />)
     const toast = screen.getByText('Info message').closest('div')
-    expect(toast?.className).toContain('bg-blue-600')
+    expect(toast?.className).toContain('bg-olive-700')
   })
 
   it('renders a dismiss button for each toast', () => {
