@@ -101,4 +101,14 @@ describe('GoogleSheetsService', () => {
     await expect(service.batchUpdate('sheet-id', [])).rejects.toThrow('Failed to batch update')
     vi.unstubAllGlobals()
   })
+
+  it('clearValues posts to the :clear endpoint', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    const service = new GoogleSheetsService('token123')
+    await service.clearValues('spreadsheet1', 'Admins!A:D')
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(':clear'),
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
 })

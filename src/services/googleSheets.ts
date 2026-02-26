@@ -124,6 +124,23 @@ export class GoogleSheetsService {
   }
 
   /**
+   * Clear values in a range
+   */
+  async clearValues(spreadsheetId: string, range: string): Promise<void> {
+    const encodedRange = encodeURIComponent(range)
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:clear`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+    if (!res.ok) throw new Error(`Failed to clear range: ${res.status}`)
+  }
+
+  /**
    * Execute a batchUpdate on a spreadsheet (e.g. add sheets)
    */
   async batchUpdate(spreadsheetId: string, requests: object[]): Promise<void> {
