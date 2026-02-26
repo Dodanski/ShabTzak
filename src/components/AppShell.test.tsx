@@ -32,4 +32,10 @@ describe('AppShell', () => {
     render(<AppShell onBackToAdmin={vi.fn()}>content</AppShell>)
     expect(screen.getByRole('button', { name: /admin panel/i })).toBeInTheDocument()
   })
+
+  it('does not show Config or Setup links in unit view', () => {
+    render(<AppShell unitName="Platoon Alpha">content</AppShell>)
+    expect(screen.queryByRole('link', { name: /config/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /setup/i })).not.toBeInTheDocument()
+  })
 })
