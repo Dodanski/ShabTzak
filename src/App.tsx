@@ -48,12 +48,11 @@ function generateNextDays(n: number): string[] {
 
 interface UnitAppProps {
   spreadsheetId: string
-  isAdmin: boolean
   unitName: string
   onBackToAdmin?: () => void
 }
 
-function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppProps) {
+function UnitApp({ spreadsheetId, unitName, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const scheduleDates = generateNextDays(30)
@@ -278,7 +277,6 @@ function AppContent() {
   return (
     <UnitApp
       spreadsheetId={spreadsheetId}
-      isAdmin={isAdmin}
       unitName={activeUnit?.name ?? ''}
       onBackToAdmin={isAdmin ? () => { setActiveUnit(null); setAppMode('admin') } : undefined}
     />
