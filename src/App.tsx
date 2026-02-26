@@ -9,8 +9,6 @@ import LeaveRequestsPage from './components/LeaveRequestsPage'
 import SchedulePage from './components/SchedulePage'
 import TasksPage from './components/TasksPage'
 import HistoryPage from './components/HistoryPage'
-import ConfigPage from './components/ConfigPage'
-import SetupPage from './components/SetupPage'
 import ToastList from './components/ToastList'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
@@ -23,10 +21,10 @@ import { config } from './config/env'
 import { MasterDataService } from './services/masterDataService'
 import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
-import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig, Unit } from './models'
+import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, Unit } from './models'
 import type { SoldierRole } from './constants'
 
-type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config' | 'setup'
+type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history'
 
 function getHashSection(): Section {
   const hash = window.location.hash
@@ -35,8 +33,6 @@ function getHashSection(): Section {
   if (hash === '#leave') return 'leave'
   if (hash === '#schedule') return 'schedule'
   if (hash === '#history') return 'history'
-  if (hash === '#config') return 'config'
-  if (hash === '#setup') return 'setup'
   return 'dashboard'
 }
 
@@ -109,11 +105,6 @@ function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppPro
   async function handleDeny(id: string) {
     try { await ds?.leaveRequestService.deny(id, 'user'); reload(); addToast('Leave request denied', 'success') }
     catch { addToast('Failed to deny leave request', 'error') }
-  }
-
-  async function handleSaveConfig(cfg: AppConfig) {
-    try { await ds?.config.write(cfg); reload(); addToast('Configuration saved', 'success') }
-    catch { addToast('Failed to save configuration', 'error') }
   }
 
   async function handleManualAssign(soldierId: string, taskId: string, role: SoldierRole) {
@@ -228,20 +219,6 @@ function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppPro
 
       {section === 'history' && (
         <HistoryPage entries={historyEntries} loading={loading} />
-      )}
-
-      {section === 'config' && (
-        <ConfigPage config={configData} onSave={handleSaveConfig} loading={loading} />
-      )}
-
-      {section === 'setup' && (
-        <SetupPage
-          ds={ds}
-          isAdmin={isAdmin}
-          configData={configData}
-          spreadsheetId={spreadsheetId}
-          onReload={reload}
-        />
       )}
 
     </AppShell>
