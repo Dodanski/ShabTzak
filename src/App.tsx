@@ -137,7 +137,7 @@ function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppPro
 
   if (loading) {
     return (
-      <AppShell isAdmin={isAdmin} unitName={unitName} onBackToAdmin={onBackToAdmin}>
+      <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">Loading…</p>
         </div>
@@ -146,7 +146,7 @@ function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppPro
   }
 
   return (
-    <AppShell isAdmin={isAdmin} unitName={unitName} onBackToAdmin={onBackToAdmin}>
+    <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
       <VersionConflictBanner isStale={isStale} onReload={reload} />
       <ErrorBanner error={error} onRetry={reload} />
       <ToastList toasts={toasts} onRemove={removeToast} />

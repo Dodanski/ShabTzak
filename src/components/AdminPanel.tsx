@@ -18,6 +18,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [units, setUnits] = useState<Unit[]>([])
   const [commanders, setCommanders] = useState<Commander[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Add form state
   const [newAdminEmail, setNewAdminEmail] = useState('')
@@ -41,38 +42,68 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
   async function handleAddAdmin() {
     if (!newAdminEmail) return
-    await masterDs.admins.create({ email: newAdminEmail }, currentAdminEmail)
-    setNewAdminEmail('')
-    reload()
+    setError(null)
+    try {
+      await masterDs.admins.create({ email: newAdminEmail }, currentAdminEmail)
+      setNewAdminEmail('')
+      await reload()
+    } catch {
+      setError('Failed to add admin')
+    }
   }
 
   async function handleRemoveAdmin(id: string) {
-    await masterDs.admins.remove(id)
-    reload()
+    setError(null)
+    try {
+      await masterDs.admins.remove(id)
+      await reload()
+    } catch {
+      setError('Failed to remove admin')
+    }
   }
 
   async function handleAddUnit() {
     if (!newUnitName || !newUnitSheetId) return
-    await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId }, currentAdminEmail)
-    setNewUnitName(''); setNewUnitSheetId('')
-    reload()
+    setError(null)
+    try {
+      await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId }, currentAdminEmail)
+      setNewUnitName(''); setNewUnitSheetId('')
+      await reload()
+    } catch {
+      setError('Failed to add unit')
+    }
   }
 
   async function handleRemoveUnit(id: string) {
-    await masterDs.units.remove(id)
-    reload()
+    setError(null)
+    try {
+      await masterDs.units.remove(id)
+      await reload()
+    } catch {
+      setError('Failed to remove unit')
+    }
   }
 
   async function handleAddCommander() {
     if (!newCmdEmail || !newCmdUnitId) return
-    await masterDs.commanders.create({ email: newCmdEmail, unitId: newCmdUnitId }, currentAdminEmail)
-    setNewCmdEmail(''); setNewCmdUnitId('')
-    reload()
+    setError(null)
+    try {
+      await masterDs.commanders.create({ email: newCmdEmail, unitId: newCmdUnitId }, currentAdminEmail)
+      setNewCmdEmail(''); setNewCmdUnitId('')
+      await reload()
+    } catch {
+      setError('Failed to add commander')
+    }
   }
 
   async function handleRemoveCommander(id: string) {
-    await masterDs.commanders.remove(id)
-    reload()
+    setError(null)
+    try {
+      await masterDs.commanders.remove(id)
+      await reload()
+    } catch {
+      setError('Failed to remove commander')
+    }
   }
 
   const tabClass = (tab: AdminTab) =>
@@ -103,6 +134,12 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           <button className={tabClass('units')} onClick={() => setActiveTab('units')}>Units</button>
           <button className={tabClass('commanders')} onClick={() => setActiveTab('commanders')}>Commanders</button>
         </div>
+
+        {error && (
+          <div role="alert" className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         {loading && <p className="text-olive-500">Loading…</p>}
 

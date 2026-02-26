@@ -4,7 +4,6 @@ import LoginPage from './LoginPage'
 
 interface AppShellProps {
   children?: React.ReactNode
-  isAdmin?: boolean
   unitName?: string
   onBackToAdmin?: () => void
 }
