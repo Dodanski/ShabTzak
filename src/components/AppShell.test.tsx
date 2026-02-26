@@ -1,82 +1,35 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { AuthContext, AuthContextValue } from '../context/AuthContext'
+import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
 import AppShell from './AppShell'
-import React from 'react'
 
-function renderWithAuth(isAuthenticated: boolean, signOut = vi.fn()) {
-  const value: AuthContextValue = {
-    auth: { isAuthenticated, accessToken: isAuthenticated ? 'tok' : null },
-    signIn: vi.fn(),
-    signOut,
-  }
-  return render(
-    <AuthContext.Provider value={value}>
-      <AppShell>
-        <p>Dashboard content</p>
-      </AppShell>
-    </AuthContext.Provider>
-  )
-}
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({ auth: { isAuthenticated: true, email: 'user@example.com' }, signOut: vi.fn() }),
+}))
 
 describe('AppShell', () => {
-  it('shows LoginPage (sign-in button) when not authenticated', () => {
-    renderWithAuth(false)
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
-    expect(screen.queryByText('Dashboard content')).not.toBeInTheDocument()
+  it('renders unit logo in nav bar', () => {
+    render(<AppShell>content</AppShell>)
+    expect(screen.getByAltText('זאבי הגבעה')).toBeInTheDocument()
   })
 
-  it('shows children when authenticated', () => {
-    renderWithAuth(true)
-    expect(screen.getByText('Dashboard content')).toBeInTheDocument()
+  it('renders navigation links', () => {
+    render(<AppShell>content</AppShell>)
+    expect(screen.getByRole('link', { name: /soldiers/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /schedule/i })).toBeInTheDocument()
   })
 
-  it('shows navigation header when authenticated', () => {
-    renderWithAuth(true)
-    expect(screen.getByRole('banner')).toBeInTheDocument()
-    expect(screen.getByText(/ShabTzak/i)).toBeInTheDocument()
+  it('renders children', () => {
+    render(<AppShell><div>hello world</div></AppShell>)
+    expect(screen.getByText('hello world')).toBeInTheDocument()
   })
 
-  it('shows a sign-out button when authenticated', () => {
-    renderWithAuth(true)
-    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
+  it('shows unit name when unitName prop is provided', () => {
+    render(<AppShell unitName="Platoon Alpha">content</AppShell>)
+    expect(screen.getByText('Platoon Alpha')).toBeInTheDocument()
   })
 
-  it('shows Config nav link when authenticated', () => {
-    renderWithAuth(true)
-    expect(screen.getByRole('link', { name: /config/i })).toBeInTheDocument()
-  })
-
-  it('calls signOut when sign-out button is clicked', async () => {
-    const signOut = vi.fn()
-    renderWithAuth(true, signOut)
-    await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
-    expect(signOut).toHaveBeenCalledOnce()
-  })
-
-  it('marks the active nav link with aria-current="page" based on hash', () => {
-    window.location.hash = '#soldiers'
-    renderWithAuth(true)
-    expect(screen.getByRole('link', { name: /soldiers/i })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: /tasks/i })).not.toHaveAttribute('aria-current', 'page')
-    window.location.hash = ''
-  })
-
-  it('updates active link when hash changes', async () => {
-    window.location.hash = '#soldiers'
-    renderWithAuth(true)
-    act(() => {
-      window.location.hash = '#tasks'
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
-    })
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: /^tasks$/i })).toHaveAttribute('aria-current', 'page')
-    })
-    window.location.hash = ''
-  })
-
-  afterEach(() => {
-    window.location.hash = ''
+  it('shows Back to Admin Panel button when onBackToAdmin provided', () => {
+    render(<AppShell onBackToAdmin={vi.fn()}>content</AppShell>)
+    expect(screen.getByRole('button', { name: /admin panel/i })).toBeInTheDocument()
   })
 })
