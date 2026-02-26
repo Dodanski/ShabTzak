@@ -10,6 +10,20 @@ vi.mock('./context/AuthContext', async (importOriginal) => {
 })
 vi.mock('./hooks/useDataService')
 
+const mockResolveRole = vi.fn().mockResolvedValue({
+  role: 'commander',
+  unitId: 'u1',
+  unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', createdAt: '', createdBy: '' },
+})
+
+vi.mock('./services/masterDataService', () => {
+  class MockMasterDataService {
+    initialize = vi.fn().mockResolvedValue(undefined)
+    resolveRole = mockResolveRole
+  }
+  return { MasterDataService: MockMasterDataService }
+})
+
 import { useAuth } from './context/AuthContext'
 import { useDataService } from './hooks/useDataService'
 import App from './App'
@@ -22,7 +36,7 @@ const EMPTY_DS_RESULT = {
 
 function mockUnauthenticated() {
   vi.mocked(useAuth).mockReturnValue({
-    auth: { isAuthenticated: false, accessToken: null },
+    auth: { isAuthenticated: false, accessToken: null, email: null, error: null },
     signIn: vi.fn(), signOut: vi.fn(),
   })
   vi.mocked(useDataService).mockReturnValue(EMPTY_DS_RESULT)
@@ -57,12 +71,18 @@ describe('App', () => {
       fairnessUpdate: { applyLeaveAssignment: vi.fn().mockResolvedValue(undefined) },
     }
     vi.mocked(useAuth).mockReturnValue({
-      auth: { isAuthenticated: true, accessToken: 'tok' },
+      auth: { isAuthenticated: true, accessToken: 'tok', email: 'commander@test.com', error: null },
       signIn: vi.fn(), signOut: vi.fn(),
     })
     vi.mocked(useDataService).mockReturnValue({ ...EMPTY_DS_RESULT, ds: mockDs as any, reload })
+    mockResolveRole.mockResolvedValue({
+      role: 'commander',
+      unitId: 'u1',
+      unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', createdAt: '', createdBy: '' },
+    })
 
     render(<App />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /generate schedule/i })).toBeInTheDocument())
     await userEvent.click(screen.getByRole('button', { name: /generate schedule/i }))
     await waitFor(() => expect(screen.getByText('Not enough soldiers')).toBeInTheDocument())
   })
@@ -83,7 +103,7 @@ describe('App', () => {
       fairnessUpdate: { applyLeaveAssignment },
     }
     vi.mocked(useAuth).mockReturnValue({
-      auth: { isAuthenticated: true, accessToken: 'tok' },
+      auth: { isAuthenticated: true, accessToken: 'tok', email: 'commander@test.com', error: null },
       signIn: vi.fn(), signOut: vi.fn(),
     })
     vi.mocked(useDataService).mockReturnValue({
@@ -91,8 +111,14 @@ describe('App', () => {
       ds: mockDs as any,
       reload,
     })
+    mockResolveRole.mockResolvedValue({
+      role: 'commander',
+      unitId: 'u1',
+      unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', createdAt: '', createdBy: '' },
+    })
 
     render(<App />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /generate schedule/i })).toBeInTheDocument())
     await userEvent.click(screen.getByRole('button', { name: /generate schedule/i }))
 
     await waitFor(() => expect(applyLeaveAssignment).toHaveBeenCalledWith('s1', 'Long', true, 'user'))

@@ -20,7 +20,10 @@ import { useScheduleGenerator } from './hooks/useScheduleGenerator'
 import VersionConflictBanner from './components/VersionConflictBanner'
 import ErrorBanner from './components/ErrorBanner'
 import { config } from './config/env'
-import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig } from './models'
+import { MasterDataService } from './services/masterDataService'
+import AccessDeniedPage from './components/AccessDeniedPage'
+import LoginPage from './components/LoginPage'
+import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, AppConfig, Unit } from './models'
 import type { SoldierRole } from './constants'
 
 type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history' | 'config' | 'setup'
@@ -46,7 +49,14 @@ function generateNextDays(n: number): string[] {
   })
 }
 
-function AppContent() {
+interface UnitAppProps {
+  spreadsheetId: string
+  isAdmin: boolean
+  unitName: string
+  onBackToAdmin?: () => void
+}
+
+function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const scheduleDates = generateNextDays(30)
@@ -60,12 +70,8 @@ function AppContent() {
   }, [])
 
   const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, error, reload } =
-    useDataService(config.spreadsheetId)
+    useDataService(spreadsheetId)
   const { auth } = useAuth()
-  const isAdmin = !!auth.email && (
-    auth.email === config.adminEmail ||
-    (configData?.adminEmails ?? []).includes(auth.email)
-  )
   const { toasts, addToast, removeToast } = useToast()
   const { isStale } = useVersionCheck(ds, 'Soldiers')
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
@@ -139,7 +145,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <AppShell isAdmin={isAdmin}>
+      <AppShell isAdmin={isAdmin} unitName={unitName} onBackToAdmin={onBackToAdmin}>
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">Loading…</p>
         </div>
@@ -148,7 +154,7 @@ function AppContent() {
   }
 
   return (
-    <AppShell isAdmin={isAdmin}>
+    <AppShell isAdmin={isAdmin} unitName={unitName} onBackToAdmin={onBackToAdmin}>
       <VersionConflictBanner isStale={isStale} onReload={reload} />
       <ErrorBanner error={error} onRetry={reload} />
       <ToastList toasts={toasts} onRemove={removeToast} />
@@ -233,12 +239,76 @@ function AppContent() {
           ds={ds}
           isAdmin={isAdmin}
           configData={configData}
-          spreadsheetId={config.spreadsheetId}
+          spreadsheetId={spreadsheetId}
           onReload={reload}
         />
       )}
 
     </AppShell>
+  )
+}
+
+type AppMode = 'loading' | 'admin' | 'unit' | 'denied'
+
+// Placeholder for AdminPanel — will be implemented in Task 8
+function AdminPanel(_props: { masterDs: MasterDataService; currentAdminEmail: string; onEnterUnit: (unit: Unit) => void }) {
+  return <div>Admin Panel Coming Soon</div>
+}
+
+function AppContent() {
+  const { auth } = useAuth()
+  const [appMode, setAppMode] = useState<AppMode>('loading')
+  const [masterDs, setMasterDs] = useState<MasterDataService | null>(null)
+  const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
+
+  useEffect(() => {
+    if (!auth.isAuthenticated || !auth.email || !auth.accessToken) {
+      setAppMode('loading')
+      return
+    }
+    const master = new MasterDataService(auth.accessToken, config.spreadsheetId)
+    setMasterDs(master)
+    master.initialize(config.adminEmail)
+      .then(() => master.resolveRole(auth.email!))
+      .then(resolved => {
+        if (!resolved) { setAppMode('denied'); return }
+        if (resolved.role === 'admin') { setAppMode('admin') }
+        if (resolved.role === 'commander') {
+          setActiveUnit(resolved.unit)
+          setAppMode('unit')
+        }
+      })
+      .catch(() => setAppMode('denied'))
+  }, [auth.isAuthenticated, auth.email, auth.accessToken])
+
+  if (!auth.isAuthenticated) return <LoginPage />
+  if (appMode === 'loading') return (
+    <div className="min-h-screen bg-olive-50 flex items-center justify-center">
+      <p className="text-olive-500">Loading…</p>
+    </div>
+  )
+  if (appMode === 'denied') return <AccessDeniedPage />
+  if (appMode === 'admin' && !activeUnit) {
+    return (
+      <AdminPanel
+        masterDs={masterDs!}
+        currentAdminEmail={auth.email!}
+        onEnterUnit={(unit) => { setActiveUnit(unit); setAppMode('unit') }}
+      />
+    )
+  }
+
+  // Unit view — for both commanders and admins who entered a unit
+  const spreadsheetId = activeUnit?.spreadsheetId ?? ''
+  const isAdmin = appMode === 'admin'
+
+  return (
+    <UnitApp
+      spreadsheetId={spreadsheetId}
+      isAdmin={isAdmin}
+      unitName={activeUnit?.name ?? ''}
+      onBackToAdmin={isAdmin ? () => { setActiveUnit(null); setAppMode('admin') } : undefined}
+    />
   )
 }
 
