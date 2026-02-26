@@ -21,6 +21,7 @@ import { config } from './config/env'
 import { MasterDataService } from './services/masterDataService'
 import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
+import AdminPanel from './components/AdminPanel'
 import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, Unit } from './models'
 import type { SoldierRole } from './constants'
 
@@ -226,11 +227,6 @@ function UnitApp({ spreadsheetId, isAdmin, unitName, onBackToAdmin }: UnitAppPro
 }
 
 type AppMode = 'loading' | 'admin' | 'unit' | 'denied'
-
-// Placeholder for AdminPanel — will be implemented in Task 8
-function AdminPanel(_props: { masterDs: MasterDataService; currentAdminEmail: string; onEnterUnit: (unit: Unit) => void }) {
-  return <div>Admin Panel Coming Soon</div>
-}
 
 function AppContent() {
   const { auth } = useAuth()
