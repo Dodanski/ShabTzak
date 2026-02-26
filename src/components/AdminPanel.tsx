@@ -118,7 +118,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       <header className="bg-white border-b-2 border-olive-700 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo-unit.jpg" alt="זאבי הגבעה" className="h-8 w-8 object-contain rounded" />
+            <img src={`${import.meta.env.BASE_URL}logo-unit.jpg`} alt="זאבי הגבעה" className="h-8 w-8 object-contain rounded" />
             <span className="text-xl font-bold text-olive-800">ShabTzak</span>
             <span className="text-sm text-olive-500 border-l border-olive-200 pl-3">Admin Panel</span>
           </div>

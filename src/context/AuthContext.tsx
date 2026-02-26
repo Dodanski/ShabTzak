@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initClient = () => {
       tokenClientRef.current = window.google!.accounts.oauth2.initTokenClient({
         client_id: config.googleClientId,
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        scope: 'https://www.googleapis.com/auth/spreadsheets email',
         callback: async (response: TokenResponse) => {
           if (response.error) {
             setAuth({ isAuthenticated: false, accessToken: null, email: null, error: response.error })

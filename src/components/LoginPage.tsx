@@ -9,14 +9,14 @@ export default function LoginPage() {
 
         {/* IDF emblem */}
         <img
-          src="/logo-idf.jpeg"
+          src={`${import.meta.env.BASE_URL}logo-idf.jpeg`}
           alt="IDF"
           className="h-24 w-24 object-contain"
         />
 
         {/* Unit logo */}
         <img
-          src="/logo-unit.jpg"
+          src={`${import.meta.env.BASE_URL}logo-unit.jpg`}
           alt="זאבי הגבעה"
           className="h-16 w-16 object-contain"
         />

@@ -39,7 +39,7 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
           {/* Left: unit logo + optional unit name */}
           <div className="flex items-center gap-3">
             <img
-              src="/logo-unit.jpg"
+              src={`${import.meta.env.BASE_URL}logo-unit.jpg`}
               alt="זאבי הגבעה"
               className="h-8 w-8 object-contain rounded"
             />
