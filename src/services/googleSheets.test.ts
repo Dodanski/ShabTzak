@@ -103,12 +103,14 @@ describe('GoogleSheetsService', () => {
   })
 
   it('clearValues posts to the :clear endpoint', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', mockFetch)
     const service = new GoogleSheetsService('token123')
     await service.clearValues('spreadsheet1', 'Admins!A:D')
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining(':clear'),
       expect.objectContaining({ method: 'POST' })
     )
+    vi.unstubAllGlobals()
   })
 })

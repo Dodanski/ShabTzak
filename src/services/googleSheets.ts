@@ -128,8 +128,8 @@ export class GoogleSheetsService {
    */
   async clearValues(spreadsheetId: string, range: string): Promise<void> {
     const encodedRange = encodeURIComponent(range)
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedRange}:clear`
-    const res = await fetch(url, {
+    const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodedRange}:clear`
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -137,7 +137,7 @@ export class GoogleSheetsService {
       },
       body: JSON.stringify({}),
     })
-    if (!res.ok) throw new Error(`Failed to clear range: ${res.status}`)
+    if (!response.ok) throw new Error(`Failed to clear range: ${response.statusText}`)
   }
 
   /**
