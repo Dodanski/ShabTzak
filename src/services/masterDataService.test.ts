@@ -55,6 +55,18 @@ describe('MasterDataService', () => {
       const result = await svc.resolveRole('unknown@example.com')
       expect(result).toBeNull()
     })
+
+    it('returns null when commander email has no matching unit', async () => {
+      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([])
+      vi.mocked(CommanderRepository.prototype.list).mockResolvedValue([
+        { id: 'c1', email: 'cmd@example.com', unitId: 'unit-orphan', addedAt: '', addedBy: '' }
+      ])
+      vi.mocked(UnitRepository.prototype.list).mockResolvedValue([])
+
+      const svc = new MasterDataService('token', 'master-id')
+      const result = await svc.resolveRole('cmd@example.com')
+      expect(result).toBeNull()
+    })
   })
 
   describe('initialize()', () => {
@@ -81,6 +93,24 @@ describe('MasterDataService', () => {
       const svc = new MasterDataService('token', 'master-id')
       await svc.initialize('admin@example.com')
       expect(AdminRepository.prototype.create).not.toHaveBeenCalled()
+    })
+
+    it('creates missing tabs when some are absent', async () => {
+      vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins'])
+      vi.mocked(GoogleSheetsService.prototype.batchUpdate).mockResolvedValue(undefined)
+      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([
+        { id: 'a1', email: 'admin@example.com', addedAt: '', addedBy: '' }
+      ])
+
+      const svc = new MasterDataService('token', 'master-id')
+      await svc.initialize('admin@example.com')
+      expect(GoogleSheetsService.prototype.batchUpdate).toHaveBeenCalledWith(
+        'master-id',
+        expect.arrayContaining([
+          { addSheet: { properties: { title: 'Units' } } },
+          { addSheet: { properties: { title: 'Commanders' } } },
+        ])
+      )
     })
   })
 })
