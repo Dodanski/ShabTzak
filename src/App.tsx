@@ -192,7 +192,7 @@ function AppContent() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowLeaveForm(true)}
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
               >
                 New Request
               </button>
