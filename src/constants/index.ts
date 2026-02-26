@@ -74,3 +74,9 @@ export const FAIRNESS_WEIGHTS = {
   MIDWEEK_LEAVE: 1.0,
   AFTER_LEAVE: 0.5,
 } as const
+
+export const MASTER_SHEET_TABS = {
+  ADMINS: 'Admins',
+  UNITS: 'Units',
+  COMMANDERS: 'Commanders',
+} as const
