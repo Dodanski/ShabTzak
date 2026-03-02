@@ -3,8 +3,18 @@ import { SheetCache } from './cache'
 import { AdminRepository } from './adminRepository'
 import { UnitRepository } from './unitRepository'
 import { CommanderRepository } from './commanderRepository'
+import { TaskRepository } from './taskRepository'
+import { ConfigRepository } from './configRepository'
+import { HistoryService } from './historyService'
+import { TaskService } from './taskService'
 import { MASTER_SHEET_TABS } from '../constants'
 import type { Unit } from '../models'
+
+const ADMIN_TAB_HEADERS: Record<string, string[][]> = {
+  [MASTER_SHEET_TABS.TASKS]: [['ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours', 'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays']],
+  [MASTER_SHEET_TABS.CONFIG]: [['Key', 'Value']],
+  [MASTER_SHEET_TABS.HISTORY]: [['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details']],
+}
 
 export type ResolvedRole =
   | { role: 'admin' }
@@ -15,6 +25,10 @@ export class MasterDataService {
   readonly admins: AdminRepository
   readonly units: UnitRepository
   readonly commanders: CommanderRepository
+  readonly tasks: TaskRepository
+  readonly config: ConfigRepository
+  readonly history: HistoryService
+  readonly taskService: TaskService
   private sheets: GoogleSheetsService
   private spreadsheetId: string
 
@@ -25,6 +39,10 @@ export class MasterDataService {
     this.admins = new AdminRepository(this.sheets, spreadsheetId, cache)
     this.units = new UnitRepository(this.sheets, spreadsheetId, cache)
     this.commanders = new CommanderRepository(this.sheets, spreadsheetId, cache)
+    this.tasks = new TaskRepository(this.sheets, spreadsheetId, cache)
+    this.config = new ConfigRepository(this.sheets, spreadsheetId)
+    this.history = new HistoryService(this.sheets, spreadsheetId)
+    this.taskService = new TaskService(this.tasks, this.history)
   }
 
   /**
@@ -41,6 +59,13 @@ export class MasterDataService {
         addSheet: { properties: { title } },
       }))
       await this.sheets.batchUpdate(this.spreadsheetId, requests)
+
+      for (const tabName of missing) {
+        const headers = ADMIN_TAB_HEADERS[tabName]
+        if (headers) {
+          await this.sheets.updateValues(this.spreadsheetId, `${tabName}!A1`, headers)
+        }
+      }
     }
 
     const admins = await this.admins.list()

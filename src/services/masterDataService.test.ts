@@ -6,6 +6,10 @@ vi.mock('./adminRepository')
 vi.mock('./unitRepository')
 vi.mock('./commanderRepository')
 vi.mock('./googleSheets')
+vi.mock('./taskRepository')
+vi.mock('./configRepository')
+vi.mock('./historyService')
+vi.mock('./taskService')
 
 import { AdminRepository } from './adminRepository'
 import { UnitRepository } from './unitRepository'
@@ -69,6 +73,16 @@ describe('MasterDataService', () => {
     })
   })
 
+  describe('admin repositories', () => {
+    it('exposes tasks, config, history, taskService', () => {
+      const svc = new MasterDataService('token', 'master-id')
+      expect(svc.tasks).toBeDefined()
+      expect(svc.config).toBeDefined()
+      expect(svc.history).toBeDefined()
+      expect(svc.taskService).toBeDefined()
+    })
+  })
+
   describe('initialize()', () => {
     it('seeds first admin when admins tab is empty', async () => {
       vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins', 'Units', 'Commanders'])
@@ -109,6 +123,9 @@ describe('MasterDataService', () => {
         expect.arrayContaining([
           { addSheet: { properties: { title: 'Units' } } },
           { addSheet: { properties: { title: 'Commanders' } } },
+          { addSheet: { properties: { title: 'Tasks' } } },
+          { addSheet: { properties: { title: 'Config' } } },
+          { addSheet: { properties: { title: 'History' } } },
         ])
       )
     })
