@@ -6,12 +6,14 @@ import { SetupService } from '../services/setupService'
 export interface UseMissingTabsResult {
   missing: string[]
   loading: boolean
+  error: boolean
 }
 
 export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMissingTabsResult {
   const { auth } = useAuth()
   const [missing, setMissing] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     if (!auth.accessToken || !spreadsheetId) {
@@ -25,8 +27,11 @@ export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMis
         setMissing(statuses.filter(s => !s.exists).map(s => s.tab))
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        setError(true)
+        setLoading(false)
+      })
   }, [auth.accessToken, spreadsheetId, tabPrefix])
 
-  return { missing, loading }
+  return { missing, loading, error }
 }

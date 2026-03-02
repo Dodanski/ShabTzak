@@ -32,4 +32,15 @@ describe('useMissingTabs', () => {
     const { result } = renderHook(() => useMissingTabs('sheet-id', 'Alpha_Company'))
     expect(result.current.loading).toBe(true)
   })
+
+  it('returns error: true when checkTabs throws', async () => {
+    const { SetupService } = await import('../services/setupService')
+    vi.mocked(SetupService).mockImplementationOnce(function() {
+      return { checkTabs: vi.fn().mockRejectedValue(new Error('network error')) }
+    } as any)
+    const { result } = renderHook(() => useMissingTabs('sheet-id', 'Alpha_Company'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.error).toBe(true)
+    expect(result.current.missing).toEqual([])
+  })
 })

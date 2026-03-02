@@ -15,6 +15,7 @@ import { useDataService } from './hooks/useDataService'
 import { useMissingTabs } from './hooks/useMissingTabs'
 import { useToast } from './hooks/useToast'
 import { useVersionCheck } from './hooks/useVersionCheck'
+import { prefixTab } from './utils/tabPrefix'
 import { useScheduleGenerator } from './hooks/useScheduleGenerator'
 import VersionConflictBanner from './components/VersionConflictBanner'
 import ErrorBanner from './components/ErrorBanner'
@@ -67,13 +68,13 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const { missing, loading: tabsLoading } = useMissingTabs(spreadsheetId, tabPrefix)
+  const { missing, loading: tabsLoading, error: tabsError } = useMissingTabs(spreadsheetId, tabPrefix)
 
   const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, error, reload } =
     useDataService(spreadsheetId, tabPrefix)
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
-  const { isStale } = useVersionCheck(ds, 'Soldiers')
+  const { isStale } = useVersionCheck(ds, prefixTab(tabPrefix, 'Soldiers'))
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
 
   async function handleDischarge(soldierId: string) {
@@ -143,6 +144,19 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
       <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">Checking spreadsheet…</p>
+        </div>
+      </AppShell>
+    )
+  }
+
+  if (tabsError) {
+    return (
+      <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
+        <div className="max-w-xl mx-auto py-16 space-y-4">
+          <h2 className="text-lg font-semibold text-red-700">Could not verify spreadsheet tabs</h2>
+          <p className="text-sm text-gray-600">
+            Failed to connect to the spreadsheet. Check your internet connection and reload the page.
+          </p>
         </div>
       </AppShell>
     )

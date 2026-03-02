@@ -82,5 +82,15 @@ describe('HistoryService', () => {
 
       expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_History!A:F')
     })
+
+    it('stores the prefixed tabName in range when prefix is provided', async () => {
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+      const prefixedService = new HistoryService(mockSheets, SHEET_ID, 'Alpha_Company')
+
+      await prefixedService.append('CREATE', 'Soldier', 's1', 'user', 'detail')
+
+      const range: string = appendSpy.mock.calls[0][1]
+      expect(range).toContain('Alpha_Company_History')
+    })
   })
 })

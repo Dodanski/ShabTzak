@@ -10,7 +10,7 @@ vi.mock('./context/AuthContext', async (importOriginal) => {
 })
 vi.mock('./hooks/useDataService')
 vi.mock('./hooks/useMissingTabs', () => ({
-  useMissingTabs: vi.fn().mockReturnValue({ missing: [], loading: false }),
+  useMissingTabs: vi.fn().mockReturnValue({ missing: [], loading: false, error: false }),
 }))
 
 const mockResolveRole = vi.fn().mockResolvedValue({

@@ -14,12 +14,14 @@ export interface HistoryEntry {
 export class HistoryService {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
+  private tabName: string
   private range: string
 
   constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
-    this.range = `${prefixTab(tabPrefix, SHEET_TABS.HISTORY)}!A:F`
+    this.tabName = prefixTab(tabPrefix, SHEET_TABS.HISTORY)
+    this.range = `${this.tabName}!A:F`
   }
 
   async append(
