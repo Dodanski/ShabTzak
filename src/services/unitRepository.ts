@@ -3,10 +3,10 @@ import { SheetCache } from './cache'
 import { MASTER_SHEET_TABS } from '../constants'
 import type { Unit, CreateUnitInput } from '../models'
 
-const RANGE = `${MASTER_SHEET_TABS.UNITS}!A:E`
+const RANGE = `${MASTER_SHEET_TABS.UNITS}!A:F`
 const CACHE_KEY = 'units'
 
-const HEADER_ROW = ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy']
+const HEADER_ROW = ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy', 'TabPrefix']
 
 export class UnitRepository {
   private sheets: GoogleSheetsService
@@ -31,6 +31,7 @@ export class UnitRepository {
       spreadsheetId: row[2],
       createdAt: row[3],
       createdBy: row[4],
+      tabPrefix: row[5] ?? '',
     }))
     this.cache.set(CACHE_KEY, units)
     return units
@@ -41,7 +42,7 @@ export class UnitRepository {
     if ((allRows ?? [])[0]?.[0] !== 'UnitID') {
       await this.sheets.updateValues(
         this.spreadsheetId,
-        `${MASTER_SHEET_TABS.UNITS}!A1:E1`,
+        `${MASTER_SHEET_TABS.UNITS}!A1:F1`,
         [HEADER_ROW]
       )
     }
@@ -50,11 +51,12 @@ export class UnitRepository {
       id: `unit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: input.name,
       spreadsheetId: input.spreadsheetId,
+      tabPrefix: input.tabPrefix,
       createdAt: new Date().toISOString(),
       createdBy: createdBy,
     }
     await this.sheets.appendValues(this.spreadsheetId, RANGE, [
-      [unit.id, unit.name, unit.spreadsheetId, unit.createdAt, unit.createdBy]
+      [unit.id, unit.name, unit.spreadsheetId, unit.createdAt, unit.createdBy, unit.tabPrefix]
     ])
     this.cache.invalidate(CACHE_KEY)
     return unit
