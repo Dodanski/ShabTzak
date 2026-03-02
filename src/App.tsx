@@ -312,7 +312,7 @@ function AppContent() {
       <AdminPanel
         masterDs={masterDs!}
         currentAdminEmail={auth.email!}
-        onEnterUnit={(unit) => { setActiveUnit(unit); setAppMode('unit') }}
+        onEnterUnit={(unit) => { setActiveUnit(unit) }}
       />
     )
   }
