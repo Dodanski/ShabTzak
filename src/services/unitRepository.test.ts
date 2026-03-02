@@ -93,4 +93,17 @@ describe('UnitRepository', () => {
     expect(writtenRows).toHaveLength(2) // header + 1 remaining
     expect(writtenRows[1][0]).toBe('unit-2')
   })
+
+  it('remove() preserves tabPrefix when rewriting remaining rows', async () => {
+    mockSheets.getValues.mockResolvedValue([
+      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy', 'TabPrefix'],
+      ['unit-1', 'Alpha', 'sheet-abc', '2026-01-01T00:00:00.000Z', 'admin@example.com', 'Alpha'],
+      ['unit-2', 'Bravo', 'sheet-xyz', '2026-01-02T00:00:00.000Z', 'admin@example.com', 'Bravo'],
+    ])
+    mockSheets.clearValues.mockResolvedValue(undefined)
+    mockSheets.updateValues.mockResolvedValue(undefined)
+    await makeRepo().remove('unit-1')
+    const writtenRows = mockSheets.updateValues.mock.calls[0][2] as string[][]
+    expect(writtenRows[1][5]).toBe('Bravo')  // tabPrefix of unit-2 is preserved
+  })
 })
