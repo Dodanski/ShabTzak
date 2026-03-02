@@ -67,4 +67,27 @@ describe('SetupService', () => {
       expect(batchSpy).not.toHaveBeenCalled()
     })
   })
+
+  describe('tabPrefix support', () => {
+    it('checkTabs() returns prefixed tab names when tabPrefix is set', async () => {
+      const mockSheets = {
+        getSheetTitles: vi.fn().mockResolvedValue(['Alpha_Company_Soldiers']),
+      } as any
+      const setup = new SetupService(mockSheets, 'sheet-id', 'Alpha_Company')
+      const statuses = await setup.checkTabs()
+      const soldierStatus = statuses.find(s => s.tab === 'Alpha_Company_Soldiers')
+      expect(soldierStatus?.exists).toBe(true)
+      const taskStatus = statuses.find(s => s.tab === 'Alpha_Company_Tasks')
+      expect(taskStatus?.exists).toBe(false)
+    })
+
+    it('checkTabs() uses bare tab names when tabPrefix is empty', async () => {
+      const mockSheets = {
+        getSheetTitles: vi.fn().mockResolvedValue(['Soldiers']),
+      } as any
+      const setup = new SetupService(mockSheets, 'sheet-id')
+      const statuses = await setup.checkTabs()
+      expect(statuses.find(s => s.tab === 'Soldiers')?.exists).toBe(true)
+    })
+  })
 })

@@ -1,5 +1,6 @@
 import { GoogleSheetsService } from './googleSheets'
 import { SHEET_TABS } from '../constants'
+import { prefixTab } from '../utils/tabPrefix'
 
 export interface TabStatus {
   tab: string
@@ -22,15 +23,21 @@ const TAB_HEADERS: Record<string, string[][]> = {
 export class SetupService {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
+  private tabPrefix: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
+    this.tabPrefix = tabPrefix
+  }
+
+  private prefixedTabs(): string[] {
+    return Object.values(SHEET_TABS).map(tab => prefixTab(this.tabPrefix, tab))
   }
 
   async checkTabs(): Promise<TabStatus[]> {
     const existing = new Set(await this.sheets.getSheetTitles(this.spreadsheetId))
-    return Object.values(SHEET_TABS).map(tab => ({
+    return this.prefixedTabs().map(tab => ({
       tab,
       exists: existing.has(tab),
       created: false,
@@ -43,24 +50,22 @@ export class SetupService {
 
     if (missing.length === 0) return statuses
 
-    // Create all missing tabs in one batchUpdate call
     await this.sheets.batchUpdate(
       this.spreadsheetId,
       missing.map(title => ({ addSheet: { properties: { title } } }))
     )
 
-    // Write headers for each newly created tab
-    for (const tab of missing) {
-      const headers = TAB_HEADERS[tab]
+    for (const prefixedTabName of missing) {
+      // Strip the prefix to look up headers by bare tab name
+      const bareTab = this.tabPrefix
+        ? prefixedTabName.slice(this.tabPrefix.length + 1)
+        : prefixedTabName
+      const headers = TAB_HEADERS[bareTab]
       if (headers) {
-        await this.sheets.updateValues(this.spreadsheetId, `${tab}!A1`, headers)
+        await this.sheets.updateValues(this.spreadsheetId, `${prefixedTabName}!A1`, headers)
       }
     }
 
-    return statuses.map(s => ({
-      ...s,
-      exists: true,
-      created: !s.exists,
-    }))
+    return statuses.map(s => ({ ...s, exists: true, created: !s.exists }))
   }
 }
