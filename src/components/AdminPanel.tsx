@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { MasterDataService } from '../services/masterDataService'
 import type { Admin, Unit, Commander } from '../models'
+import { deriveTabPrefix } from '../utils/tabPrefix'
 
 type AdminTab = 'admins' | 'units' | 'commanders'
 
@@ -66,7 +67,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     if (!newUnitName || !newUnitSheetId) return
     setError(null)
     try {
-      await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId, tabPrefix: '' }, currentAdminEmail)
+      await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId, tabPrefix: deriveTabPrefix(newUnitName) }, currentAdminEmail)
       setNewUnitName(''); setNewUnitSheetId('')
       await reload()
     } catch {
@@ -105,6 +106,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       setError('Failed to remove commander')
     }
   }
+
+  const derivedPrefix = deriveTabPrefix(newUnitName)
 
   const tabClass = (tab: AdminTab) =>
     `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
@@ -194,11 +197,30 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
               </tbody>
             </table>
             <div className="grid grid-cols-2 gap-2">
-              <input value={newUnitName} onChange={e => setNewUnitName(e.target.value)}
-                placeholder="Unit name" className="border border-olive-200 rounded px-2 py-1 text-sm" />
-              <input value={newUnitSheetId} onChange={e => setNewUnitSheetId(e.target.value)}
-                placeholder="Google Sheet ID" className="border border-olive-200 rounded px-2 py-1 text-sm" />
-              <button onClick={handleAddUnit} className="col-span-2 px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Unit</button>
+              <input
+                value={newUnitName}
+                onChange={e => setNewUnitName(e.target.value)}
+                placeholder="Unit name"
+                className="border border-olive-200 rounded px-2 py-1 text-sm"
+              />
+              <input
+                value={newUnitSheetId}
+                onChange={e => setNewUnitSheetId(e.target.value)}
+                placeholder="Google Sheet ID"
+                className="border border-olive-200 rounded px-2 py-1 text-sm"
+              />
+              {newUnitName && (
+                <p className="col-span-2 text-xs text-olive-500">
+                  Tab prefix: <span className="font-mono font-medium">{derivedPrefix}</span>
+                  {' '}— tabs will be named {derivedPrefix}_Soldiers, {derivedPrefix}_Tasks, …
+                </p>
+              )}
+              <button
+                onClick={handleAddUnit}
+                className="col-span-2 px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800"
+              >
+                Add Unit
+              </button>
             </div>
           </div>
         )}
