@@ -22,9 +22,9 @@ export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMis
     }
     const sheets = new GoogleSheetsService(auth.accessToken)
     const setup = new SetupService(sheets, spreadsheetId, tabPrefix)
-    setup.checkTabs()
-      .then(statuses => {
-        setMissing(statuses.filter(s => !s.exists).map(s => s.tab))
+    setup.initializeMissingTabs()
+      .then(() => {
+        setMissing([])
         setLoading(false)
       })
       .catch(() => {

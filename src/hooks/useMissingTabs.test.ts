@@ -13,19 +13,16 @@ vi.mock('../services/googleSheets', () => ({
 vi.mock('../services/setupService', () => ({
   SetupService: vi.fn().mockImplementation(function () {
     return {
-      checkTabs: vi.fn().mockResolvedValue([
-        { tab: 'Alpha_Company_Soldiers', exists: false, created: false },
-        { tab: 'Alpha_Company_Tasks', exists: true, created: false },
-      ]),
+      initializeMissingTabs: vi.fn().mockResolvedValue([])
     }
   }),
 }))
 
 describe('useMissingTabs', () => {
-  it('returns missing tab names', async () => {
+  it('returns empty missing on success', async () => {
     const { result } = renderHook(() => useMissingTabs('sheet-id', 'Alpha_Company'))
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.missing).toEqual(['Alpha_Company_Soldiers'])
+    expect(result.current.missing).toEqual([])
   })
 
   it('starts in loading state', () => {
@@ -33,10 +30,10 @@ describe('useMissingTabs', () => {
     expect(result.current.loading).toBe(true)
   })
 
-  it('returns error: true when checkTabs throws', async () => {
+  it('returns error: true when initializeMissingTabs throws', async () => {
     const { SetupService } = await import('../services/setupService')
     vi.mocked(SetupService).mockImplementationOnce(function() {
-      return { checkTabs: vi.fn().mockRejectedValue(new Error('network error')) }
+      return { initializeMissingTabs: vi.fn().mockRejectedValue(new Error('network error')) }
     } as any)
     const { result } = renderHook(() => useMissingTabs('sheet-id', 'Alpha_Company'))
     await waitFor(() => expect(result.current.loading).toBe(false))
