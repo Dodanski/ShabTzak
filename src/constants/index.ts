@@ -52,13 +52,9 @@ export const DEFAULT_CONFIG = {
 // Google Sheets tabs
 export const SHEET_TABS = {
   SOLDIERS: 'Soldiers',
-  TASKS: 'Tasks',
   TASK_SCHEDULE: 'TaskSchedule',
   LEAVE_REQUESTS: 'LeaveRequests',
   LEAVE_SCHEDULE: 'LeaveSchedule',
-  HISTORY: 'History',
-  CONFIG: 'Config',
-  VERSION: 'Version',
 } as const
 
 // Priority range
@@ -79,4 +75,7 @@ export const MASTER_SHEET_TABS = {
   ADMINS: 'Admins',
   UNITS: 'Units',
   COMMANDERS: 'Commanders',
+  TASKS: 'Tasks',
+  CONFIG: 'Config',
+  HISTORY: 'History',
 } as const
