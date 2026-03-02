@@ -18,7 +18,7 @@ export interface UseDataServiceResult {
   reload: () => void
 }
 
-export function useDataService(spreadsheetId: string): UseDataServiceResult {
+export function useDataService(spreadsheetId: string, tabPrefix = ''): UseDataServiceResult {
   const { auth } = useAuth()
   const [soldiers, setSoldiers] = useState<Soldier[]>([])
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
@@ -33,8 +33,8 @@ export function useDataService(spreadsheetId: string): UseDataServiceResult {
 
   const ds = useMemo(() => {
     if (!auth.accessToken || !spreadsheetId) return null
-    return new DataService(auth.accessToken, spreadsheetId)
-  }, [auth.accessToken, spreadsheetId])
+    return new DataService(auth.accessToken, spreadsheetId, tabPrefix)
+  }, [auth.accessToken, spreadsheetId, tabPrefix])
 
   useEffect(() => {
     if (!ds) return

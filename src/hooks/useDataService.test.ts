@@ -54,7 +54,7 @@ describe('useDataService', () => {
   it('creates DataService with token and spreadsheetId when authenticated', () => {
     mockAuthenticated('my-token')
     renderHook(() => useDataService('sheet-xyz'))
-    expect(vi.mocked(DataService)).toHaveBeenCalledWith('my-token', 'sheet-xyz')
+    expect(vi.mocked(DataService)).toHaveBeenCalledWith('my-token', 'sheet-xyz', '')
   })
 
   it('sets ds when authenticated', () => {
