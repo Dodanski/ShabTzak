@@ -89,5 +89,24 @@ describe('SetupService', () => {
       const statuses = await setup.checkTabs()
       expect(statuses.find(s => s.tab === 'Soldiers')?.exists).toBe(true)
     })
+
+    it('initializeMissingTabs() creates and writes headers to prefixed tab names', async () => {
+      const mockSheets = {
+        getSheetTitles: vi.fn().mockResolvedValue([]),
+        batchUpdate: vi.fn().mockResolvedValue(undefined),
+        updateValues: vi.fn().mockResolvedValue(undefined),
+      } as any
+      const setup = new SetupService(mockSheets, 'sheet-id', 'Alpha_Company')
+      await setup.initializeMissingTabs()
+      // Soldiers tab created with prefixed name
+      const batchArg = mockSheets.batchUpdate.mock.calls[0][1] as Array<{ addSheet: { properties: { title: string } } }>
+      expect(batchArg.some(r => r.addSheet.properties.title === 'Alpha_Company_Soldiers')).toBe(true)
+      // Headers written to the prefixed tab range
+      expect(mockSheets.updateValues).toHaveBeenCalledWith(
+        'sheet-id',
+        'Alpha_Company_Soldiers!A1',
+        expect.arrayContaining([expect.any(Array)])
+      )
+    })
   })
 })
