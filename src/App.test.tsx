@@ -9,6 +9,9 @@ vi.mock('./context/AuthContext', async (importOriginal) => {
   return { ...actual, useAuth: vi.fn() }
 })
 vi.mock('./hooks/useDataService')
+vi.mock('./hooks/useMissingTabs', () => ({
+  useMissingTabs: vi.fn().mockReturnValue({ missing: [], loading: false }),
+}))
 
 const mockResolveRole = vi.fn().mockResolvedValue({
   role: 'commander',

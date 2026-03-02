@@ -24,6 +24,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [newUnitName, setNewUnitName] = useState('')
   const [newUnitSheetId, setNewUnitSheetId] = useState('')
+  const [newUnitTabPrefix, setNewUnitTabPrefix] = useState('')
   const [newCmdEmail, setNewCmdEmail] = useState('')
   const [newCmdUnitId, setNewCmdUnitId] = useState('')
 
@@ -66,8 +67,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     if (!newUnitName || !newUnitSheetId) return
     setError(null)
     try {
-      await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId }, currentAdminEmail)
-      setNewUnitName(''); setNewUnitSheetId('')
+      await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId, tabPrefix: newUnitTabPrefix }, currentAdminEmail)
+      setNewUnitName(''); setNewUnitSheetId(''); setNewUnitTabPrefix('')
       await reload()
     } catch {
       setError('Failed to add unit')
@@ -198,6 +199,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
                 placeholder="Unit name" className="border border-olive-200 rounded px-2 py-1 text-sm" />
               <input value={newUnitSheetId} onChange={e => setNewUnitSheetId(e.target.value)}
                 placeholder="Google Sheet ID" className="border border-olive-200 rounded px-2 py-1 text-sm" />
+              <input value={newUnitTabPrefix} onChange={e => setNewUnitTabPrefix(e.target.value)}
+                placeholder="Tab prefix (e.g. UnitA_)" className="col-span-2 border border-olive-200 rounded px-2 py-1 text-sm" />
               <button onClick={handleAddUnit} className="col-span-2 px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Unit</button>
             </div>
           </div>

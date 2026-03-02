@@ -12,6 +12,7 @@ import HistoryPage from './components/HistoryPage'
 import ToastList from './components/ToastList'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
+import { useMissingTabs } from './hooks/useMissingTabs'
 import { useToast } from './hooks/useToast'
 import { useVersionCheck } from './hooks/useVersionCheck'
 import { useScheduleGenerator } from './hooks/useScheduleGenerator'
@@ -48,11 +49,12 @@ function generateNextDays(n: number): string[] {
 
 interface UnitAppProps {
   spreadsheetId: string
+  tabPrefix: string
   unitName: string
   onBackToAdmin?: () => void
 }
 
-function UnitApp({ spreadsheetId, unitName, onBackToAdmin }: UnitAppProps) {
+function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const scheduleDates = generateNextDays(30)
@@ -65,8 +67,10 @@ function UnitApp({ spreadsheetId, unitName, onBackToAdmin }: UnitAppProps) {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
+  const { missing, loading: tabsLoading } = useMissingTabs(spreadsheetId, tabPrefix)
+
   const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, error, reload } =
-    useDataService(spreadsheetId)
+    useDataService(spreadsheetId, tabPrefix)
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
   const { isStale } = useVersionCheck(ds, 'Soldiers')
@@ -132,6 +136,35 @@ function UnitApp({ spreadsheetId, unitName, onBackToAdmin }: UnitAppProps) {
       reload()
       addToast('Schedule generated', 'success')
     } catch { addToast('Failed to generate schedule', 'error') }
+  }
+
+  if (tabsLoading) {
+    return (
+      <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
+        <div className="flex items-center justify-center py-20">
+          <p className="text-gray-500">Checking spreadsheet…</p>
+        </div>
+      </AppShell>
+    )
+  }
+
+  if (missing.length > 0) {
+    return (
+      <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
+        <div className="max-w-xl mx-auto py-16 space-y-4">
+          <h2 className="text-lg font-semibold text-red-700">Missing spreadsheet tabs</h2>
+          <p className="text-sm text-gray-600">
+            The following tabs are required but were not found in the spreadsheet:
+          </p>
+          <ul className="list-disc list-inside text-sm font-mono text-red-600 space-y-1">
+            {missing.map(tab => <li key={tab}>{tab}</li>)}
+          </ul>
+          <p className="text-sm text-gray-500">
+            Create these tabs in the spreadsheet, then reload the page.
+          </p>
+        </div>
+      </AppShell>
+    )
   }
 
   if (loading) {
@@ -271,12 +304,12 @@ function AppContent() {
   }
 
   // Unit view — for both commanders and admins who entered a unit
-  const spreadsheetId = activeUnit?.spreadsheetId ?? ''
   const isAdmin = appMode === 'admin'
 
   return (
     <UnitApp
-      spreadsheetId={spreadsheetId}
+      spreadsheetId={activeUnit?.spreadsheetId ?? ''}
+      tabPrefix={activeUnit?.tabPrefix ?? ''}
       unitName={activeUnit?.name ?? ''}
       onBackToAdmin={isAdmin ? () => { setActiveUnit(null); setAppMode('admin') } : undefined}
     />
