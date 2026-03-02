@@ -36,19 +36,19 @@ export class DataService {
 
   private cache: SheetCache
 
-  constructor(accessToken: string, spreadsheetId: string) {
+  constructor(accessToken: string, spreadsheetId: string, tabPrefix = '') {
     const sheets = new GoogleSheetsService(accessToken)
     this.sheets = sheets
     this.cache = new SheetCache()
 
-    this.soldiers = new SoldierRepository(sheets, spreadsheetId, this.cache)
-    this.tasks = new TaskRepository(sheets, spreadsheetId, this.cache)
-    this.leaveRequests = new LeaveRequestRepository(sheets, spreadsheetId, this.cache)
-    this.leaveAssignments = new LeaveAssignmentRepository(sheets, spreadsheetId, this.cache)
-    this.taskAssignments = new TaskAssignmentRepository(sheets, spreadsheetId, this.cache)
-    this.config = new ConfigRepository(sheets, spreadsheetId)
-    this.history = new HistoryService(sheets, spreadsheetId)
-    this.versions = new VersionService(sheets, spreadsheetId)
+    this.soldiers = new SoldierRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    this.tasks = new TaskRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    this.leaveRequests = new LeaveRequestRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    this.leaveAssignments = new LeaveAssignmentRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    this.taskAssignments = new TaskAssignmentRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    this.config = new ConfigRepository(sheets, spreadsheetId, tabPrefix)
+    this.history = new HistoryService(sheets, spreadsheetId, tabPrefix)
+    this.versions = new VersionService(sheets, spreadsheetId, tabPrefix)
 
     this.soldierService = new SoldierService(this.soldiers, this.history)
     this.taskService = new TaskService(this.tasks, this.history)

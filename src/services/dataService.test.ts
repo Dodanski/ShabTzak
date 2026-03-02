@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { DataService } from './dataService'
 
 describe('DataService', () => {
@@ -92,5 +92,12 @@ describe('DataService', () => {
     const service = new DataService('token', 'id')
     expect(service.fairnessUpdate).toBeDefined()
     expect(service.fairnessUpdate.applyTaskAssignment).toBeDefined()
+  })
+
+  it('passes tabPrefix to repositories — soldiers list uses prefixed range', async () => {
+    const ds = new DataService('token', 'sheet-id', 'Alpha_Company')
+    vi.spyOn(ds.sheets, 'getValues').mockResolvedValue([])
+    await ds.soldiers.list()
+    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company_Soldiers!A:L')
   })
 })
