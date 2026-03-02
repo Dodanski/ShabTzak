@@ -136,4 +136,15 @@ describe('TaskRepository', () => {
       expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [TASK_ROW_1])
     })
   })
+
+  describe('tabPrefix', () => {
+    it('uses prefixed tab name when tabPrefix is provided', async () => {
+      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+      const prefixedRepo = new TaskRepository(mockSheets, SHEET_ID, new SheetCache(), 'Alpha_Company')
+
+      await prefixedRepo.list()
+
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_Tasks!A:I')
+    })
+  })
 })

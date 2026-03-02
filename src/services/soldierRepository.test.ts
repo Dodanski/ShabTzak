@@ -153,4 +153,15 @@ describe('SoldierRepository', () => {
       await expect(repo.update({ id: 'ghost' })).rejects.toThrow()
     })
   })
+
+  describe('tabPrefix', () => {
+    it('uses prefixed tab name when tabPrefix is provided', async () => {
+      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+      const prefixedRepo = new SoldierRepository(mockSheets, SHEET_ID, new SheetCache(), 'Alpha_Company')
+
+      await prefixedRepo.list()
+
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_Soldiers!A:L')
+    })
+  })
 })

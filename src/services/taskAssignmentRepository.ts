@@ -1,9 +1,9 @@
 import { GoogleSheetsService } from './googleSheets'
 import { SheetCache } from './cache'
 import { SHEET_TABS } from '../constants'
+import { prefixTab } from '../utils/tabPrefix'
 import type { TaskAssignment, SoldierRole } from '../models'
 
-const RANGE = `${SHEET_TABS.TASK_SCHEDULE}!A:G`
 const CACHE_KEY = 'taskAssignments'
 
 const HEADER_ROW = [
@@ -51,18 +51,22 @@ export class TaskAssignmentRepository {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
   private cache: SheetCache
+  private range: string
+  private tabName: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
     this.cache = cache
+    this.tabName = prefixTab(tabPrefix, SHEET_TABS.TASK_SCHEDULE)
+    this.range = `${this.tabName}!A:G`
   }
 
   private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
     const cached = this.cache.get<{ headers: string[]; rows: string[][] }>(CACHE_KEY)
     if (cached) return cached
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const headers = allRows[0] ?? []
     const rows = allRows.slice(1).filter(r => r.length > 0)
     const result = { headers, rows }
@@ -91,17 +95,17 @@ export class TaskAssignmentRepository {
       createdBy: input.createdBy,
     }
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     if (allRows[0]?.[0] !== 'ScheduleID') {
       const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.TASK_SCHEDULE}!A1:G1`, [HEADER_ROW])
+      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:G1`, [HEADER_ROW])
       if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
       }
     }
 
     const row = serializeAssignment(assignment)
-    await this.sheets.appendValues(this.spreadsheetId, RANGE, [row])
+    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
     this.cache.invalidate(CACHE_KEY)
     return assignment
   }
@@ -122,7 +126,7 @@ export class TaskAssignmentRepository {
 
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${SHEET_TABS.TASK_SCHEDULE}!A${sheetRow}:G${sheetRow}`,
+      `${this.tabName}!A${sheetRow}:G${sheetRow}`,
       [updatedRow]
     )
     this.cache.invalidate(CACHE_KEY)

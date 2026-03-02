@@ -3,9 +3,9 @@ import { SheetCache } from './cache'
 import { parseLeaveAssignment } from './parsers'
 import { serializeLeaveAssignment } from './serializers'
 import { SHEET_TABS } from '../constants'
+import { prefixTab } from '../utils/tabPrefix'
 import type { LeaveAssignment, LeaveType } from '../models'
 
-const RANGE = `${SHEET_TABS.LEAVE_SCHEDULE}!A:I`
 const CACHE_KEY = 'leaveAssignments'
 
 const HEADER_ROW = [
@@ -30,18 +30,22 @@ export class LeaveAssignmentRepository {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
   private cache: SheetCache
+  private range: string
+  private tabName: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
     this.cache = cache
+    this.tabName = prefixTab(tabPrefix, SHEET_TABS.LEAVE_SCHEDULE)
+    this.range = `${this.tabName}!A:I`
   }
 
   private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
     const cached = this.cache.get<{ headers: string[]; rows: string[][] }>(CACHE_KEY)
     if (cached) return cached
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const headers = allRows[0] ?? []
     const rows = allRows.slice(1).filter(r => r.length > 0)
     const result = { headers, rows }
@@ -72,17 +76,17 @@ export class LeaveAssignmentRepository {
       createdAt: new Date().toISOString(),
     }
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     if (allRows[0]?.[0] !== 'ID') {
       const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.LEAVE_SCHEDULE}!A1:I1`, [HEADER_ROW])
+      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:I1`, [HEADER_ROW])
       if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
       }
     }
 
     const row = serializeLeaveAssignment(assignment)
-    await this.sheets.appendValues(this.spreadsheetId, RANGE, [row])
+    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
     this.cache.invalidate(CACHE_KEY)
     return assignment
   }
@@ -103,7 +107,7 @@ export class LeaveAssignmentRepository {
 
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${SHEET_TABS.LEAVE_SCHEDULE}!A${sheetRow}:I${sheetRow}`,
+      `${this.tabName}!A${sheetRow}:I${sheetRow}`,
       [updatedRow]
     )
     this.cache.invalidate(CACHE_KEY)

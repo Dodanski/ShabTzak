@@ -132,4 +132,15 @@ describe('LeaveRequestRepository', () => {
       await expect(repo.updateStatus('ghost', 'Approved')).rejects.toThrow()
     })
   })
+
+  describe('tabPrefix', () => {
+    it('uses prefixed tab name when tabPrefix is provided', async () => {
+      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+      const prefixedRepo = new LeaveRequestRepository(mockSheets, SHEET_ID, new SheetCache(), 'Alpha_Company')
+
+      await prefixedRepo.list()
+
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_LeaveRequests!A:H')
+    })
+  })
 })

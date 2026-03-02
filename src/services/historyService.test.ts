@@ -70,4 +70,17 @@ describe('HistoryService', () => {
     expect(entries[0].action).toBe('CREATE')
     expect(entries[1].action).toBe('UPDATE')
   })
+
+  describe('tabPrefix', () => {
+    it('uses prefixed tab name when tabPrefix is provided', async () => {
+      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([
+        ['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details'],
+      ])
+      const prefixedService = new HistoryService(mockSheets, SHEET_ID, 'Alpha_Company')
+
+      await prefixedService.listAll()
+
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_History!A:F')
+    })
+  })
 })

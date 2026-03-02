@@ -1,8 +1,7 @@
 import { GoogleSheetsService } from './googleSheets'
 import { SHEET_TABS, DEFAULT_CONFIG } from '../constants'
+import { prefixTab } from '../utils/tabPrefix'
 import type { AppConfig } from '../models'
-
-const RANGE = `${SHEET_TABS.CONFIG}!A:B`
 
 type PartialNumericConfig = Partial<Pick<AppConfig,
   'leaveRatioDaysInBase' | 'leaveRatioDaysHome' | 'longLeaveMaxDays' |
@@ -12,14 +11,18 @@ type PartialNumericConfig = Partial<Pick<AppConfig,
 export class ConfigRepository {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
+  private range: string
+  private tabName: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
+    this.tabName = prefixTab(tabPrefix, SHEET_TABS.CONFIG)
+    this.range = `${this.tabName}!A:B`
   }
 
   async read(): Promise<AppConfig> {
-    const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const dataRows = rows.slice(1) // skip header
     const map = new Map(dataRows.map(r => [r[0], r[1]]))
 
@@ -51,13 +54,13 @@ export class ConfigRepository {
     const rows = Object.entries(updates).map(([key, value]) => [key, String(value)])
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${SHEET_TABS.CONFIG}!A2:B${rows.length + 1}`,
+      `${this.tabName}!A2:B${rows.length + 1}`,
       rows
     )
   }
 
   async writeAdminEmails(emails: string[]): Promise<void> {
-    const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const dataRows = rows.slice(1) // skip header
     const existingRowIndex = dataRows.findIndex(r => r[0] === 'adminEmails')
 
@@ -66,13 +69,13 @@ export class ConfigRepository {
       const rowNumber = existingRowIndex + 2
       await this.sheets.updateValues(
         this.spreadsheetId,
-        `${SHEET_TABS.CONFIG}!A${rowNumber}:B${rowNumber}`,
+        `${this.tabName}!A${rowNumber}:B${rowNumber}`,
         [['adminEmails', emails.join(',')]]
       )
     } else {
       await this.sheets.appendValues(
         this.spreadsheetId,
-        `${SHEET_TABS.CONFIG}!A:B`,
+        `${this.tabName}!A:B`,
         [['adminEmails', emails.join(',')]]
       )
     }

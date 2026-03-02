@@ -3,9 +3,9 @@ import { SheetCache } from './cache'
 import { parseLeaveRequest } from './parsers'
 import { serializeLeaveRequest } from './serializers'
 import { SHEET_TABS } from '../constants'
+import { prefixTab } from '../utils/tabPrefix'
 import type { LeaveRequest, CreateLeaveRequestInput, RequestStatus } from '../models'
 
-const RANGE = `${SHEET_TABS.LEAVE_REQUESTS}!A:H`
 const CACHE_KEY = 'leaveRequests'
 
 const HEADER_ROW = [
@@ -21,18 +21,22 @@ export class LeaveRequestRepository {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
   private cache: SheetCache
+  private range: string
+  private tabName: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
     this.cache = cache
+    this.tabName = prefixTab(tabPrefix, SHEET_TABS.LEAVE_REQUESTS)
+    this.range = `${this.tabName}!A:H`
   }
 
   private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
     const cached = this.cache.get<{ headers: string[]; rows: string[][] }>(CACHE_KEY)
     if (cached) return cached
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const headers = allRows[0] ?? []
     const rows = allRows.slice(1).filter(r => r.length > 0)
     const result = { headers, rows }
@@ -62,17 +66,17 @@ export class LeaveRequestRepository {
       status: 'Pending',
     }
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     if (allRows[0]?.[0] !== 'ID') {
       const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${SHEET_TABS.LEAVE_REQUESTS}!A1:H1`, [HEADER_ROW])
+      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:H1`, [HEADER_ROW])
       if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, RANGE, rescuedRows)
+        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
       }
     }
 
     const row = serializeLeaveRequest(request)
-    await this.sheets.appendValues(this.spreadsheetId, RANGE, [row])
+    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
     this.cache.invalidate(CACHE_KEY)
     return request
   }
@@ -93,7 +97,7 @@ export class LeaveRequestRepository {
 
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${SHEET_TABS.LEAVE_REQUESTS}!A${sheetRow}:H${sheetRow}`,
+      `${this.tabName}!A${sheetRow}:H${sheetRow}`,
       [updatedRow]
     )
     this.cache.invalidate(CACHE_KEY)

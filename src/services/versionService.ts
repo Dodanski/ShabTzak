@@ -1,16 +1,19 @@
 import { GoogleSheetsService } from './googleSheets'
 import { SHEET_TABS } from '../constants'
+import { prefixTab } from '../utils/tabPrefix'
 import type { VersionInfo } from '../models'
-
-const VERSION_RANGE = `${SHEET_TABS.VERSION}!A:D`
 
 export class VersionService {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
+  private range: string
+  private tabName: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
+    this.tabName = prefixTab(tabPrefix, SHEET_TABS.VERSION)
+    this.range = `${this.tabName}!A:D`
   }
 
   /**
@@ -18,7 +21,7 @@ export class VersionService {
    * Returns null if the tab has no version entry.
    */
   async getVersion(tabName: string): Promise<VersionInfo | null> {
-    const rows = await this.sheets.getValues(this.spreadsheetId, VERSION_RANGE)
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     if (rows.length < 2) return null
 
     const headers = rows[0]
@@ -44,7 +47,7 @@ export class VersionService {
    * Increment the version for a tab and record who changed it.
    */
   async incrementVersion(tabName: string, changedBy: string): Promise<void> {
-    const rows = await this.sheets.getValues(this.spreadsheetId, VERSION_RANGE)
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const headers = rows[0] ?? []
     const dataRows = rows.slice(1)
 
@@ -58,7 +61,7 @@ export class VersionService {
 
     // Row index in sheet = header row (1) + data offset (rowIndex) + 1-based = rowIndex + 2
     const sheetRow = rowIndex >= 0 ? rowIndex + 2 : dataRows.length + 2
-    const range = `${SHEET_TABS.VERSION}!A${sheetRow}:D${sheetRow}`
+    const range = `${this.tabName}!A${sheetRow}:D${sheetRow}`
 
     await this.sheets.updateValues(this.spreadsheetId, range, [updatedRow])
   }

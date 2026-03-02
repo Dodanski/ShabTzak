@@ -75,4 +75,17 @@ describe('VersionService', () => {
     const isStale = await service.isStale('Soldiers', 3)
     expect(isStale).toBe(false)
   })
+
+  describe('tabPrefix', () => {
+    it('uses prefixed tab name when tabPrefix is provided', async () => {
+      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([
+        ['TabName', 'Version', 'LastModified', 'LastModifiedBy'],
+      ])
+      const prefixedService = new VersionService(mockSheets, SHEET_ID, 'Alpha_Company')
+
+      await prefixedService.getVersion('Soldiers')
+
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_Version!A:D')
+    })
+  })
 })

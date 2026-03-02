@@ -1,7 +1,6 @@
 import { GoogleSheetsService } from './googleSheets'
 import { SHEET_TABS } from '../constants'
-
-const RANGE = `${SHEET_TABS.HISTORY}!A:F`
+import { prefixTab } from '../utils/tabPrefix'
 
 export interface HistoryEntry {
   timestamp: string
@@ -15,10 +14,12 @@ export interface HistoryEntry {
 export class HistoryService {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
+  private range: string
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string) {
+  constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
+    this.range = `${prefixTab(tabPrefix, SHEET_TABS.HISTORY)}!A:F`
   }
 
   async append(
@@ -36,11 +37,11 @@ export class HistoryService {
       changedBy,
       details,
     ]
-    await this.sheets.appendValues(this.spreadsheetId, RANGE, [row])
+    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
   }
 
   async listAll(): Promise<HistoryEntry[]> {
-    const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     return rows.slice(1).filter(r => r.length > 0).map(r => ({
       timestamp: r[0] ?? '',
       action: r[1] ?? '',
@@ -52,7 +53,7 @@ export class HistoryService {
   }
 
   async getRecent(entityType: string, entityId: string): Promise<HistoryEntry[]> {
-    const rows = await this.sheets.getValues(this.spreadsheetId, RANGE)
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const dataRows = rows.slice(1).filter(r => r.length > 0)
 
     return dataRows

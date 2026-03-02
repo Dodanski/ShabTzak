@@ -105,4 +105,15 @@ describe('ConfigRepository', () => {
       )
     })
   })
+
+  describe('tabPrefix', () => {
+    it('uses prefixed tab name when tabPrefix is provided', async () => {
+      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([['Key', 'Value']])
+      const prefixedRepo = new ConfigRepository(mockSheets, SHEET_ID, 'Alpha_Company')
+
+      await prefixedRepo.read()
+
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_Config!A:B')
+    })
+  })
 })
