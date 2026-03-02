@@ -13,6 +13,7 @@ export interface Unit {
   id: string
   name: string
   spreadsheetId: string
+  tabPrefix: string      // auto-derived from name at creation; empty = legacy (no prefix)
   createdAt: string
   createdBy: string
 }
@@ -20,6 +21,7 @@ export interface Unit {
 export interface CreateUnitInput {
   name: string
   spreadsheetId: string
+  tabPrefix: string
 }
 
 export interface Commander {
