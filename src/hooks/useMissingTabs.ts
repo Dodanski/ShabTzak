@@ -24,7 +24,6 @@ export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMis
     const setup = new SetupService(sheets, spreadsheetId, tabPrefix)
     setup.initializeMissingTabs()
       .then(() => {
-        setMissing([])
         setLoading(false)
       })
       .catch(() => {
