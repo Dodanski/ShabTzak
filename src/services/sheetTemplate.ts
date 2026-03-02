@@ -1,5 +1,5 @@
 import { GoogleSheetsService } from './googleSheets'
-import { SHEET_TABS, DEFAULT_CONFIG } from '../constants'
+import { SHEET_TABS, MASTER_SHEET_TABS, DEFAULT_CONFIG } from '../constants'
 
 const TAB_HEADERS: Record<string, string[][]> = {
   [SHEET_TABS.SOLDIERS]: [[
@@ -7,7 +7,7 @@ const TAB_HEADERS: Record<string, string[][]> = {
     'InitialFairness', 'CurrentFairness', 'Status',
     'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
   ]],
-  [SHEET_TABS.TASKS]: [[
+  [MASTER_SHEET_TABS.TASKS]: [[
     'ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours',
     'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays',
   ]],
@@ -23,14 +23,11 @@ const TAB_HEADERS: Record<string, string[][]> = {
     'ID', 'SoldierID', 'StartDate', 'EndDate',
     'LeaveType', 'IsWeekend', 'IsLocked', 'RequestID', 'CreatedAt',
   ]],
-  [SHEET_TABS.HISTORY]: [[
+  [MASTER_SHEET_TABS.HISTORY]: [[
     'Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details',
   ]],
-  [SHEET_TABS.CONFIG]: [[
+  [MASTER_SHEET_TABS.CONFIG]: [[
     'Key', 'Value',
-  ]],
-  [SHEET_TABS.VERSION]: [[
-    'TabName', 'Version', 'LastModified', 'LastModifiedBy',
   ]],
 }
 
@@ -66,7 +63,7 @@ export class SheetTemplateGenerator {
     // Write default config values
     await this.service.appendValues(
       spreadsheetId,
-      `${SHEET_TABS.CONFIG}!A2`,
+      `${MASTER_SHEET_TABS.CONFIG}!A2`,
       DEFAULT_CONFIG_ROWS
     )
 

@@ -2,7 +2,7 @@ import { GoogleSheetsService } from './googleSheets'
 import { SheetCache } from './cache'
 import { parseTask } from './parsers'
 import { serializeTask } from './serializers'
-import { SHEET_TABS } from '../constants'
+import { MASTER_SHEET_TABS } from '../constants'
 import { prefixTab } from '../utils/tabPrefix'
 import type { Task, CreateTaskInput } from '../models'
 
@@ -34,7 +34,7 @@ export class TaskRepository {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
     this.cache = cache
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.TASKS)
+    this.tabName = prefixTab(tabPrefix, MASTER_SHEET_TABS.TASKS)
     this.range = `${this.tabName}!A:I`
   }
 

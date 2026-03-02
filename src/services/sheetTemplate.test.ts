@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SheetTemplateGenerator } from './sheetTemplate'
 import { GoogleSheetsService } from './googleSheets'
-import { SHEET_TABS } from '../constants'
+import { SHEET_TABS, MASTER_SHEET_TABS } from '../constants'
 
 describe('SheetTemplateGenerator', () => {
   let mockService: GoogleSheetsService
@@ -47,6 +47,6 @@ describe('SheetTemplateGenerator', () => {
     const calledRanges = updateSpy.mock.calls.map(call => call[1])
     expect(calledRanges).toContain(`${SHEET_TABS.SOLDIERS}!A1`)
     expect(calledRanges).toContain(`${SHEET_TABS.LEAVE_REQUESTS}!A1`)
-    expect(calledRanges).toContain(`${SHEET_TABS.CONFIG}!A1`)
+    expect(calledRanges).toContain(`${MASTER_SHEET_TABS.CONFIG}!A1`)
   })
 })

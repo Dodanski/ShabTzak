@@ -1,5 +1,5 @@
 import { GoogleSheetsService } from './googleSheets'
-import { SHEET_TABS, DEFAULT_CONFIG } from '../constants'
+import { MASTER_SHEET_TABS, DEFAULT_CONFIG } from '../constants'
 import { prefixTab } from '../utils/tabPrefix'
 import type { AppConfig } from '../models'
 
@@ -17,7 +17,7 @@ export class ConfigRepository {
   constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.CONFIG)
+    this.tabName = prefixTab(tabPrefix, MASTER_SHEET_TABS.CONFIG)
     this.range = `${this.tabName}!A:B`
   }
 

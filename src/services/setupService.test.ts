@@ -24,18 +24,18 @@ describe('SetupService', () => {
     })
 
     it('marks missing tabs as not existing', async () => {
-      vi.spyOn(mockSheets, 'getSheetTitles').mockResolvedValue(['Soldiers', 'Tasks'])
+      vi.spyOn(mockSheets, 'getSheetTitles').mockResolvedValue(['Soldiers'])
       const results = await service.checkTabs()
       const soldiers = results.find(r => r.tab === SHEET_TABS.SOLDIERS)
-      const version = results.find(r => r.tab === SHEET_TABS.VERSION)
+      const taskSchedule = results.find(r => r.tab === SHEET_TABS.TASK_SCHEDULE)
       expect(soldiers?.exists).toBe(true)
-      expect(version?.exists).toBe(false)
+      expect(taskSchedule?.exists).toBe(false)
     })
   })
 
   describe('initializeMissingTabs()', () => {
     it('creates only missing tabs and writes their headers', async () => {
-      vi.spyOn(mockSheets, 'getSheetTitles').mockResolvedValue(['Soldiers', 'Tasks'])
+      vi.spyOn(mockSheets, 'getSheetTitles').mockResolvedValue(['Soldiers'])
       const batchSpy = vi.spyOn(mockSheets, 'batchUpdate').mockResolvedValue(undefined)
       const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
 
@@ -45,16 +45,15 @@ describe('SetupService', () => {
       const skipped = results.filter(r => !r.created)
 
       expect(created.map(r => r.tab)).not.toContain(SHEET_TABS.SOLDIERS)
-      expect(created.map(r => r.tab)).not.toContain(SHEET_TABS.TASKS)
       expect(skipped.map(r => r.tab)).toContain(SHEET_TABS.SOLDIERS)
 
       // batchUpdate called once with all missing tabs
       expect(batchSpy).toHaveBeenCalledOnce()
       const requests: object[] = batchSpy.mock.calls[0][1]
-      expect(requests.length).toBe(6) // 8 total - 2 existing
+      expect(requests.length).toBe(3) // 4 total - 1 existing
 
       // headers written for each created tab
-      expect(updateSpy).toHaveBeenCalledTimes(6)
+      expect(updateSpy).toHaveBeenCalledTimes(3)
     })
 
     it('does nothing when all tabs exist', async () => {
@@ -77,7 +76,7 @@ describe('SetupService', () => {
       const statuses = await setup.checkTabs()
       const soldierStatus = statuses.find(s => s.tab === 'Alpha_Company_Soldiers')
       expect(soldierStatus?.exists).toBe(true)
-      const taskStatus = statuses.find(s => s.tab === 'Alpha_Company_Tasks')
+      const taskStatus = statuses.find(s => s.tab === 'Alpha_Company_TaskSchedule')
       expect(taskStatus?.exists).toBe(false)
     })
 

@@ -1,5 +1,4 @@
 import { GoogleSheetsService } from './googleSheets'
-import { SHEET_TABS } from '../constants'
 import { prefixTab } from '../utils/tabPrefix'
 import type { VersionInfo } from '../models'
 
@@ -12,7 +11,7 @@ export class VersionService {
   constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.VERSION)
+    this.tabName = prefixTab(tabPrefix, 'Version')
     this.range = `${this.tabName}!A:D`
   }
 

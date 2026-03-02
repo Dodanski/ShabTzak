@@ -1,5 +1,5 @@
 import { GoogleSheetsService } from './googleSheets'
-import { SHEET_TABS } from '../constants'
+import { MASTER_SHEET_TABS } from '../constants'
 import { prefixTab } from '../utils/tabPrefix'
 
 export interface HistoryEntry {
@@ -20,7 +20,7 @@ export class HistoryService {
   constructor(sheets: GoogleSheetsService, spreadsheetId: string, tabPrefix = '') {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.HISTORY)
+    this.tabName = prefixTab(tabPrefix, MASTER_SHEET_TABS.HISTORY)
     this.range = `${this.tabName}!A:F`
   }
 
