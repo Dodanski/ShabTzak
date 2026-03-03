@@ -121,6 +121,18 @@ describe('ScheduleService', () => {
       expect(mockTaskAssignments.create).toHaveBeenCalledOnce()
     })
 
+    it('does not re-persist existing task assignments', async () => {
+      const existingAssignment = {
+        id: 'ta-1', taskId: 't1', soldierId: 's1', assignedRole: 'Driver',
+        createdBy: 'admin', createdAt: '2026-02-01T00:00:00',
+      }
+      mockTaskAssignments.list.mockResolvedValue([existingAssignment])
+
+      await service.generateTaskSchedule([TASK], 'admin')
+
+      expect(mockTaskAssignments.create).not.toHaveBeenCalled()
+    })
+
     it('logs generation to history', async () => {
       await service.generateTaskSchedule([TASK], 'admin')
       expect(mockHistory.append).toHaveBeenCalledWith(

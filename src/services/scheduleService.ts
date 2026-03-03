@@ -66,9 +66,9 @@ export class ScheduleService {
     const schedule = scheduleTasks(tasks, soldiers, existing)
 
     // Persist only assignments that aren't already stored
-    const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}`))
+    const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}:${a.assignedRole}`))
     for (const assignment of schedule.assignments) {
-      if (!existingKeys.has(`${assignment.taskId}:${assignment.soldierId}`)) {
+      if (!existingKeys.has(`${assignment.taskId}:${assignment.soldierId}:${assignment.assignedRole}`)) {
         await this.taskAssignments.create({
           taskId: assignment.taskId,
           soldierId: assignment.soldierId,
