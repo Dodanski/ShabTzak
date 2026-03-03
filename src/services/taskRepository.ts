@@ -4,7 +4,7 @@ import { parseTask } from './parsers'
 import { serializeTask } from './serializers'
 import { MASTER_SHEET_TABS } from '../constants'
 import { prefixTab } from '../utils/tabPrefix'
-import type { Task, CreateTaskInput } from '../models'
+import type { Task, CreateTaskInput, UpdateTaskInput } from '../models'
 
 const CACHE_KEY = 'tasks'
 
@@ -86,5 +86,37 @@ export class TaskRepository {
     await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
     this.cache.invalidate(CACHE_KEY)
     return task
+  }
+
+  async update(input: UpdateTaskInput): Promise<void> {
+    const { headers, rows } = await this.fetchAll()
+    const idIdx = headers.indexOf('ID')
+    const rowIndex = rows.findIndex(r => r[idIdx] === input.id)
+
+    if (rowIndex === -1) {
+      throw new Error(`Task with id "${input.id}" not found`)
+    }
+
+    const existing = parseTask(rows[rowIndex], headers)
+    const updated: Task = {
+      ...existing,
+      ...(input.taskType !== undefined && { taskType: input.taskType }),
+      ...(input.startTime !== undefined && { startTime: input.startTime }),
+      ...(input.endTime !== undefined && { endTime: input.endTime }),
+      ...(input.durationHours !== undefined && { durationHours: input.durationHours }),
+      ...(input.roleRequirements !== undefined && { roleRequirements: input.roleRequirements }),
+      ...(input.minRestAfter !== undefined && { minRestAfter: input.minRestAfter }),
+      ...(input.isSpecial !== undefined && { isSpecial: input.isSpecial }),
+      ...(input.specialDurationDays !== undefined && { specialDurationDays: input.specialDurationDays }),
+    }
+
+    const updatedRow = serializeTask(updated)
+    const sheetRow = rowIndex + 2 // +2: 1-based and row 1 is header
+    await this.sheets.updateValues(
+      this.spreadsheetId,
+      `${this.tabName}!A${sheetRow}:I${sheetRow}`,
+      [updatedRow]
+    )
+    this.cache.invalidate(CACHE_KEY)
   }
 }

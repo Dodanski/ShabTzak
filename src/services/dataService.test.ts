@@ -70,11 +70,11 @@ describe('DataService', () => {
     expect(service.fairnessUpdate.applyTaskAssignment).toBeDefined()
   })
 
-  it('passes tabPrefix to repositories — soldiers list uses prefixed range', async () => {
+  it('passes tabPrefix to repositories — soldiers list uses unit-named tab range', async () => {
     const ds = new DataService('token', 'sheet-id', 'Alpha_Company', makeHistory())
     vi.spyOn(ds.sheets, 'getValues').mockResolvedValue([])
     await ds.soldiers.list()
-    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company_Soldiers!A:L')
+    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company!A:L')
   })
 
   it('does not expose tasks, config, history, versions', () => {

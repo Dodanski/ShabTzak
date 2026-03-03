@@ -1,6 +1,6 @@
 import type { TaskRepository } from './taskRepository'
 import type { HistoryService } from './historyService'
-import type { Task, CreateTaskInput } from '../models'
+import type { Task, CreateTaskInput, UpdateTaskInput } from '../models'
 
 /**
  * Orchestrates task configuration CRUD with audit history logging.
@@ -19,5 +19,10 @@ export class TaskService {
 
   async list(): Promise<Task[]> {
     return this.repo.list()
+  }
+
+  async update(input: UpdateTaskInput, changedBy: string): Promise<void> {
+    await this.repo.update(input)
+    await this.history.append('UPDATE', 'Task', input.id, changedBy, `Updated task`)
   }
 }

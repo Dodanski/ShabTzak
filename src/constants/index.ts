@@ -49,9 +49,8 @@ export const DEFAULT_CONFIG = {
   defaultRestPeriod: 6,
 } as const
 
-// Google Sheets tabs
+// Google Sheets tabs (per-unit scheduling tabs only; soldier list lives in admin spreadsheet under unit-name tabs)
 export const SHEET_TABS = {
-  SOLDIERS: 'Soldiers',
   TASK_SCHEDULE: 'TaskSchedule',
   LEAVE_REQUESTS: 'LeaveRequests',
   LEAVE_SCHEDULE: 'LeaveSchedule',

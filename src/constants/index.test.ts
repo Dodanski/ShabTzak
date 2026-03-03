@@ -19,8 +19,9 @@ describe('Constants', () => {
     expect(DEFAULT_CONFIG.longLeaveMaxDays).toBe(4)
   })
 
-  it('SHEET_TABS has exactly 4 unit-only tabs', () => {
-    expect(Object.values(SHEET_TABS)).toHaveLength(4)
+  it('SHEET_TABS has exactly 3 scheduling tabs (soldiers live in unit-named tab)', () => {
+    expect(Object.values(SHEET_TABS)).toHaveLength(3)
+    expect(Object.keys(SHEET_TABS)).not.toContain('SOLDIERS')
     expect(Object.keys(SHEET_TABS)).not.toContain('TASKS')
     expect(Object.keys(SHEET_TABS)).not.toContain('VERSION')
   })

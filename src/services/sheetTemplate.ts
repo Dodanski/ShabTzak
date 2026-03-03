@@ -2,11 +2,6 @@ import { GoogleSheetsService } from './googleSheets'
 import { SHEET_TABS, MASTER_SHEET_TABS, DEFAULT_CONFIG } from '../constants'
 
 const TAB_HEADERS: Record<string, string[][]> = {
-  [SHEET_TABS.SOLDIERS]: [[
-    'ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd',
-    'InitialFairness', 'CurrentFairness', 'Status',
-    'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
-  ]],
   [MASTER_SHEET_TABS.TASKS]: [[
     'ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours',
     'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays',

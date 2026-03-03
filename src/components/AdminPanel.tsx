@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { MasterDataService } from '../services/masterDataService'
-import type { Admin, Unit, Commander, Task, AppConfig, CreateTaskInput } from '../models'
+import type { Admin, Unit, Commander, Task, AppConfig, CreateTaskInput, UpdateTaskInput } from '../models'
 import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
 
@@ -117,6 +117,11 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     catch { /* ignore */ }
   }
 
+  async function handleUpdateTask(input: UpdateTaskInput) {
+    try { await masterDs.taskService.update(input, currentAdminEmail); await reload() }
+    catch { /* ignore */ }
+  }
+
   const derivedPrefix = deriveTabPrefix(newUnitName)
 
   const tabClass = (tab: AdminTab) =>
@@ -224,7 +229,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
               {newUnitName && (
                 <p className="col-span-2 text-xs text-olive-500">
                   Tab prefix: <span className="font-mono font-medium">{derivedPrefix}</span>
-                  {' '}— tabs will be named {derivedPrefix}_Soldiers, {derivedPrefix}_Tasks, …
+                  {' '}— soldiers tab: <span className="font-mono">{derivedPrefix}</span>, scheduling tabs: {derivedPrefix}_TaskSchedule, …
                 </p>
               )}
               <button
@@ -272,7 +277,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
         {!loading && activeTab === 'tasks' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4">
-            <TasksPage tasks={tasks} onAddTask={handleAddTask} />
+            <TasksPage tasks={tasks} onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} />
           </div>
         )}
 

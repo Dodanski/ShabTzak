@@ -2,8 +2,6 @@ import { GoogleSheetsService } from './googleSheets'
 import { SheetCache } from './cache'
 import { parseSoldier } from './parsers'
 import { serializeSoldier } from './serializers'
-import { SHEET_TABS } from '../constants'
-import { prefixTab } from '../utils/tabPrefix'
 import type { Soldier, CreateSoldierInput, UpdateSoldierInput } from '../models'
 
 const CACHE_KEY = 'soldiers'
@@ -29,7 +27,8 @@ export class SoldierRepository {
     this.sheets = sheets
     this.spreadsheetId = spreadsheetId
     this.cache = cache
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.SOLDIERS)
+    // Soldiers live in the unit-named tab (e.g. "א'") not a dedicated "Soldiers" tab
+    this.tabName = tabPrefix || 'Soldiers'
     this.range = `${this.tabName}!A:L`
   }
 

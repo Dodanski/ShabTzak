@@ -161,7 +161,7 @@ describe('SoldierRepository', () => {
 
       await prefixedRepo.list()
 
-      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_Soldiers!A:L')
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company!A:L')
     })
   })
 })

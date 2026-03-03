@@ -37,3 +37,15 @@ export interface CreateTaskInput {
   isSpecial?: boolean
   specialDurationDays?: number
 }
+
+export interface UpdateTaskInput {
+  id: string
+  taskType?: string
+  startTime?: string
+  endTime?: string
+  durationHours?: number
+  roleRequirements?: RoleRequirement[]
+  minRestAfter?: number
+  isSpecial?: boolean
+  specialDurationDays?: number
+}

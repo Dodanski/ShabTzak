@@ -45,7 +45,6 @@ describe('SheetTemplateGenerator', () => {
     await generator.createTemplate('Test Unit')
 
     const calledRanges = updateSpy.mock.calls.map(call => call[1])
-    expect(calledRanges).toContain(`${SHEET_TABS.SOLDIERS}!A1`)
     expect(calledRanges).toContain(`${SHEET_TABS.LEAVE_REQUESTS}!A1`)
     expect(calledRanges).toContain(`${MASTER_SHEET_TABS.CONFIG}!A1`)
   })
