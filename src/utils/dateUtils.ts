@@ -75,12 +75,12 @@ export function getDateRange(startDate: Date, endDate: Date): Date[] {
 }
 
 /**
- * Formats "YYYY-MM-DD..." as "DD/MM"
+ * Formats "YYYY-MM-DD..." as "DD/MM/YY"
  */
 export function formatDisplayDate(iso: string): string {
   const date = iso.split('T')[0]
-  const [, month, day] = date.split('-')
-  return `${day}/${month}`
+  const [year, month, day] = date.split('-')
+  return `${day}/${month}/${year.slice(-2)}`
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   parseDate,
   isSameDay,
   addDays,
+  formatDisplayDate,
 } from './dateUtils'
 
 describe('Date Utils', () => {
@@ -91,6 +92,16 @@ describe('Date Utils', () => {
       const date = new Date('2026-03-20')
       const result = addDays(date, -5)
       expect(formatDate(result)).toBe('2026-03-15')
+    })
+  })
+
+  describe('formatDisplayDate', () => {
+    it('formatDisplayDate returns dd/mm/yy', () => {
+      expect(formatDisplayDate('2026-03-15')).toBe('15/03/26')
+    })
+
+    it('formatDisplayDate handles datetime strings', () => {
+      expect(formatDisplayDate('2026-12-01T14:00:00Z')).toBe('01/12/26')
     })
   })
 })

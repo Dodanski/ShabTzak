@@ -21,8 +21,8 @@ describe('ScheduleCalendar', () => {
 
   it('renders date column headers', () => {
     render(<ScheduleCalendar soldiers={[SOLDIER]} dates={DATES} tasks={[]} taskAssignments={[]} leaveAssignments={[]} />)
-    expect(screen.getByText('01/03')).toBeInTheDocument()
-    expect(screen.getByText('02/03')).toBeInTheDocument()
+    expect(screen.getByText('01/03/26')).toBeInTheDocument()
+    expect(screen.getByText('02/03/26')).toBeInTheDocument()
   })
 
   it('shows available cells when no assignments', () => {
