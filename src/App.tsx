@@ -14,10 +14,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { useDataService } from './hooks/useDataService'
 import { useMissingTabs } from './hooks/useMissingTabs'
 import { useToast } from './hooks/useToast'
-import { useVersionCheck } from './hooks/useVersionCheck'
-import { prefixTab } from './utils/tabPrefix'
 import { useScheduleGenerator } from './hooks/useScheduleGenerator'
-import VersionConflictBanner from './components/VersionConflictBanner'
 import ErrorBanner from './components/ErrorBanner'
 import { config } from './config/env'
 import { MasterDataService } from './services/masterDataService'
@@ -74,7 +71,6 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
     useDataService(spreadsheetId, tabPrefix)
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
-  const { isStale } = useVersionCheck(ds, prefixTab(tabPrefix, 'Soldiers'))
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
 
   async function handleDischarge(soldierId: string) {
@@ -193,7 +189,6 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
 
   return (
     <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
-      <VersionConflictBanner isStale={isStale} onReload={reload} />
       <ErrorBanner error={error} onRetry={reload} />
       <ToastList toasts={toasts} onRemove={removeToast} />
       {section === 'dashboard' && (
