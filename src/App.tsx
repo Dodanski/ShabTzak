@@ -68,7 +68,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const { missing, loading: tabsLoading, error: tabsError } = useMissingTabs(spreadsheetId, tabPrefix)
+  const { loading: tabsLoading, error: tabsError } = useMissingTabs(spreadsheetId, tabPrefix)
 
   const { ds, soldiers, leaveRequests, taskAssignments, leaveAssignments, loading, error, reload } =
     useDataService(spreadsheetId, tabPrefix, masterDs)
@@ -121,12 +121,12 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   }
 
   async function handleGenerateSchedule() {
-    if (!ds) return
+    if (!ds || !configData) return
     try {
       await runSchedule()
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
-      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData!, today, scheduleEnd, 'user')
+      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, 'user')
       for (const assignment of leaveSchedule.assignments) {
         if (!existingIds.has(assignment.id)) {
           await ds.fairnessUpdate.applyLeaveAssignment(
@@ -156,25 +156,6 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           <h2 className="text-lg font-semibold text-red-700">Could not verify spreadsheet tabs</h2>
           <p className="text-sm text-gray-600">
             Failed to connect to the spreadsheet. Check your internet connection and reload the page.
-          </p>
-        </div>
-      </AppShell>
-    )
-  }
-
-  if (missing.length > 0) {
-    return (
-      <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
-        <div className="max-w-xl mx-auto py-16 space-y-4">
-          <h2 className="text-lg font-semibold text-red-700">Missing spreadsheet tabs</h2>
-          <p className="text-sm text-gray-600">
-            The following tabs are required but were not found in the spreadsheet:
-          </p>
-          <ul className="list-disc list-inside text-sm font-mono text-red-600 space-y-1">
-            {missing.map(tab => <li key={tab}>{tab}</li>)}
-          </ul>
-          <p className="text-sm text-gray-500">
-            Create these tabs in the spreadsheet, then reload the page.
           </p>
         </div>
       </AppShell>

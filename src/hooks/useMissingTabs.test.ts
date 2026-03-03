@@ -19,10 +19,9 @@ vi.mock('../services/setupService', () => ({
 }))
 
 describe('useMissingTabs', () => {
-  it('returns empty missing on success', async () => {
+  it('returns loading: false on success', async () => {
     const { result } = renderHook(() => useMissingTabs('sheet-id', 'Alpha_Company'))
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.missing).toEqual([])
   })
 
   it('starts in loading state', () => {
@@ -38,6 +37,5 @@ describe('useMissingTabs', () => {
     const { result } = renderHook(() => useMissingTabs('sheet-id', 'Alpha_Company'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toBe(true)
-    expect(result.current.missing).toEqual([])
   })
 })

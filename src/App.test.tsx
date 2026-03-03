@@ -40,7 +40,20 @@ vi.mock('./services/masterDataService', () => {
     initialize = vi.fn().mockResolvedValue(undefined)
     resolveRole = mockResolveRole
     tasks = { list: vi.fn().mockResolvedValue([]) }
-    config = { read: vi.fn().mockResolvedValue(null) }
+    config = {
+      read: vi.fn().mockResolvedValue({
+        leaveRatioDaysInBase: 3,
+        leaveRatioDaysHome: 1,
+        longLeaveMaxDays: 7,
+        weekendDays: ['Friday', 'Saturday'],
+        minBasePresence: 2,
+        minBasePresenceByRole: {},
+        maxDrivingHours: 8,
+        defaultRestPeriod: 8,
+        taskTypeRestPeriods: {},
+        adminEmails: [],
+      }),
+    }
     history = { append: vi.fn(), listAll: vi.fn(), getRecent: vi.fn() }
     taskService = { create: vi.fn() }
   }

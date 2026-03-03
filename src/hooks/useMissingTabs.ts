@@ -4,14 +4,12 @@ import { GoogleSheetsService } from '../services/googleSheets'
 import { SetupService } from '../services/setupService'
 
 export interface UseMissingTabsResult {
-  missing: string[]
   loading: boolean
   error: boolean
 }
 
 export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMissingTabsResult {
   const { auth } = useAuth()
-  const [missing] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -32,5 +30,5 @@ export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMis
       })
   }, [auth.accessToken, spreadsheetId, tabPrefix])
 
-  return { missing, loading, error }
+  return { loading, error }
 }
