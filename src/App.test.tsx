@@ -32,13 +32,17 @@ vi.mock('./hooks/useScheduleGenerator', () => {
 const mockResolveRole = vi.fn().mockResolvedValue({
   role: 'commander',
   unitId: 'u1',
-  unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', createdAt: '', createdBy: '' },
+  unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', tabPrefix: '', createdAt: '', createdBy: '' },
 })
 
 vi.mock('./services/masterDataService', () => {
   class MockMasterDataService {
     initialize = vi.fn().mockResolvedValue(undefined)
     resolveRole = mockResolveRole
+    tasks = { list: vi.fn().mockResolvedValue([]) }
+    config = { read: vi.fn().mockResolvedValue(null) }
+    history = { append: vi.fn(), listAll: vi.fn(), getRecent: vi.fn() }
+    taskService = { create: vi.fn() }
   }
   return { MasterDataService: MockMasterDataService }
 })
@@ -97,7 +101,7 @@ describe('App', () => {
     mockResolveRole.mockResolvedValue({
       role: 'commander',
       unitId: 'u1',
-      unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', createdAt: '', createdBy: '' },
+      unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', tabPrefix: '', createdAt: '', createdBy: '' },
     })
 
     render(<App />)
@@ -133,7 +137,7 @@ describe('App', () => {
     mockResolveRole.mockResolvedValue({
       role: 'commander',
       unitId: 'u1',
-      unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', createdAt: '', createdBy: '' },
+      unit: { id: 'u1', name: 'Test Unit', spreadsheetId: 'sheet1', tabPrefix: '', createdAt: '', createdBy: '' },
     })
 
     render(<App />)

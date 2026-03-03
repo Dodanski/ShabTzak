@@ -21,7 +21,7 @@ import { MasterDataService } from './services/masterDataService'
 import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
 import AdminPanel from './components/AdminPanel'
-import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, Unit } from './models'
+import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, Unit, Task, AppConfig } from './models'
 import type { SoldierRole } from './constants'
 
 type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history'
@@ -50,10 +50,12 @@ interface UnitAppProps {
   tabPrefix: string
   unitName: string
   masterDs: MasterDataService | null
+  tasks: Task[]
+  configData: AppConfig | null
   onBackToAdmin?: () => void
 }
 
-function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, onBackToAdmin }: UnitAppProps) {
+function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configData, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const scheduleDates = generateNextDays(30)
@@ -72,12 +74,8 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, onBackToAdmin }
     useDataService(spreadsheetId, tabPrefix, masterDs)
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
-  // tasks and configData will be wired in Task 10 (from masterDs)
-  const tasks = masterDs?.tasks ? [] : []
-  const configData: import('./models').AppConfig | null = null
 
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
-  const historyEntries = masterDs?.history ? [] : []
 
   async function handleDischarge(soldierId: string) {
     try { await ds?.soldierService.discharge(soldierId, 'user'); reload(); addToast('Soldier discharged', 'success') }
@@ -267,7 +265,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, onBackToAdmin }
       )}
 
       {section === 'history' && (
-        <HistoryPage entries={historyEntries} loading={loading} />
+        <HistoryPage entries={[]} loading={loading} />
       )}
 
     </AppShell>
@@ -281,6 +279,8 @@ function AppContent() {
   const [appMode, setAppMode] = useState<AppMode>('loading')
   const [masterDs, setMasterDs] = useState<MasterDataService | null>(null)
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [configData, setConfigData] = useState<AppConfig | null>(null)
 
   useEffect(() => {
     if (!auth.isAuthenticated || !auth.email || !auth.accessToken) {
@@ -292,12 +292,19 @@ function AppContent() {
     master.initialize(config.adminEmail)
       .then(() => master.resolveRole(auth.email!))
       .then(resolved => {
-        if (!resolved) { setAppMode('denied'); return }
+        if (!resolved) { setAppMode('denied'); return null }
         if (resolved.role === 'admin') { setAppMode('admin') }
         if (resolved.role === 'commander') {
           setActiveUnit(resolved.unit)
           setAppMode('unit')
         }
+        return Promise.all([master.tasks.list(), master.config.read()])
+      })
+      .then(result => {
+        if (!result) return
+        const [loadedTasks, loadedConfig] = result
+        setTasks(loadedTasks ?? [])
+        setConfigData(loadedConfig)
       })
       .catch(() => setAppMode('denied'))
   }, [auth.isAuthenticated, auth.email, auth.accessToken])
@@ -328,6 +335,8 @@ function AppContent() {
       tabPrefix={activeUnit?.tabPrefix ?? ''}
       unitName={activeUnit?.name ?? ''}
       masterDs={masterDs}
+      tasks={tasks}
+      configData={configData}
       onBackToAdmin={isAdmin ? () => { setActiveUnit(null); setAppMode('admin') } : undefined}
     />
   )
