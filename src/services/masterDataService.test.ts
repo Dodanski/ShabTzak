@@ -129,5 +129,29 @@ describe('MasterDataService', () => {
         ])
       )
     })
+
+    it('writes headers to newly created admin tabs', async () => {
+      // All admin tabs are missing
+      vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins'])
+      vi.mocked(GoogleSheetsService.prototype.batchUpdate).mockResolvedValue(undefined)
+      const updateValuesSpy = vi.mocked(GoogleSheetsService.prototype.updateValues)
+      updateValuesSpy.mockResolvedValue(undefined as any)
+      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([
+        { id: 'a1', email: 'admin@test.com', addedAt: '', addedBy: '' }
+      ])
+
+      const svc = new MasterDataService('token', 'master-id')
+      await svc.initialize('admin@test.com')
+
+      expect(updateValuesSpy).toHaveBeenCalledWith(
+        'master-id', 'Tasks!A1', expect.any(Array)
+      )
+      expect(updateValuesSpy).toHaveBeenCalledWith(
+        'master-id', 'Config!A1', expect.any(Array)
+      )
+      expect(updateValuesSpy).toHaveBeenCalledWith(
+        'master-id', 'History!A1', expect.any(Array)
+      )
+    })
   })
 })
