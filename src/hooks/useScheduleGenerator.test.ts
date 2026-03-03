@@ -18,6 +18,21 @@ const MOCK_TASK_SCHEDULE = {
   assignments: [], conflicts: [{ type: 'NO_ROLE_AVAILABLE', message: 'Not enough drivers', affectedSoldierIds: [], suggestions: [] }],
 }
 
+const MOCK_CONFIG = {
+  leaveRatioDaysInBase: 1,
+  leaveRatioDaysHome: 1,
+  longLeaveMaxDays: 7,
+  weekendDays: ['Friday', 'Saturday'],
+  minBasePresence: 0.5,
+  minBasePresenceByRole: {} as any,
+  maxDrivingHours: 8,
+  defaultRestPeriod: 8,
+  taskTypeRestPeriods: {},
+  adminEmails: [],
+}
+
+const MOCK_TASKS: any[] = []
+
 function makeMockDs() {
   return {
     scheduleService: {
@@ -39,7 +54,7 @@ describe('useScheduleGenerator', () => {
 
   it('starts with loading=false and no conflicts', () => {
     const ds = makeMockDs() as any
-    const { result } = renderHook(() => useScheduleGenerator(ds, '2026-03-01', '2026-03-30'))
+    const { result } = renderHook(() => useScheduleGenerator(ds, MOCK_TASKS, MOCK_CONFIG, '2026-03-01', '2026-03-30'))
     expect(result.current.loading).toBe(false)
     expect(result.current.conflicts).toEqual([])
     expect(result.current.error).toBeNull()
@@ -50,7 +65,7 @@ describe('useScheduleGenerator', () => {
     let resolveLeave!: (v: any) => void
     ds.scheduleService.generateLeaveSchedule.mockReturnValue(new Promise(r => { resolveLeave = r }))
 
-    const { result } = renderHook(() => useScheduleGenerator(ds, '2026-03-01', '2026-03-30'))
+    const { result } = renderHook(() => useScheduleGenerator(ds, MOCK_TASKS, MOCK_CONFIG, '2026-03-01', '2026-03-30'))
     act(() => { result.current.generate() })
     expect(result.current.loading).toBe(true)
     resolveLeave(MOCK_LEAVE_SCHEDULE)
@@ -59,7 +74,7 @@ describe('useScheduleGenerator', () => {
 
   it('returns combined conflicts from leave and task schedules', async () => {
     const ds = makeMockDs() as any
-    const { result } = renderHook(() => useScheduleGenerator(ds, '2026-03-01', '2026-03-30'))
+    const { result } = renderHook(() => useScheduleGenerator(ds, MOCK_TASKS, MOCK_CONFIG, '2026-03-01', '2026-03-30'))
     await act(async () => { result.current.generate() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.conflicts).toHaveLength(1)
@@ -69,7 +84,7 @@ describe('useScheduleGenerator', () => {
   it('sets error when generation fails', async () => {
     const ds = makeMockDs() as any
     ds.scheduleService.generateLeaveSchedule.mockRejectedValue(new Error('Sheet error'))
-    const { result } = renderHook(() => useScheduleGenerator(ds, '2026-03-01', '2026-03-30'))
+    const { result } = renderHook(() => useScheduleGenerator(ds, MOCK_TASKS, MOCK_CONFIG, '2026-03-01', '2026-03-30'))
     await act(async () => { result.current.generate() })
     await waitFor(() => expect(result.current.error).not.toBeNull())
     expect(result.current.error?.message).toBe('Sheet error')

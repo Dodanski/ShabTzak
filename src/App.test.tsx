@@ -13,6 +13,22 @@ vi.mock('./hooks/useMissingTabs', () => ({
   useMissingTabs: vi.fn().mockReturnValue({ missing: [], loading: false, error: false }),
 }))
 
+vi.mock('./hooks/useScheduleGenerator', () => {
+  const { useState, useCallback } = require('react')
+  return {
+    useScheduleGenerator: vi.fn(function (ds: any) {
+      const [conflicts, setConflicts] = useState<any[]>([])
+      const generate = useCallback(async () => {
+        if (!ds) return
+        const leave = await ds.scheduleService.generateLeaveSchedule()
+        const task = await ds.scheduleService.generateTaskSchedule()
+        setConflicts([...leave.conflicts, ...task.conflicts])
+      }, [ds])
+      return { generate, loading: false, conflicts, error: null }
+    }),
+  }
+})
+
 const mockResolveRole = vi.fn().mockResolvedValue({
   role: 'commander',
   unitId: 'u1',

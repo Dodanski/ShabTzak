@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import type { DataService } from '../services/dataService'
-import type { ScheduleConflict } from '../models'
+import type { ScheduleConflict, Task, AppConfig } from '../models'
 
 export interface UseScheduleGeneratorResult {
   generate: () => void
@@ -11,6 +11,8 @@ export interface UseScheduleGeneratorResult {
 
 export function useScheduleGenerator(
   ds: DataService | null,
+  tasks: Task[],
+  config: AppConfig | null,
   startDate: string,
   endDate: string,
 ): UseScheduleGeneratorResult {
@@ -19,13 +21,13 @@ export function useScheduleGenerator(
   const [error, setError] = useState<Error | null>(null)
 
   const generate = useCallback(async () => {
-    if (!ds) return
+    if (!ds || !config) return
     setLoading(true)
     setError(null)
     try {
       const [leave, task] = await Promise.all([
-        ds.scheduleService.generateLeaveSchedule(startDate, endDate, 'user'),
-        ds.scheduleService.generateTaskSchedule('user'),
+        ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user'),
+        ds.scheduleService.generateTaskSchedule(tasks, 'user'),
       ])
       setConflicts([...leave.conflicts, ...task.conflicts])
     } catch (err) {
@@ -33,7 +35,7 @@ export function useScheduleGenerator(
     } finally {
       setLoading(false)
     }
-  }, [ds, startDate, endDate])
+  }, [ds, tasks, config, startDate, endDate])
 
   return { generate, loading, conflicts, error }
 }

@@ -72,10 +72,11 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, onBackToAdmin }
     useDataService(spreadsheetId, tabPrefix, masterDs)
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
-  const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
-
   // tasks and configData will be wired in Task 10 (from masterDs)
   const tasks = masterDs?.tasks ? [] : []
+  const configData: import('./models').AppConfig | null = null
+
+  const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
   const historyEntries = masterDs?.history ? [] : []
 
   async function handleDischarge(soldierId: string) {
@@ -127,7 +128,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, onBackToAdmin }
       await runSchedule()
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
-      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(today, scheduleEnd, 'user')
+      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData!, today, scheduleEnd, 'user')
       for (const assignment of leaveSchedule.assignments) {
         if (!existingIds.has(assignment.id)) {
           await ds.fairnessUpdate.applyLeaveAssignment(
