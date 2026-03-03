@@ -9,6 +9,10 @@ export interface ValidationErrors {
 export function validateSoldier(input: CreateSoldierInput): ValidationErrors | null {
   const errors: ValidationErrors = {}
 
+  if (!input.id || input.id.trim() === '') {
+    errors.id = 'Army ID is required'
+  }
+
   if (!input.name || input.name.trim() === '') {
     errors.name = 'Name is required'
   } else if (input.name.length < 2) {

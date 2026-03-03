@@ -87,6 +87,7 @@ describe('SoldierRepository', () => {
       vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
 
       const soldier = await repo.create({
+        id: 'test-id',
         name: 'Yoni Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
@@ -106,6 +107,7 @@ describe('SoldierRepository', () => {
       const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
 
       await repo.create({
+        id: 'test-id',
         name: 'Yoni Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
@@ -122,6 +124,7 @@ describe('SoldierRepository', () => {
       const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
 
       await repo.create({
+        id: 'test-id',
         name: 'Yoni Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
@@ -133,6 +136,21 @@ describe('SoldierRepository', () => {
       // First append: rescued existing row; second append: new soldier
       expect(appendSpy).toHaveBeenCalledTimes(2)
       expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [SOLDIER_ROW])
+    })
+
+    it('uses the provided army ID as the soldier id', async () => {
+      vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+
+      const soldier = await repo.create({
+        id: '9876543',
+        name: 'Yoni Ben',
+        role: 'Squad Leader',
+        serviceStart: '2026-03-01',
+        serviceEnd: '2026-10-31',
+      })
+
+      expect(soldier.id).toBe('9876543')
     })
   })
 

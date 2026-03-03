@@ -6,11 +6,13 @@ import {
   isPriorityValid,
 } from './validation'
 import type { CreateSoldierInput, CreateLeaveRequestInput } from '../models'
+import type { SoldierRole } from '../constants'
 
 describe('Validation Utils', () => {
   describe('validateSoldier', () => {
     it('returns null for valid soldier', () => {
       const input: CreateSoldierInput = {
+        id: '1234567',
         name: 'David',
         role: 'Driver',
         serviceStart: '2026-01-01',
@@ -42,6 +44,7 @@ describe('Validation Utils', () => {
 
     it('returns error for end date before start date', () => {
       const input: CreateSoldierInput = {
+        id: '1234567',
         name: 'David',
         role: 'Driver',
         serviceStart: '2026-08-31',
@@ -49,6 +52,18 @@ describe('Validation Utils', () => {
       }
       const errors = validateSoldier(input)
       expect(errors).toHaveProperty('serviceEnd')
+    })
+
+    it('returns error when id is missing', () => {
+      const input = { id: '', name: 'Yoni', role: 'Driver' as SoldierRole, serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
+      const errors = validateSoldier(input)
+      expect(errors?.id).toBeTruthy()
+    })
+
+    it('returns no id error when id is provided', () => {
+      const input = { id: '1234567', name: 'Yoni', role: 'Driver' as SoldierRole, serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
+      const errors = validateSoldier(input)
+      expect(errors?.id).toBeUndefined()
     })
   })
 

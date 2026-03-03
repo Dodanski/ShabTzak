@@ -12,10 +12,6 @@ const HEADER_ROW = [
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
 ]
 
-function generateId(): string {
-  return `s-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
-
 export class SoldierRepository {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
@@ -56,7 +52,7 @@ export class SoldierRepository {
 
   async create(input: CreateSoldierInput): Promise<Soldier> {
     const soldier: Soldier = {
-      id: generateId(),
+      id: input.id,
       name: input.name,
       role: input.role,
       serviceStart: input.serviceStart,

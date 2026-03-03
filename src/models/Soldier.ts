@@ -16,6 +16,7 @@ export interface Soldier {
 }
 
 export interface CreateSoldierInput {
+  id: string          // army ID number, e.g. "1234567" — user-supplied
   name: string
   role: SoldierRole
   serviceStart: string
