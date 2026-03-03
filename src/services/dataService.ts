@@ -1,65 +1,57 @@
 import { GoogleSheetsService } from './googleSheets'
 import { SheetCache } from './cache'
 import { SoldierRepository } from './soldierRepository'
-import { TaskRepository } from './taskRepository'
 import { LeaveRequestRepository } from './leaveRequestRepository'
 import { LeaveAssignmentRepository } from './leaveAssignmentRepository'
 import { TaskAssignmentRepository } from './taskAssignmentRepository'
-import { ConfigRepository } from './configRepository'
-import { HistoryService } from './historyService'
-import { VersionService } from './versionService'
+import type { HistoryService } from './historyService'
 import { SoldierService } from './soldierService'
-import { TaskService } from './taskService'
 import { LeaveRequestService } from './leaveRequestService'
 import { ScheduleService } from './scheduleService'
 import { FairnessUpdateService } from './fairnessUpdateService'
 
 /**
- * Single entry point for all data operations.
- * Wires together all repositories and services sharing one cache instance.
+ * Single entry point for per-unit data operations.
+ * Wires together the 4 unit repositories and services sharing one cache instance.
+ * Receives HistoryService injected from MasterDataService.
  */
 export class DataService {
   readonly sheets: GoogleSheetsService
   readonly soldiers: SoldierRepository
-  readonly tasks: TaskRepository
   readonly leaveRequests: LeaveRequestRepository
   readonly leaveAssignments: LeaveAssignmentRepository
   readonly taskAssignments: TaskAssignmentRepository
-  readonly config: ConfigRepository
-  readonly history: HistoryService
-  readonly versions: VersionService
   readonly soldierService: SoldierService
-  readonly taskService: TaskService
   readonly leaveRequestService: LeaveRequestService
   readonly scheduleService: ScheduleService
   readonly fairnessUpdate: FairnessUpdateService
 
   private cache: SheetCache
 
-  constructor(accessToken: string, spreadsheetId: string, tabPrefix = '') {
+  constructor(
+    accessToken: string,
+    spreadsheetId: string,
+    tabPrefix = '',
+    private historyService: HistoryService,
+  ) {
     const sheets = new GoogleSheetsService(accessToken)
     this.sheets = sheets
     this.cache = new SheetCache()
 
     this.soldiers = new SoldierRepository(sheets, spreadsheetId, this.cache, tabPrefix)
-    this.tasks = new TaskRepository(sheets, spreadsheetId, this.cache, tabPrefix)
     this.leaveRequests = new LeaveRequestRepository(sheets, spreadsheetId, this.cache, tabPrefix)
     this.leaveAssignments = new LeaveAssignmentRepository(sheets, spreadsheetId, this.cache, tabPrefix)
     this.taskAssignments = new TaskAssignmentRepository(sheets, spreadsheetId, this.cache, tabPrefix)
-    this.config = new ConfigRepository(sheets, spreadsheetId, tabPrefix)
-    this.history = new HistoryService(sheets, spreadsheetId, tabPrefix)
-    this.versions = new VersionService(sheets, spreadsheetId, tabPrefix)
 
-    this.soldierService = new SoldierService(this.soldiers, this.history)
-    this.taskService = new TaskService(this.tasks, this.history)
-    this.leaveRequestService = new LeaveRequestService(this.leaveRequests, this.history)
-    this.fairnessUpdate = new FairnessUpdateService(this.soldiers, this.history)
+    this.soldierService = new SoldierService(this.soldiers, this.historyService)
+    this.leaveRequestService = new LeaveRequestService(this.leaveRequests, this.historyService)
+    this.fairnessUpdate = new FairnessUpdateService(this.soldiers, this.historyService)
     this.scheduleService = new ScheduleService(
       this.soldiers,
       this.leaveRequests,
       this.leaveAssignments,
       this.taskAssignments,
-      this.history,
+      this.historyService,
     )
   }
 
