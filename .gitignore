@@ -26,3 +26,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Soldier data files
+soldier_list.xlsx
+*.xlsx
+.~lock.*
