@@ -11,7 +11,7 @@ export interface UseMissingTabsResult {
 
 export function useMissingTabs(spreadsheetId: string, tabPrefix: string): UseMissingTabsResult {
   const { auth } = useAuth()
-  const [missing, setMissing] = useState<string[]>([])
+  const [missing] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { SetupService } from '../services/setupService'
-import type { DataService } from '../services/dataService'
+import type { MasterDataService } from '../services/masterDataService'
 import type { AppConfig } from '../models'
 import type { TabStatus } from '../services/setupService'
 
 interface Props {
-  ds: DataService | null
+  ds: MasterDataService | null
   isAdmin: boolean
   configData: AppConfig | null
   spreadsheetId: string

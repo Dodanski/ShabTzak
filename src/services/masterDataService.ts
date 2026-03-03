@@ -29,7 +29,7 @@ export class MasterDataService {
   readonly config: ConfigRepository
   readonly history: HistoryService
   readonly taskService: TaskService
-  private sheets: GoogleSheetsService
+  readonly sheets: GoogleSheetsService
   private spreadsheetId: string
 
   constructor(accessToken: string, spreadsheetId: string) {

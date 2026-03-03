@@ -99,4 +99,9 @@ describe('TasksPage', () => {
     expect(screen.getByText('Guard')).toBeInTheDocument()
     expect(screen.getByText('Patrol')).toBeInTheDocument()
   })
+
+  it('hides Add Task button when onAddTask is not provided', () => {
+    render(<TasksPage tasks={TASKS} />)
+    expect(screen.queryByRole('button', { name: /add task/i })).not.toBeInTheDocument()
+  })
 })

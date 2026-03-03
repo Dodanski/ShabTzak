@@ -36,7 +36,7 @@ const EMPTY_FORM: TaskFormState = {
 
 interface TasksPageProps {
   tasks: Task[]
-  onAddTask: (input: CreateTaskInput) => void
+  onAddTask?: (input: CreateTaskInput) => void
   loading?: boolean
 }
 
@@ -100,7 +100,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
         isSpecial: false,
       }
     }
-    onAddTask(input)
+    onAddTask?.(input)
     setForm(EMPTY_FORM)
     setShowForm(false)
   }
@@ -117,12 +117,14 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-olive-800">Tasks</h2>
-        <button
-          onClick={() => setShowForm(s => !s)}
-          className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
-        >
-          Add Task
-        </button>
+        {onAddTask && (
+          <button
+            onClick={() => setShowForm(s => !s)}
+            className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
+          >
+            Add Task
+          </button>
+        )}
       </div>
 
       <input
@@ -132,7 +134,7 @@ export default function TasksPage({ tasks, onAddTask, loading }: TasksPageProps)
         className="border rounded px-3 py-1.5 text-sm w-full max-w-xs"
       />
 
-      {showForm && (
+      {onAddTask && showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-olive-200 shadow-sm p-4 space-y-3">
           <div>
             <label htmlFor="task-type" className="block text-xs text-olive-600 mb-1">Description</label>
