@@ -58,9 +58,7 @@ export class DataService {
       this.soldiers,
       this.leaveRequests,
       this.leaveAssignments,
-      this.tasks,
       this.taskAssignments,
-      this.config,
       this.history,
     )
   }

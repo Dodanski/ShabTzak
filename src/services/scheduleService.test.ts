@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ScheduleService } from './scheduleService'
 import type { Soldier, LeaveRequest, Task, AppConfig } from '../models'
 
-const CONFIG: Partial<AppConfig> = {
+const CONFIG: AppConfig = {
   minBasePresence: 25,
   leaveRatioDaysInBase: 10,
   leaveRatioDaysHome: 4,
@@ -51,9 +51,7 @@ describe('ScheduleService', () => {
   let mockSoldiers: ReturnType<typeof makeRepo>
   let mockLeaveRequests: ReturnType<typeof makeRepo>
   let mockLeaveAssignments: ReturnType<typeof makeRepo>
-  let mockTasks: ReturnType<typeof makeRepo>
   let mockTaskAssignments: ReturnType<typeof makeRepo>
-  let mockConfig: { read: ReturnType<typeof vi.fn> }
   let service: ScheduleService
 
   beforeEach(() => {
@@ -61,24 +59,20 @@ describe('ScheduleService', () => {
     mockSoldiers = makeRepo({ list: vi.fn().mockResolvedValue(SOLDIERS) })
     mockLeaveRequests = makeRepo({ list: vi.fn().mockResolvedValue([PENDING_REQUEST]) })
     mockLeaveAssignments = makeRepo({ list: vi.fn().mockResolvedValue([]) })
-    mockTasks = makeRepo({ list: vi.fn().mockResolvedValue([TASK]) })
     mockTaskAssignments = makeRepo({ list: vi.fn().mockResolvedValue([]) })
-    mockConfig = { read: vi.fn().mockResolvedValue(CONFIG) }
 
     service = new ScheduleService(
       mockSoldiers as any,
       mockLeaveRequests as any,
       mockLeaveAssignments as any,
-      mockTasks as any,
       mockTaskAssignments as any,
-      mockConfig as any,
       mockHistory as any,
     )
   })
 
   describe('generateLeaveSchedule()', () => {
     it('runs the scheduler and returns a LeaveSchedule', async () => {
-      const result = await service.generateLeaveSchedule('2026-03-01', '2026-03-31', 'admin')
+      const result = await service.generateLeaveSchedule(CONFIG, '2026-03-01', '2026-03-31', 'admin')
 
       expect(result.startDate).toBe('2026-03-01')
       expect(result.endDate).toBe('2026-03-31')
@@ -86,7 +80,7 @@ describe('ScheduleService', () => {
     })
 
     it('persists new assignments via repository', async () => {
-      await service.generateLeaveSchedule('2026-03-01', '2026-03-31', 'admin')
+      await service.generateLeaveSchedule(CONFIG, '2026-03-01', '2026-03-31', 'admin')
       // The pending request for s1 should have been scheduled → create called
       expect(mockLeaveAssignments.create).toHaveBeenCalledOnce()
     })
@@ -101,13 +95,13 @@ describe('ScheduleService', () => {
       mockLeaveAssignments.list.mockResolvedValue([existingAssignment])
       mockLeaveRequests.list.mockResolvedValue([]) // no new requests
 
-      await service.generateLeaveSchedule('2026-03-01', '2026-03-31', 'admin')
+      await service.generateLeaveSchedule(CONFIG, '2026-03-01', '2026-03-31', 'admin')
 
       expect(mockLeaveAssignments.create).not.toHaveBeenCalled()
     })
 
     it('logs generation to history', async () => {
-      await service.generateLeaveSchedule('2026-03-01', '2026-03-31', 'admin')
+      await service.generateLeaveSchedule(CONFIG, '2026-03-01', '2026-03-31', 'admin')
       expect(mockHistory.append).toHaveBeenCalledWith(
         'GENERATE_LEAVE_SCHEDULE', 'LeaveSchedule', '2026-03-01', 'admin', expect.any(String)
       )
@@ -116,19 +110,19 @@ describe('ScheduleService', () => {
 
   describe('generateTaskSchedule()', () => {
     it('runs the scheduler and returns a TaskSchedule', async () => {
-      const result = await service.generateTaskSchedule('admin')
+      const result = await service.generateTaskSchedule([TASK], 'admin')
 
       expect(Array.isArray(result.assignments)).toBe(true)
     })
 
     it('persists new task assignments via repository', async () => {
-      await service.generateTaskSchedule('admin')
+      await service.generateTaskSchedule([TASK], 'admin')
       // Task t1 needs 1 Driver; s1 is available → create called once
       expect(mockTaskAssignments.create).toHaveBeenCalledOnce()
     })
 
     it('logs generation to history', async () => {
-      await service.generateTaskSchedule('admin')
+      await service.generateTaskSchedule([TASK], 'admin')
       expect(mockHistory.append).toHaveBeenCalledWith(
         'GENERATE_TASK_SCHEDULE', 'TaskSchedule', '', 'admin', expect.any(String)
       )

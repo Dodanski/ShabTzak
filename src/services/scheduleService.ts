@@ -1,13 +1,11 @@
 import { scheduleLeave } from '../algorithms/leaveScheduler'
 import { scheduleTasks } from '../algorithms/taskScheduler'
 import type { SoldierRepository } from './soldierRepository'
-import type { TaskRepository } from './taskRepository'
 import type { LeaveRequestRepository } from './leaveRequestRepository'
 import type { LeaveAssignmentRepository } from './leaveAssignmentRepository'
 import type { TaskAssignmentRepository } from './taskAssignmentRepository'
-import type { ConfigRepository } from './configRepository'
 import type { HistoryService } from './historyService'
-import type { LeaveSchedule, TaskSchedule } from '../models'
+import type { LeaveSchedule, TaskSchedule, Task, AppConfig } from '../models'
 
 /**
  * Orchestrates leave and task schedule generation:
@@ -18,22 +16,20 @@ export class ScheduleService {
     private soldiers: SoldierRepository,
     private leaveRequests: LeaveRequestRepository,
     private leaveAssignments: LeaveAssignmentRepository,
-    private tasks: TaskRepository,
     private taskAssignments: TaskAssignmentRepository,
-    private config: ConfigRepository,
     private history: HistoryService,
   ) {}
 
   async generateLeaveSchedule(
+    config: AppConfig,
     scheduleStart: string,
     scheduleEnd: string,
     changedBy: string,
   ): Promise<LeaveSchedule> {
-    const [soldiers, requests, existing, config] = await Promise.all([
+    const [soldiers, requests, existing] = await Promise.all([
       this.soldiers.list(),
       this.leaveRequests.list(),
       this.leaveAssignments.list(),
-      this.config.read(),
     ])
 
     const schedule = scheduleLeave(requests, soldiers, existing, config, scheduleStart, scheduleEnd)
@@ -61,10 +57,9 @@ export class ScheduleService {
     return schedule
   }
 
-  async generateTaskSchedule(changedBy: string): Promise<TaskSchedule> {
-    const [soldiers, tasks, existing] = await Promise.all([
+  async generateTaskSchedule(tasks: Task[], changedBy: string): Promise<TaskSchedule> {
+    const [soldiers, existing] = await Promise.all([
       this.soldiers.list(),
-      this.tasks.list(),
       this.taskAssignments.list(),
     ])
 
