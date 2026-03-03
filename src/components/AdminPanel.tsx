@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { MasterDataService } from '../services/masterDataService'
-import type { Admin, Unit, Commander } from '../models'
+import type { Admin, Unit, Commander, Task, AppConfig, CreateTaskInput } from '../models'
 import { deriveTabPrefix } from '../utils/tabPrefix'
+import TasksPage from './TasksPage'
 
-type AdminTab = 'admins' | 'units' | 'commanders'
+type AdminTab = 'admins' | 'units' | 'commanders' | 'tasks' | 'config'
 
 interface AdminPanelProps {
   masterDs: MasterDataService
@@ -18,6 +19,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [admins, setAdmins] = useState<Admin[]>([])
   const [units, setUnits] = useState<Unit[]>([])
   const [commanders, setCommanders] = useState<Commander[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [configData, setConfigData] = useState<AppConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,12 +33,14 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
   async function reload() {
     setLoading(true)
-    const [a, u, c] = await Promise.all([
+    const [a, u, c, t, cfg] = await Promise.all([
       masterDs.admins.list(),
       masterDs.units.list(),
       masterDs.commanders.list(),
+      masterDs.tasks.list(),
+      masterDs.config.read(),
     ])
-    setAdmins(a); setUnits(u); setCommanders(c)
+    setAdmins(a); setUnits(u); setCommanders(c); setTasks(t); setConfigData(cfg)
     setLoading(false)
   }
 
@@ -107,6 +112,11 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     }
   }
 
+  async function handleAddTask(input: CreateTaskInput) {
+    try { await masterDs.taskService.create(input, currentAdminEmail); await reload() }
+    catch { /* ignore */ }
+  }
+
   const derivedPrefix = deriveTabPrefix(newUnitName)
 
   const tabClass = (tab: AdminTab) =>
@@ -136,6 +146,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           <button className={tabClass('admins')} onClick={() => setActiveTab('admins')}>Admins</button>
           <button className={tabClass('units')} onClick={() => setActiveTab('units')}>Units</button>
           <button className={tabClass('commanders')} onClick={() => setActiveTab('commanders')}>Commanders</button>
+          <button className={tabClass('tasks')} onClick={() => setActiveTab('tasks')}>Tasks</button>
+          <button className={tabClass('config')} onClick={() => setActiveTab('config')}>Config</button>
         </div>
 
         {error && (
@@ -255,6 +267,25 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
               </select>
               <button onClick={handleAddCommander} className="col-span-2 px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Commander</button>
             </div>
+          </div>
+        )}
+
+        {!loading && activeTab === 'tasks' && (
+          <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4">
+            <TasksPage tasks={tasks} onAddTask={handleAddTask} />
+          </div>
+        )}
+
+        {!loading && activeTab === 'config' && (
+          <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
+            <h2 className="font-semibold text-olive-800">Config</h2>
+            <table className="w-full text-sm">
+              <tbody>
+                {configData && Object.entries(configData)
+                  .filter(([, v]) => typeof v !== 'object')
+                  .map(([k, v]) => <tr key={k}><td className="p-2 font-mono text-olive-700">{k}</td><td className="p-2">{String(v)}</td></tr>)}
+              </tbody>
+            </table>
           </div>
         )}
       </main>

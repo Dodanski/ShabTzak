@@ -28,6 +28,11 @@ const mockMasterDs = {
     create: vi.fn().mockResolvedValue({ id: 'cmd-2', email: 'cmd2@example.com', unitId: 'unit-1', addedAt: '', addedBy: '' }),
     remove: vi.fn().mockResolvedValue(undefined),
   },
+  tasks: { list: vi.fn().mockResolvedValue([
+    { id: 't1', taskType: 'Guard', startTime: '06:00', endTime: '14:00', durationHours: 8, roleRequirements: [], minRestAfter: 6, isSpecial: false }
+  ]) },
+  config: { read: vi.fn().mockResolvedValue({ leaveRatioDaysInBase: 10, minRestBetweenShifts: 8, minDaysInBaseBeforeLeave: 30, maxConsecutiveShifts: 3, weekendLeaveWeight: 1.5, afterLeaveWeight: 0.5, longWeekendLeaveWeight: 2, midweekLeaveWeight: 0.8, specialDutyBaseChance: 0.3 }) },
+  taskService: { create: vi.fn().mockResolvedValue({}) },
 }
 
 const BASE_PROPS = {
@@ -82,5 +87,25 @@ describe('AdminPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('cmd@example.com')).toBeInTheDocument()
     })
+  })
+
+  it('renders Tasks and Config tab buttons', async () => {
+    render(<AdminPanel {...BASE_PROPS} />)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^tasks$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^config$/i })).toBeInTheDocument()
+    })
+  })
+  it('shows task list when Tasks tab clicked', async () => {
+    render(<AdminPanel {...BASE_PROPS} />)
+    await waitFor(() => screen.getByRole('button', { name: /^tasks$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^tasks$/i }))
+    await waitFor(() => expect(screen.getByText('Guard')).toBeInTheDocument())
+  })
+  it('shows config when Config tab clicked', async () => {
+    render(<AdminPanel {...BASE_PROPS} />)
+    await waitFor(() => screen.getByRole('button', { name: /^config$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^config$/i }))
+    await waitFor(() => expect(screen.getByText('leaveRatioDaysInBase')).toBeInTheDocument())
   })
 })
