@@ -32,8 +32,8 @@ import { useDataService } from './hooks/useDataService'
 import App from './App'
 
 const EMPTY_DS_RESULT = {
-  ds: null, soldiers: [], leaveRequests: [], tasks: [],
-  taskAssignments: [], leaveAssignments: [], historyEntries: [], configData: null,
+  ds: null, soldiers: [], leaveRequests: [],
+  taskAssignments: [], leaveAssignments: [],
   loading: false, error: null, reload: vi.fn(),
 }
 

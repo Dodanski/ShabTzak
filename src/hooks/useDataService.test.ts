@@ -7,16 +7,24 @@ vi.mock('../services/dataService')
 import { useAuth } from '../context/AuthContext'
 import { DataService } from '../services/dataService'
 import { useDataService } from './useDataService'
+import type { MasterDataService } from '../services/masterDataService'
+
+function makeMockHistory() {
+  return { listAll: vi.fn().mockResolvedValue([]) }
+}
+
+function makeMockMasterDs(): MasterDataService {
+  return {
+    history: makeMockHistory(),
+  } as unknown as MasterDataService
+}
 
 function makeMockDs(overrides: Record<string, unknown> = {}) {
   return {
     soldiers: { list: vi.fn().mockResolvedValue([]) },
     leaveRequests: { list: vi.fn().mockResolvedValue([]) },
-    tasks: { list: vi.fn().mockResolvedValue([]) },
     taskAssignments: { list: vi.fn().mockResolvedValue([]) },
     leaveAssignments: { list: vi.fn().mockResolvedValue([]) },
-    history: { listAll: vi.fn().mockResolvedValue([]) },
-    config: { read: vi.fn().mockResolvedValue(null) },
     ...overrides,
   }
 }
@@ -45,21 +53,31 @@ describe('useDataService', () => {
   })
 
   it('returns null ds and empty arrays when not authenticated', () => {
-    const { result } = renderHook(() => useDataService('sheet123'))
+    const masterDs = makeMockMasterDs()
+    const { result } = renderHook(() => useDataService('sheet123', '', masterDs))
     expect(result.current.ds).toBeNull()
     expect(result.current.soldiers).toEqual([])
     expect(result.current.loading).toBe(false)
   })
 
-  it('creates DataService with token and spreadsheetId when authenticated', () => {
+  it('returns null ds when masterDs is null', () => {
+    mockAuthenticated()
+    const { result } = renderHook(() => useDataService('sheet123', '', null))
+    expect(result.current.ds).toBeNull()
+    expect(result.current.loading).toBe(false)
+  })
+
+  it('creates DataService with token, spreadsheetId, tabPrefix and history when authenticated', () => {
+    const masterDs = makeMockMasterDs()
     mockAuthenticated('my-token')
-    renderHook(() => useDataService('sheet-xyz'))
-    expect(vi.mocked(DataService)).toHaveBeenCalledWith('my-token', 'sheet-xyz', '')
+    renderHook(() => useDataService('sheet-xyz', '', masterDs))
+    expect(vi.mocked(DataService)).toHaveBeenCalledWith('my-token', 'sheet-xyz', '', masterDs.history)
   })
 
   it('sets ds when authenticated', () => {
+    const masterDs = makeMockMasterDs()
     mockAuthenticated()
-    const { result } = renderHook(() => useDataService('sheet123'))
+    const { result } = renderHook(() => useDataService('sheet123', '', masterDs))
     expect(result.current.ds).not.toBeNull()
   })
 
@@ -68,8 +86,9 @@ describe('useDataService', () => {
     vi.mocked(DataService).mockImplementationOnce(
       function () { return makeMockDs({ soldiers: { list: vi.fn().mockResolvedValue(SOLDIERS) } }) as any }
     )
+    const masterDs = makeMockMasterDs()
     mockAuthenticated()
-    const { result } = renderHook(() => useDataService('sheet123'))
+    const { result } = renderHook(() => useDataService('sheet123', '', masterDs))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.soldiers).toEqual(SOLDIERS)
   })
@@ -82,21 +101,11 @@ describe('useDataService', () => {
         }) as any
       }
     )
+    const masterDs = makeMockMasterDs()
     mockAuthenticated()
-    const { result } = renderHook(() => useDataService('sheet123'))
+    const { result } = renderHook(() => useDataService('sheet123', '', masterDs))
     await waitFor(() => expect(result.current.error).not.toBeNull())
-    expect(result.current.error?.message).toBe('API error')
-  })
-
-  it('loads historyEntries when authenticated', async () => {
-    const ENTRIES = [{ timestamp: 't', action: 'CREATE', entityType: 'Soldier', entityId: 's1', changedBy: 'user', details: 'Created' }]
-    vi.mocked(DataService).mockImplementationOnce(
-      function () { return makeMockDs({ history: { listAll: vi.fn().mockResolvedValue(ENTRIES) } }) as any }
-    )
-    mockAuthenticated()
-    const { result } = renderHook(() => useDataService('sheet123'))
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.historyEntries).toEqual(ENTRIES)
+    expect(result.current.error).toBe('API error')
   })
 
   it('reload function re-fetches data', async () => {
@@ -104,8 +113,9 @@ describe('useDataService', () => {
     vi.mocked(DataService).mockImplementation(
       function () { return makeMockDs({ soldiers: { list: listFn } }) as any }
     )
+    const masterDs = makeMockMasterDs()
     mockAuthenticated()
-    const { result } = renderHook(() => useDataService('sheet123'))
+    const { result } = renderHook(() => useDataService('sheet123', '', masterDs))
     await waitFor(() => expect(result.current.loading).toBe(false))
     const callsBefore = listFn.mock.calls.length
     result.current.reload()

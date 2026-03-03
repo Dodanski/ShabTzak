@@ -49,10 +49,11 @@ interface UnitAppProps {
   spreadsheetId: string
   tabPrefix: string
   unitName: string
+  masterDs: MasterDataService | null
   onBackToAdmin?: () => void
 }
 
-function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppProps) {
+function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const scheduleDates = generateNextDays(30)
@@ -67,11 +68,15 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
 
   const { missing, loading: tabsLoading, error: tabsError } = useMissingTabs(spreadsheetId, tabPrefix)
 
-  const { ds, soldiers, leaveRequests, tasks, taskAssignments, leaveAssignments, historyEntries, configData, loading, error, reload } =
-    useDataService(spreadsheetId, tabPrefix)
+  const { ds, soldiers, leaveRequests, taskAssignments, leaveAssignments, loading, error, reload } =
+    useDataService(spreadsheetId, tabPrefix, masterDs)
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, today, scheduleEnd)
+
+  // tasks and configData will be wired in Task 10 (from masterDs)
+  const tasks = masterDs?.tasks ? [] : []
+  const historyEntries = masterDs?.history ? [] : []
 
   async function handleDischarge(soldierId: string) {
     try { await ds?.soldierService.discharge(soldierId, 'user'); reload(); addToast('Soldier discharged', 'success') }
@@ -99,7 +104,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
   }
 
   async function handleAddTask(input: CreateTaskInput) {
-    try { await ds?.taskService.create(input, 'user'); reload(); addToast('Task added', 'success') }
+    try { await masterDs?.taskService.create(input, 'user'); reload(); addToast('Task added', 'success') }
     catch { addToast('Failed to add task', 'error') }
   }
 
@@ -187,9 +192,11 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
     )
   }
 
+  const errorObj = error ? new Error(error) : null
+
   return (
     <AppShell unitName={unitName} onBackToAdmin={onBackToAdmin}>
-      <ErrorBanner error={error} onRetry={reload} />
+      <ErrorBanner error={errorObj} onRetry={reload} />
       <ToastList toasts={toasts} onRemove={removeToast} />
       {section === 'dashboard' && (
         <Dashboard
@@ -207,7 +214,6 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, onBackToAdmin }: UnitAppP
           onDischarge={handleDischarge}
           onAddSoldier={handleAddSoldier}
           onAdjustFairness={handleAdjustFairness}
-          configData={configData}
           leaveAssignments={leaveAssignments}
         />
       )}
@@ -320,6 +326,7 @@ function AppContent() {
       spreadsheetId={activeUnit?.spreadsheetId ?? ''}
       tabPrefix={activeUnit?.tabPrefix ?? ''}
       unitName={activeUnit?.name ?? ''}
+      masterDs={masterDs}
       onBackToAdmin={isAdmin ? () => { setActiveUnit(null); setAppMode('admin') } : undefined}
     />
   )
