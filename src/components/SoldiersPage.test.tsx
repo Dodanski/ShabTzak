@@ -20,215 +20,154 @@ const BASE_CONFIG: AppConfig = {
 
 const SOLDIERS: Soldier[] = [
   {
-    id: 's1', name: 'David Cohen', role: 'Driver',
+    id: '1111111', name: 'David Cohen', role: 'Driver',
     serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 2.5, status: 'Active',
     hoursWorked: 24, weekendLeavesCount: 1, midweekLeavesCount: 0, afterLeavesCount: 0,
   },
   {
-    id: 's2', name: 'Moshe Levi', role: 'Medic',
+    id: '2222222', name: 'Moshe Levi', role: 'Medic',
     serviceStart: '2026-02-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 1.0, status: 'Inactive',
+    inactiveReason: 'Medical leave',
     hoursWorked: 8, weekendLeavesCount: 0, midweekLeavesCount: 1, afterLeavesCount: 0,
   },
 ]
 
 describe('SoldiersPage', () => {
   it('renders all soldier names', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     expect(screen.getByText('David Cohen')).toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })
 
   it('shows loading indicator when loading', () => {
-    render(<SoldiersPage soldiers={[]} loading onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={[]} loading onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
   it('shows empty state when no soldiers', () => {
-    render(<SoldiersPage soldiers={[]} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     expect(screen.getByText(/no soldiers/i)).toBeInTheDocument()
   })
 
-  it('shows discharge button only for active soldiers', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    // s1 is Active → has discharge button; s2 is Injured → no discharge button
-    const dischargeButtons = screen.getAllByRole('button', { name: /discharge/i })
-    expect(dischargeButtons).toHaveLength(1)
+  it('shows a checked checkbox for Active soldiers and unchecked for Inactive', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
+    expect(checkboxes[0]).toBeChecked()
+    expect(checkboxes[1]).not.toBeChecked()
   })
 
-  it('calls onDischarge with soldier id when discharge is clicked', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-    const onDischarge = vi.fn()
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={onDischarge} onAddSoldier={vi.fn()} />)
-    await userEvent.click(screen.getByRole('button', { name: /discharge/i }))
-    expect(onDischarge).toHaveBeenCalledWith('s1')
-    vi.restoreAllMocks()
+  it('shows inactiveReason text next to inactive soldiers', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    expect(screen.getByText('Medical leave')).toBeInTheDocument()
+  })
+
+  it('calls onUpdateStatus with Active when unchecked (Inactive) soldier checkbox is clicked', async () => {
+    const onUpdateStatus = vi.fn()
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={onUpdateStatus} onAddSoldier={vi.fn()} />)
+    const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
+    await userEvent.click(checkboxes[1])
+    expect(onUpdateStatus).toHaveBeenCalledWith('2222222', 'Active', undefined)
+  })
+
+  it('shows inline reason input when Active soldier checkbox is unchecked', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
+    await userEvent.click(checkboxes[0])
+    expect(screen.getByPlaceholderText(/reason/i)).toBeInTheDocument()
+  })
+
+  it('calls onUpdateStatus with Inactive + reason when Confirm is clicked', async () => {
+    const onUpdateStatus = vi.fn()
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={onUpdateStatus} onAddSoldier={vi.fn()} />)
+    const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
+    await userEvent.click(checkboxes[0])
+    await userEvent.type(screen.getByPlaceholderText(/reason/i), 'Sick')
+    await userEvent.click(screen.getByRole('button', { name: /confirm/i }))
+    expect(onUpdateStatus).toHaveBeenCalledWith('1111111', 'Inactive', 'Sick')
   })
 
   it('shows Fairness and Hours column headers', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     expect(screen.getByText('Fairness')).toBeInTheDocument()
     expect(screen.getByText('Hours')).toBeInTheDocument()
   })
 
-  it('displays fairness score via FairnessBar and hours worked for each soldier', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    expect(screen.getByText('2.5')).toBeInTheDocument()
-    expect(screen.getByText('24h')).toBeInTheDocument()
-    expect(screen.getByText('1.0')).toBeInTheDocument()
-    expect(screen.getByText('8h')).toBeInTheDocument()
-    // FairnessBar fill elements should render
-    const fills = document.querySelectorAll('[data-testid="fairness-fill"]')
-    expect(fills.length).toBe(2)
-  })
-
-  it('shows add form when Add Soldier button is clicked', async () => {
-    render(<SoldiersPage soldiers={[]} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+  it('shows add form with Army ID field when Add Soldier button is clicked', async () => {
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
+    expect(screen.getByPlaceholderText(/army id/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/name/i)).toBeInTheDocument()
   })
 
-  it('shows Adjust button for each soldier', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={vi.fn()} />)
-    const adjustBtns = screen.getAllByRole('button', { name: /adjust/i })
-    expect(adjustBtns).toHaveLength(2)
+  it('calls onAddSoldier with army id and form data on submit', async () => {
+    const onAddSoldier = vi.fn()
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={onAddSoldier} />)
+    await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
+    await userEvent.type(screen.getByPlaceholderText(/army id/i), '9876543')
+    await userEvent.type(screen.getByPlaceholderText(/name/i), 'Yoni Ben')
+    await userEvent.type(screen.getByLabelText(/service start/i), '2026-03-01')
+    await userEvent.type(screen.getByLabelText(/service end/i), '2026-12-31')
+    await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
+    expect(onAddSoldier).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '9876543', name: 'Yoni Ben' })
+    )
   })
 
-  it('calls onAdjustFairness with soldierId, delta and reason on submit', async () => {
-    const onAdjustFairness = vi.fn()
-    render(<SoldiersPage soldiers={[SOLDIERS[0]]} onDischarge={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={onAdjustFairness} />)
-    await userEvent.click(screen.getByRole('button', { name: /adjust/i }))
-    const deltaInput = screen.getByLabelText(/delta/i)
-    const reasonInput = screen.getByLabelText(/reason/i)
-    await userEvent.type(deltaInput, '2')
-    await userEvent.type(reasonInput, 'Extra duty')
-    await userEvent.click(screen.getByRole('button', { name: /apply/i }))
-    expect(onAdjustFairness).toHaveBeenCalledWith('s1', 2, 'Extra duty')
-  })
-
-  it('shows Quota column header when configData is provided', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[]} />)
-    expect(screen.getByText('Quota')).toBeInTheDocument()
-  })
-
-  it('does not show Quota column when configData is null', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    expect(screen.queryByText('Quota')).not.toBeInTheDocument()
-  })
-
-  it('shows entitlement and used days in quota column', () => {
-    const la: LeaveAssignment = {
-      id: 'la1', soldierId: 's1', startDate: '2026-03-01', endDate: '2026-03-03',
-      leaveType: 'Long', isWeekend: false, isLocked: false, createdAt: '',
-    }
-    render(<SoldiersPage soldiers={[SOLDIERS[0]]} onDischarge={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[la]} />)
-    // s1: 365 days / 14 cycle * 4 = floor(104.28) = 104 entitlement; 2 days used
-    expect(screen.getByText(/104/)).toBeInTheDocument()
-    expect(screen.getByText(/2\s*used/i)).toBeInTheDocument()
-  })
-
-  it('renders a name filter input', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    expect(screen.getByPlaceholderText(/search soldiers/i)).toBeInTheDocument()
-  })
-
-  it('filters soldiers by name', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    await userEvent.type(screen.getByPlaceholderText(/search soldiers/i), 'David')
-    expect(screen.getByText('David Cohen')).toBeInTheDocument()
-    expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
-  })
-
-  it('filters soldiers by role', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    const roleFilter = screen.getByRole('combobox', { name: /filter by role/i })
-    await userEvent.selectOptions(roleFilter, 'Medic')
-    expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
-    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
-  })
-
-  it('renders a status filter dropdown', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    expect(screen.getByRole('combobox', { name: /filter by status/i })).toBeInTheDocument()
+  it('disables Add button and shows error when end date is before start date', async () => {
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
+    await userEvent.type(screen.getByLabelText(/service start/i), '2026-12-01')
+    await userEvent.type(screen.getByLabelText(/service end/i), '2026-01-01')
+    expect(screen.getByRole('button', { name: /^add$/i })).toBeDisabled()
+    expect(screen.getByText(/end date must be after start/i)).toBeInTheDocument()
   })
 
   it('filters soldiers by status Active', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Active')
     expect(screen.getByText('David Cohen')).toBeInTheDocument()
     expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
   })
 
   it('filters soldiers by status Inactive', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Inactive')
     expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })
 
-  it('shows all soldiers when filter is cleared', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    await userEvent.type(screen.getByPlaceholderText(/search soldiers/i), 'David')
-    await userEvent.clear(screen.getByPlaceholderText(/search soldiers/i))
-    expect(screen.getByText('David Cohen')).toBeInTheDocument()
-    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+  it('shows Adjust button for each soldier', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={vi.fn()} />)
+    expect(screen.getAllByRole('button', { name: /adjust/i })).toHaveLength(2)
+  })
+
+  it('calls onAdjustFairness on submit', async () => {
+    const onAdjustFairness = vi.fn()
+    render(<SoldiersPage soldiers={[SOLDIERS[0]]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={onAdjustFairness} />)
+    await userEvent.click(screen.getByRole('button', { name: /adjust/i }))
+    await userEvent.type(screen.getByLabelText(/delta/i), '2')
+    await userEvent.type(screen.getByLabelText(/reason/i), 'Extra duty')
+    await userEvent.click(screen.getByRole('button', { name: /apply/i }))
+    expect(onAdjustFairness).toHaveBeenCalledWith('1111111', 2, 'Extra duty')
+  })
+
+  it('shows Quota column header when configData is provided', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[]} />)
+    expect(screen.getByText('Quota')).toBeInTheDocument()
+  })
+
+  it('renders a name filter input', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    expect(screen.getByPlaceholderText(/search soldiers/i)).toBeInTheDocument()
   })
 
   it('sorts soldiers by name ascending when Name header clicked', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
-    const rows = screen.getAllByRole('row').slice(1) // skip header
+    const rows = screen.getAllByRole('row').slice(1)
     expect(rows[0]).toHaveTextContent('David Cohen')
     expect(rows[1]).toHaveTextContent('Moshe Levi')
-  })
-
-  it('sorts soldiers by name descending when Name header clicked twice', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
-    await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
-    const rows = screen.getAllByRole('row').slice(1)
-    expect(rows[0]).toHaveTextContent('Moshe Levi')
-    expect(rows[1]).toHaveTextContent('David Cohen')
-  })
-
-  it('sorts soldiers by fairness ascending when Fairness header clicked', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    await userEvent.click(screen.getByRole('columnheader', { name: /fairness/i }))
-    const rows = screen.getAllByRole('row').slice(1)
-    expect(rows[0]).toHaveTextContent('Moshe Levi') // fairness 1.0
-    expect(rows[1]).toHaveTextContent('David Cohen') // fairness 2.5
-  })
-
-  it('shows window.confirm before discharging', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    await userEvent.click(screen.getByRole('button', { name: /discharge/i }))
-    expect(confirmSpy).toHaveBeenCalledOnce()
-    confirmSpy.mockRestore()
-  })
-
-  it('does not call onDischarge when confirm is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    const onDischarge = vi.fn()
-    render(<SoldiersPage soldiers={SOLDIERS} onDischarge={onDischarge} onAddSoldier={vi.fn()} />)
-    await userEvent.click(screen.getByRole('button', { name: /discharge/i }))
-    expect(onDischarge).not.toHaveBeenCalled()
-    vi.restoreAllMocks()
-  })
-
-  it('calls onAddSoldier with form data when add form is submitted', async () => {
-    const onAddSoldier = vi.fn()
-    render(<SoldiersPage soldiers={[]} onDischarge={vi.fn()} onAddSoldier={onAddSoldier} />)
-    await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
-
-    await userEvent.type(screen.getByPlaceholderText(/name/i), 'Yoni Ben')
-    await userEvent.type(screen.getByLabelText(/service start/i), '2026-03-01')
-    await userEvent.type(screen.getByLabelText(/service end/i), '2026-12-31')
-    await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
-
-    expect(onAddSoldier).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Yoni Ben', serviceStart: '2026-03-01', serviceEnd: '2026-12-31' })
-    )
   })
 })

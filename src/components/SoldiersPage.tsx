@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 import { ROLES } from '../constants'
-import type { Soldier, CreateSoldierInput, SoldierRole, AppConfig, LeaveAssignment } from '../models'
+import type { Soldier, CreateSoldierInput, SoldierRole, SoldierStatus, AppConfig, LeaveAssignment } from '../models'
 import FairnessBar from './FairnessBar'
 import { calculateLeaveEntitlement, countUsedLeaveDays } from '../utils/leaveQuota'
 
 interface SoldiersPageProps {
   soldiers: Soldier[]
   loading?: boolean
-  onDischarge: (soldierId: string) => void
+  onUpdateStatus: (soldierId: string, status: SoldierStatus, reason?: string) => void
   onAddSoldier: (input: CreateSoldierInput) => void
   onAdjustFairness?: (soldierId: string, delta: number, reason: string) => void
   configData?: AppConfig | null
@@ -15,13 +15,14 @@ interface SoldiersPageProps {
 }
 
 const EMPTY_FORM: CreateSoldierInput = {
+  id: '',
   name: '',
   role: 'Driver',
   serviceStart: '',
   serviceEnd: '',
 }
 
-export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSoldier, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
+export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
@@ -32,9 +33,15 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
   const [statusFilter, setStatusFilter] = useState('')
   const [sortKey, setSortKey] = useState<'name' | 'fairness' | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
+  const [pendingInactiveId, setPendingInactiveId] = useState<string | null>(null)
+  const [pendingReason, setPendingReason] = useState('')
+
+  const endBeforeStart =
+    form.serviceStart && form.serviceEnd && form.serviceEnd <= form.serviceStart
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (endBeforeStart) return
     onAddSoldier(form)
     setForm(EMPTY_FORM)
     setShowForm(false)
@@ -48,6 +55,21 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
       setAdjustDelta('')
       setAdjustReason('')
     }
+  }
+
+  function handleCheckboxChange(soldier: Soldier) {
+    if (soldier.status === 'Active') {
+      setPendingInactiveId(soldier.id)
+      setPendingReason('')
+    } else {
+      onUpdateStatus(soldier.id, 'Active', undefined)
+    }
+  }
+
+  function handleConfirmInactive(soldierId: string) {
+    onUpdateStatus(soldierId, 'Inactive', pendingReason || undefined)
+    setPendingInactiveId(null)
+    setPendingReason('')
   }
 
   if (loading) {
@@ -126,6 +148,15 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
         <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-olive-200 shadow-sm p-4 space-y-3">
           <div>
             <input
+              placeholder="Army ID"
+              value={form.id}
+              onChange={e => setForm(f => ({ ...f, id: e.target.value }))}
+              required
+              className="w-full border rounded px-3 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <input
               placeholder="Name"
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -162,13 +193,17 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
               value={form.serviceEnd}
               onChange={e => setForm(f => ({ ...f, serviceEnd: e.target.value }))}
               required
-              className="w-full border rounded px-3 py-1.5 text-sm"
+              className={`w-full border rounded px-3 py-1.5 text-sm ${endBeforeStart ? 'border-red-400' : ''}`}
             />
+            {endBeforeStart && (
+              <p className="text-xs text-red-600 mt-1">End date must be after start date</p>
+            )}
           </div>
           <div className="flex gap-2">
             <button
               type="submit"
-              className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
+              disabled={!!endBeforeStart}
+              className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add
             </button>
@@ -192,16 +227,16 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
           <table className="w-full text-sm">
             <thead className="bg-olive-700 text-white">
               <tr>
+                <th className="text-left px-4 py-2">Active</th>
                 <th
-                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-100"
+                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-600"
                   onClick={() => handleSortClick('name')}
                 >
                   Name{sortKey === 'name' ? (sortAsc ? ' ▲' : ' ▼') : ''}
                 </th>
                 <th className="text-left px-4 py-2">Role</th>
-                <th className="text-left px-4 py-2">Status</th>
                 <th
-                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-100"
+                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-600"
                   onClick={() => handleSortClick('fairness')}
                 >
                   Fairness{sortKey === 'fairness' ? (sortAsc ? ' ▲' : ' ▼') : ''}
@@ -214,48 +249,70 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
             <tbody>
               {filteredSoldiers.map(s => (
                 <React.Fragment key={s.id}>
-                <tr className="border-t">
-                  <td className="px-4 py-2">{s.name}</td>
-                  <td className="px-4 py-2 text-olive-500">{s.role}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      s.status === 'Active' ? 'bg-green-100 text-green-700' :
-                      'bg-olive-100 text-olive-500'
-                    }`}>
-                      {s.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <FairnessBar score={s.currentFairness} average={avgFairness} />
-                  </td>
-                  <td className="px-4 py-2 text-olive-500 text-xs">
-                    {s.hoursWorked}h
-                  </td>
-                  {configData && (
-                    <td className="px-4 py-2 text-olive-500 text-xs">
-                      <span>{calculateLeaveEntitlement(s, configData)}</span>
-                      {' '}<span className="text-gray-400">{countUsedLeaveDays(s.id, leaveAssignments)} used</span>
+                  <tr className="border-t">
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label="active status"
+                        checked={s.status === 'Active'}
+                        onChange={() => handleCheckboxChange(s)}
+                        className="cursor-pointer"
+                      />
+                      {s.status === 'Inactive' && s.inactiveReason && (
+                        <span className="ml-2 text-xs text-gray-500">{s.inactiveReason}</span>
+                      )}
                     </td>
-                  )}
-                  <td className="px-4 py-2 text-right space-x-2">
-                    <button
-                      onClick={() => setAdjustingId(id => id === s.id ? null : s.id)}
-                      className="text-xs text-olive-700 hover:text-olive-800"
-                    >
-                      Adjust
-                    </button>
-                    {s.status === 'Active' && (
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Discharge ${s.name}?`)) onDischarge(s.id)
-                        }}
-                        className="text-xs text-red-600 hover:text-red-800"
-                      >
-                        Discharge
-                      </button>
+                    <td className="px-4 py-2">{s.name}</td>
+                    <td className="px-4 py-2 text-olive-500">{s.role}</td>
+                    <td className="px-4 py-2">
+                      <FairnessBar score={s.currentFairness} average={avgFairness} />
+                    </td>
+                    <td className="px-4 py-2 text-olive-500 text-xs">{s.hoursWorked}h</td>
+                    {configData && (
+                      <td className="px-4 py-2 text-olive-500 text-xs">
+                        <span>{calculateLeaveEntitlement(s, configData)}</span>
+                        {' '}<span className="text-gray-400">{countUsedLeaveDays(s.id, leaveAssignments)} used</span>
+                      </td>
                     )}
-                  </td>
-                </tr>
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        onClick={() => setAdjustingId(id => id === s.id ? null : s.id)}
+                        className="text-xs text-olive-700 hover:text-olive-800"
+                      >
+                        Adjust
+                      </button>
+                    </td>
+                  </tr>
+
+                  {pendingInactiveId === s.id && (
+                    <tr className="bg-red-50 border-t">
+                      <td colSpan={configData ? 7 : 6} className="px-4 py-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-red-700">Reason for deactivation:</span>
+                          <input
+                            type="text"
+                            value={pendingReason}
+                            onChange={e => setPendingReason(e.target.value)}
+                            placeholder="Reason (optional)"
+                            className="flex-1 border rounded px-2 py-1 text-xs min-w-[120px]"
+                          />
+                          <button
+                            onClick={() => handleConfirmInactive(s.id)}
+                            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setPendingInactiveId(null)}
+                            className="text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
                   {adjustingId === s.id && (
                     <tr className="bg-olive-50 border-t">
                       <td colSpan={configData ? 7 : 6} className="px-4 py-2">
