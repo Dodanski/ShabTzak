@@ -107,8 +107,8 @@ describe('SoldiersPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
     await userEvent.type(screen.getByPlaceholderText(/army id/i), '9876543')
     await userEvent.type(screen.getByPlaceholderText(/name/i), 'Yoni Ben')
-    await userEvent.type(screen.getByLabelText(/service start/i), '2026-03-01')
-    await userEvent.type(screen.getByLabelText(/service end/i), '2026-12-31')
+    await userEvent.type(screen.getByLabelText(/service start/i), '01/03/26')
+    await userEvent.type(screen.getByLabelText(/service end/i), '31/12/26')
     await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
     expect(onAddSoldier).toHaveBeenCalledWith(
       expect.objectContaining({ id: '9876543', name: 'Yoni Ben' })
@@ -118,8 +118,8 @@ describe('SoldiersPage', () => {
   it('disables Add button and shows error when end date is before start date', async () => {
     render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
-    await userEvent.type(screen.getByLabelText(/service start/i), '2026-12-01')
-    await userEvent.type(screen.getByLabelText(/service end/i), '2026-01-01')
+    await userEvent.type(screen.getByLabelText(/service start/i), '01/12/26')
+    await userEvent.type(screen.getByLabelText(/service end/i), '01/01/26')
     expect(screen.getByRole('button', { name: /^add$/i })).toBeDisabled()
     expect(screen.getByText(/end date must be after start/i)).toBeInTheDocument()
   })

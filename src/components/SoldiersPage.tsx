@@ -3,6 +3,7 @@ import { ROLES } from '../constants'
 import type { Soldier, CreateSoldierInput, SoldierRole, SoldierStatus, AppConfig, LeaveAssignment } from '../models'
 import FairnessBar from './FairnessBar'
 import { calculateLeaveEntitlement, countUsedLeaveDays } from '../utils/leaveQuota'
+import { formatDisplayDate, parseDisplayDateInput } from '../utils/dateUtils'
 
 interface SoldiersPageProps {
   soldiers: Soldier[]
@@ -39,13 +40,15 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
   const [editingIdFor, setEditingIdFor] = useState<string | null>(null)
   const [editIdValue, setEditIdValue] = useState('')
 
-  const endBeforeStart =
-    form.serviceStart && form.serviceEnd && form.serviceEnd <= form.serviceStart
+  const startISO = parseDisplayDateInput(form.serviceStart)
+  const endISO = parseDisplayDateInput(form.serviceEnd)
+  const endBeforeStart = startISO && endISO && endISO <= startISO
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (endBeforeStart) return
-    onAddSoldier(form)
+    if (!startISO || !endISO) return
+    onAddSoldier({ ...form, serviceStart: startISO, serviceEnd: endISO })
     setForm(EMPTY_FORM)
     setShowForm(false)
   }
@@ -194,7 +197,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
             <label className="block text-xs text-olive-600 mb-1" htmlFor="svc-start">Service start</label>
             <input
               id="svc-start"
-              type="date"
+              type="text"
+              placeholder="dd/mm/yy"
               value={form.serviceStart}
               onChange={e => setForm(f => ({ ...f, serviceStart: e.target.value }))}
               required
@@ -205,7 +209,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
             <label className="block text-xs text-olive-600 mb-1" htmlFor="svc-end">Service end</label>
             <input
               id="svc-end"
-              type="date"
+              type="text"
+              placeholder="dd/mm/yy"
               value={form.serviceEnd}
               onChange={e => setForm(f => ({ ...f, serviceEnd: e.target.value }))}
               required
@@ -259,6 +264,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                   Fairness{sortKey === 'fairness' ? (sortAsc ? ' ▲' : ' ▼') : ''}
                 </th>
                 <th className="text-left px-4 py-2">Hours</th>
+                <th className="text-left px-4 py-2">Start</th>
+                <th className="text-left px-4 py-2">End</th>
                 {configData && <th className="text-left px-4 py-2">Quota</th>}
                 <th className="px-4 py-2" />
               </tr>
@@ -286,6 +293,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                       <FairnessBar score={s.currentFairness} average={avgFairness} />
                     </td>
                     <td className="px-4 py-2 text-olive-500 text-xs">{s.hoursWorked}h</td>
+                    <td className="px-4 py-2 text-olive-500 text-xs">{formatDisplayDate(s.serviceStart)}</td>
+                    <td className="px-4 py-2 text-olive-500 text-xs">{formatDisplayDate(s.serviceEnd)}</td>
                     {configData && (
                       <td className="px-4 py-2 text-olive-500 text-xs">
                         <span>{calculateLeaveEntitlement(s, configData)}</span>
@@ -312,7 +321,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {editingIdFor === s.id && (
                     <tr className="bg-olive-50 border-t">
-                      <td colSpan={configData ? 8 : 7} className="px-4 py-2">
+                      <td colSpan={configData ? 10 : 9} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <label className="text-xs text-olive-600">ID</label>
                           <input
@@ -342,7 +351,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {pendingInactiveId === s.id && (
                     <tr className="bg-red-50 border-t">
-                      <td colSpan={configData ? 8 : 7} className="px-4 py-2">
+                      <td colSpan={configData ? 10 : 9} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-red-700">Reason for deactivation:</span>
                           <input
@@ -371,7 +380,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {adjustingId === s.id && (
                     <tr className="bg-olive-50 border-t">
-                      <td colSpan={configData ? 8 : 7} className="px-4 py-2">
+                      <td colSpan={configData ? 10 : 9} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <label className="text-xs text-olive-600" htmlFor={`delta-${s.id}`}>Delta</label>
                           <input

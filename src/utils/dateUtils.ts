@@ -84,6 +84,23 @@ export function formatDisplayDate(iso: string): string {
 }
 
 /**
+ * Parse "dd/mm/yy" or "dd/mm/yyyy" user input to ISO "YYYY-MM-DD".
+ * Returns '' for invalid input.
+ */
+export function parseDisplayDateInput(value: string): string {
+  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+  if (!match) return ''
+  const [, dd, mm, yy] = match
+  const year = yy.length <= 2 ? `20${yy.padStart(2, '0')}` : yy
+  const result = `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  const d = new Date(result + 'T00:00:00')
+  if (isNaN(d.getTime())) return ''
+  if (d.getMonth() + 1 !== parseInt(mm, 10)) return ''
+  if (d.getDate() !== parseInt(dd, 10)) return ''
+  return result
+}
+
+/**
  * Check if a date is within service period
  */
 export function isWithinServicePeriod(
