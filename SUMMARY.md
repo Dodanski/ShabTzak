@@ -1,6 +1,6 @@
 # ShabTzak — Project Summary
 
-> **For the next agent.** Read this before touching any code. Current state is clean: 506 tests passing, build clean, pushed to `origin/main`.
+> **For the next agent.** Read this before touching any code. Current state is clean: 505 tests passing, build clean, pushed to `origin/main`.
 
 ---
 
@@ -66,6 +66,12 @@ AuthContext (OAuth token)
 
 **`SoldierRepository`** (`src/services/soldierRepository.ts`)
 - `tabName = tabPrefix || 'Soldiers'` — reads from `"א'"` tab (not `"א'_Soldiers"`)
+- Sheet range is `A:M` (13 columns); `HEADER_ROW` ends with `'InactiveReason'`
+- `create(input)` uses `input.id` directly (army ID supplied by user — no auto-generation)
+
+**`SoldierService`** (`src/services/soldierService.ts`)
+- `create(input, changedBy)` — army ID must be in `input.id`
+- `updateStatus(id, status, changedBy, inactiveReason?)` — sets Active or Inactive; no `discharge()` method
 
 **`ScheduleService`** (`src/services/scheduleService.ts`)
 - `generateLeaveSchedule(config, startDate, endDate, changedBy)` — config passed as param
@@ -90,6 +96,8 @@ MASTER_SHEET_TABS = { ADMINS, UNITS, COMMANDERS, TASKS, CONFIG, HISTORY }
 Scheduling tabs: `prefixTab(prefix, 'TaskSchedule')` → `"א'_TaskSchedule"`.
 Soldiers tab: `tabPrefix || 'Soldiers'` (bare prefix, no suffix).
 
+`App.tsx` passes `tabPrefix={activeUnit?.tabPrefix || activeUnit?.name || ''}` — if `tabPrefix` is empty in the Units row, falls back to the unit name to avoid writing soldiers to a generic `Soldiers` tab.
+
 ---
 
 ## Real spreadsheet setup
@@ -110,8 +118,10 @@ python3 scripts/import-soldiers.py \
 ```
 Get the OAuth token from DevTools → Network → any `sheets.googleapis.com` request → Authorization header (strip `"Bearer "`).
 
-Soldier tab format (English headers):
-`ID | Name | Role | ServiceStart | ServiceEnd | InitialFairness | CurrentFairness | Status | HoursWorked | WeekendLeavesCount | MidweekLeavesCount | AfterLeavesCount`
+Soldier tab format (English headers, 13 columns):
+`ID | Name | Role | ServiceStart | ServiceEnd | InitialFairness | CurrentFairness | Status | HoursWorked | WeekendLeavesCount | MidweekLeavesCount | AfterLeavesCount | InactiveReason`
+
+> **Note:** Existing sheets with 12 columns will still parse correctly — `InactiveReason` gracefully defaults to `undefined` for missing headers.
 
 ---
 
@@ -145,17 +155,29 @@ App
 **`CreateTaskInput`** — same minus `id` (all optional except `taskType, startTime, endTime, roleRequirements`)
 **`UpdateTaskInput`** — `id` (required) + all Task fields optional
 **`Unit`** — `id, name, spreadsheetId, tabPrefix, createdAt, createdBy`
-**`Soldier`** — `id, name, role, serviceStart, serviceEnd, initialFairness, currentFairness, status, hoursWorked, weekendLeavesCount, midweekLeavesCount, afterLeavesCount`
+**`Soldier`** — `id` (army ID, user-supplied), `name, role, serviceStart, serviceEnd, initialFairness, currentFairness, status: 'Active'|'Inactive', inactiveReason?, hoursWorked, weekendLeavesCount, midweekLeavesCount, afterLeavesCount`
+**`CreateSoldierInput`** — `id` (required, army number), `name, role, serviceStart, serviceEnd`
+
+---
+
+## Recent changes (2026-03-03/04)
+
+1. **Date display** — `formatDisplayDate(iso)` now returns `DD/MM/YY` (was `DD/MM`)
+2. **Army ID** — `CreateSoldierInput.id` is now required (user-entered army number); `SoldierRepository.create()` uses it directly
+3. **Status** — `SOLDIER_STATUS` is `['Active', 'Inactive']` (removed Injured/Discharged); `Soldier` has `inactiveReason?: string`; sheet is 13 columns (`A:M`)
+4. **SoldiersPage** — `onDischarge` prop replaced by `onUpdateStatus(id, status, reason?)`; checkbox per row; Army ID form field; end-date validation
+5. **tabPrefix fix** — `App.tsx` falls back to `activeUnit.name` when `tabPrefix` is empty, fixing soldiers being written to a generic `Soldiers` tab
 
 ---
 
 ## Known / potential issues
 
-- **`changedBy` hardcoded to `'user'`** throughout `UnitApp` handlers — should be `auth.email`
+- **`changedBy`** now uses `auth.email ?? 'user'` in `handleUpdateStatus`; still `'user'` in other handlers
 - **`HistoryPage`** always renders with empty `entries={[]}` — history not wired to load from `masterDs.history`
 - **`SetupPage.tsx`** exists but is not reachable in current UI (orphaned component)
 - Task editing is admin-only (commanders see tasks read-only in UnitApp's Tasks section)
 - `soldier_list.xlsx` is gitignored; keep it locally for re-runs of the import script
+- Soldier import script (`scripts/import-soldiers.py`) uses old 12-column format — needs `InactiveReason` column added if re-run
 
 ---
 
@@ -163,7 +185,7 @@ App
 
 ```bash
 npm run dev          # Vite dev server
-npm test             # Vitest (506 tests)
+npm test             # Vitest (505 tests)
 npm run build        # TypeScript + Vite build
 npm run deploy       # build + gh-pages publish
 ```
