@@ -26,6 +26,7 @@ export interface CreateSoldierInput {
 
 export interface UpdateSoldierInput {
   id: string
+  newId?: string          // if set, replaces the ID column in the sheet
   name?: string
   role?: SoldierRole
   serviceStart?: string

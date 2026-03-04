@@ -101,6 +101,7 @@ export class SoldierRepository {
     const existing = parseSoldier(rows[rowIndex], headers)
     const updated: Soldier = {
       ...existing,
+      ...(input.newId !== undefined && { id: input.newId }),
       ...(input.name !== undefined && { name: input.name }),
       ...(input.role !== undefined && { role: input.role }),
       ...(input.serviceStart !== undefined && { serviceStart: input.serviceStart }),

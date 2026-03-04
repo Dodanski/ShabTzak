@@ -17,6 +17,11 @@ export class SoldierService {
     return soldier
   }
 
+  async updateId(oldId: string, newId: string, changedBy: string): Promise<void> {
+    await this.repo.update({ id: oldId, newId })
+    await this.history.append('UPDATE_ID', 'Soldier', newId, changedBy, `Army ID changed from ${oldId} to ${newId}`)
+  }
+
   async updateStatus(id: string, status: SoldierStatus, changedBy: string, inactiveReason?: string): Promise<void> {
     await this.repo.update({ id, status, inactiveReason: inactiveReason ?? '' })
     await this.history.append('UPDATE_STATUS', 'Soldier', id, changedBy, `Status changed to ${status}${inactiveReason ? `: ${inactiveReason}` : ''}`)

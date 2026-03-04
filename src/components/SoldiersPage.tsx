@@ -9,6 +9,7 @@ interface SoldiersPageProps {
   loading?: boolean
   onUpdateStatus: (soldierId: string, status: SoldierStatus, reason?: string) => void
   onAddSoldier: (input: CreateSoldierInput) => void
+  onEditId?: (soldierId: string, newId: string) => void
   onAdjustFairness?: (soldierId: string, delta: number, reason: string) => void
   configData?: AppConfig | null
   leaveAssignments?: LeaveAssignment[]
@@ -22,7 +23,7 @@ const EMPTY_FORM: CreateSoldierInput = {
   serviceEnd: '',
 }
 
-export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
+export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onEditId, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
@@ -35,6 +36,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
   const [sortAsc, setSortAsc] = useState(true)
   const [pendingInactiveId, setPendingInactiveId] = useState<string | null>(null)
   const [pendingReason, setPendingReason] = useState('')
+  const [editingIdFor, setEditingIdFor] = useState<string | null>(null)
+  const [editIdValue, setEditIdValue] = useState('')
 
   const endBeforeStart =
     form.serviceStart && form.serviceEnd && form.serviceEnd <= form.serviceStart
@@ -64,6 +67,19 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
     } else {
       onUpdateStatus(soldier.id, 'Active', undefined)
     }
+  }
+
+  function handleEditIdOpen(soldier: Soldier) {
+    setEditingIdFor(soldier.id)
+    setEditIdValue(soldier.id)
+  }
+
+  function handleEditIdSave(oldId: string) {
+    if (editIdValue.trim() && editIdValue.trim() !== oldId) {
+      onEditId?.(oldId, editIdValue.trim())
+    }
+    setEditingIdFor(null)
+    setEditIdValue('')
   }
 
   function handleConfirmInactive(soldierId: string) {
@@ -228,6 +244,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
             <thead className="bg-olive-700 text-white">
               <tr>
                 <th className="text-left px-4 py-2">Active</th>
+                <th className="text-left px-4 py-2">ID</th>
                 <th
                   className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-600"
                   onClick={() => handleSortClick('name')}
@@ -262,6 +279,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                         <span className="ml-2 text-xs text-gray-500">{s.inactiveReason}</span>
                       )}
                     </td>
+                    <td className="px-4 py-2 text-xs text-olive-500 font-mono">{s.id}</td>
                     <td className="px-4 py-2">{s.name}</td>
                     <td className="px-4 py-2 text-olive-500">{s.role}</td>
                     <td className="px-4 py-2">
@@ -274,7 +292,15 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                         {' '}<span className="text-gray-400">{countUsedLeaveDays(s.id, leaveAssignments)} used</span>
                       </td>
                     )}
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-2 text-right space-x-2">
+                      {onEditId && (
+                        <button
+                          onClick={() => editingIdFor === s.id ? setEditingIdFor(null) : handleEditIdOpen(s)}
+                          className="text-xs text-olive-700 hover:text-olive-800"
+                        >
+                          Edit
+                        </button>
+                      )}
                       <button
                         onClick={() => setAdjustingId(id => id === s.id ? null : s.id)}
                         className="text-xs text-olive-700 hover:text-olive-800"
@@ -284,9 +310,39 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                     </td>
                   </tr>
 
+                  {editingIdFor === s.id && (
+                    <tr className="bg-olive-50 border-t">
+                      <td colSpan={configData ? 8 : 7} className="px-4 py-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className="text-xs text-olive-600">ID</label>
+                          <input
+                            type="text"
+                            value={editIdValue}
+                            onChange={e => setEditIdValue(e.target.value)}
+                            className="w-32 border rounded px-2 py-1 text-xs font-mono"
+                            placeholder="Army ID"
+                          />
+                          <button
+                            onClick={() => handleEditIdSave(s.id)}
+                            disabled={!editIdValue.trim()}
+                            className="px-2 py-1 text-xs bg-olive-700 text-white rounded hover:bg-olive-800 disabled:opacity-50"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingIdFor(null)}
+                            className="text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
                   {pendingInactiveId === s.id && (
                     <tr className="bg-red-50 border-t">
-                      <td colSpan={configData ? 7 : 6} className="px-4 py-2">
+                      <td colSpan={configData ? 8 : 7} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-red-700">Reason for deactivation:</span>
                           <input
@@ -315,7 +371,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {adjustingId === s.id && (
                     <tr className="bg-olive-50 border-t">
-                      <td colSpan={configData ? 7 : 6} className="px-4 py-2">
+                      <td colSpan={configData ? 8 : 7} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <label className="text-xs text-olive-600" htmlFor={`delta-${s.id}`}>Delta</label>
                           <input

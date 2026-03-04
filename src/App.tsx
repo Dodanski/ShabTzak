@@ -87,6 +87,11 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
     }
   }
 
+  async function handleEditId(soldierId: string, newId: string) {
+    try { await ds?.soldierService.updateId(soldierId, newId, auth.email ?? 'user'); reload(); addToast('ID updated', 'success') }
+    catch { addToast('Failed to update ID', 'error') }
+  }
+
   async function handleAddSoldier(input: CreateSoldierInput) {
     try { await ds?.soldierService.create(input, 'user'); reload(); addToast('Soldier added', 'success') }
     catch { addToast('Failed to add soldier', 'error') }
@@ -197,6 +202,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
         <SoldiersPage
           soldiers={soldiers}
           onUpdateStatus={handleUpdateStatus}
+          onEditId={handleEditId}
           onAddSoldier={handleAddSoldier}
           onAdjustFairness={handleAdjustFairness}
           leaveAssignments={leaveAssignments}
