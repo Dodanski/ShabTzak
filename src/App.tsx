@@ -22,7 +22,7 @@ import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
 import AdminPanel from './components/AdminPanel'
 import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, Unit, Task, AppConfig } from './models'
-import type { SoldierRole } from './constants'
+import type { SoldierRole, SoldierStatus } from './constants'
 
 type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history'
 
@@ -77,9 +77,14 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
 
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
 
-  async function handleDischarge(soldierId: string) {
-    try { await ds?.soldierService.updateStatus(soldierId, 'Inactive', 'user'); reload(); addToast('Soldier discharged', 'success') }
-    catch { addToast('Failed to discharge soldier', 'error') }
+  async function handleUpdateStatus(soldierId: string, status: SoldierStatus, reason?: string) {
+    try {
+      await ds?.soldierService.updateStatus(soldierId, status, auth.email ?? 'user', reason)
+      reload()
+      addToast(status === 'Active' ? 'Soldier reactivated' : 'Soldier deactivated', 'success')
+    } catch {
+      addToast('Failed to update soldier status', 'error')
+    }
   }
 
   async function handleAddSoldier(input: CreateSoldierInput) {
@@ -191,7 +196,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       {section === 'soldiers' && (
         <SoldiersPage
           soldiers={soldiers}
-          onDischarge={handleDischarge}
+          onUpdateStatus={handleUpdateStatus}
           onAddSoldier={handleAddSoldier}
           onAdjustFairness={handleAdjustFairness}
           leaveAssignments={leaveAssignments}
@@ -313,7 +318,7 @@ function AppContent() {
   return (
     <UnitApp
       spreadsheetId={activeUnit?.spreadsheetId ?? ''}
-      tabPrefix={activeUnit?.tabPrefix ?? ''}
+      tabPrefix={activeUnit?.tabPrefix || activeUnit?.name || ''}
       unitName={activeUnit?.name ?? ''}
       masterDs={masterDs}
       tasks={tasks}
