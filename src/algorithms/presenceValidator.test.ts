@@ -35,7 +35,7 @@ describe('Presence Validator', () => {
     makeSoldier('s2'),
     makeSoldier('s3'),
     makeSoldier('s4'),
-    makeSoldier('s5', { status: 'Injured' }),
+    makeSoldier('s5', { status: 'Inactive' }),
   ]
 
   const assignments: LeaveAssignment[] = [

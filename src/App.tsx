@@ -78,7 +78,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
 
   async function handleDischarge(soldierId: string) {
-    try { await ds?.soldierService.discharge(soldierId, 'user'); reload(); addToast('Soldier discharged', 'success') }
+    try { await ds?.soldierService.updateStatus(soldierId, 'Inactive', 'user'); reload(); addToast('Soldier discharged', 'success') }
     catch { addToast('Failed to discharge soldier', 'error') }
   }
 

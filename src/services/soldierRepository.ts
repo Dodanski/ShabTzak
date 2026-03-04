@@ -10,6 +10,7 @@ const HEADER_ROW = [
   'ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
+  'InactiveReason',
 ]
 
 export class SoldierRepository {
@@ -25,7 +26,7 @@ export class SoldierRepository {
     this.cache = cache
     // Soldiers live in the unit-named tab (e.g. "א'") not a dedicated "Soldiers" tab
     this.tabName = tabPrefix || 'Soldiers'
-    this.range = `${this.tabName}!A:L`
+    this.range = `${this.tabName}!A:M`
   }
 
   private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
@@ -74,7 +75,7 @@ export class SoldierRepository {
       const rescuedRows = allRows.filter(r => r.length > 0)
       await this.sheets.updateValues(
         this.spreadsheetId,
-        `${this.tabName}!A1:L1`,
+        `${this.tabName}!A1:M1`,
         [HEADER_ROW]
       )
       if (rescuedRows.length > 0) {
@@ -110,6 +111,7 @@ export class SoldierRepository {
       ...(input.midweekLeavesCount !== undefined && { midweekLeavesCount: input.midweekLeavesCount }),
       ...(input.afterLeavesCount !== undefined && { afterLeavesCount: input.afterLeavesCount }),
       ...(input.currentFairness !== undefined && { currentFairness: input.currentFairness }),
+      ...(input.inactiveReason !== undefined && { inactiveReason: input.inactiveReason }),
     }
 
     const updatedRow = serializeSoldier(updated)
@@ -117,7 +119,7 @@ export class SoldierRepository {
     const sheetRow = rowIndex + 2
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${this.tabName}!A${sheetRow}:L${sheetRow}`,
+      `${this.tabName}!A${sheetRow}:M${sheetRow}`,
       [updatedRow]
     )
     this.cache.invalidate(CACHE_KEY)

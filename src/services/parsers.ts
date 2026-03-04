@@ -18,6 +18,11 @@ function getBool(row: string[], headers: string[], name: string): boolean {
   return get(row, headers, name).toLowerCase() === 'true'
 }
 
+function safeGet(row: string[], headers: string[], name: string): string {
+  const i = headers.indexOf(name)
+  return i === -1 ? '' : (row[i] ?? '')
+}
+
 export function parseSoldier(row: string[], headers: string[]): Soldier {
   if (row.length === 0) throw new Error('Cannot parse empty row')
   return {
@@ -33,6 +38,7 @@ export function parseSoldier(row: string[], headers: string[]): Soldier {
     weekendLeavesCount: getNum(row, headers, 'WeekendLeavesCount'),
     midweekLeavesCount: getNum(row, headers, 'MidweekLeavesCount'),
     afterLeavesCount: getNum(row, headers, 'AfterLeavesCount'),
+    inactiveReason: safeGet(row, headers, 'InactiveReason') || undefined,
   }
 }
 

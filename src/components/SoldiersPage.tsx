@@ -118,8 +118,7 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
         >
           <option value="">All statuses</option>
           <option value="Active">Active</option>
-          <option value="Injured">Injured</option>
-          <option value="Discharged">Discharged</option>
+          <option value="Inactive">Inactive</option>
         </select>
       </div>
 
@@ -221,7 +220,6 @@ export default function SoldiersPage({ soldiers, loading, onDischarge, onAddSold
                   <td className="px-4 py-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       s.status === 'Active' ? 'bg-green-100 text-green-700' :
-                      s.status === 'Injured' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-olive-100 text-olive-500'
                     }`}>
                       {s.status}

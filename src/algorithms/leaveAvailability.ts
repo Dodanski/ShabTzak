@@ -25,7 +25,7 @@ export function getLeaveConflicts(
 ): ScheduleConflict[] {
   const conflicts: ScheduleConflict[] = []
 
-  if (soldier.status === 'Discharged' || soldier.status === 'Injured') {
+  if (soldier.status === 'Inactive') {
     conflicts.push({
       type: 'NO_ROLE_AVAILABLE',
       message: `Soldier ${soldier.name} is ${soldier.status} and cannot take leave`,

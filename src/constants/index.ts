@@ -35,7 +35,7 @@ export const REQUEST_STATUS = ['Pending', 'Approved', 'Denied'] as const
 export type RequestStatus = typeof REQUEST_STATUS[number]
 
 // Soldier status
-export const SOLDIER_STATUS = ['Active', 'Injured', 'Discharged'] as const
+export const SOLDIER_STATUS = ['Active', 'Inactive'] as const
 export type SoldierStatus = typeof SOLDIER_STATUS[number]
 
 // Configuration defaults

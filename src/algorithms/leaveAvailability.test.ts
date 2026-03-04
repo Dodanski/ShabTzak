@@ -50,8 +50,8 @@ describe('Leave Availability', () => {
       expect(isLeaveAvailable(soldier, '2026-07-01', '2026-07-03', [])).toBe(false)
     })
 
-    it('returns false for discharged soldiers', () => {
-      const soldier = makeSoldier({ status: 'Discharged' })
+    it('returns false for inactive soldiers', () => {
+      const soldier = makeSoldier({ status: 'Inactive' })
       expect(isLeaveAvailable(soldier, '2026-03-20', '2026-03-22', [])).toBe(false)
     })
   })

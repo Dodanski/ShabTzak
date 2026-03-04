@@ -48,7 +48,7 @@ describe('DataService', () => {
     const service = new DataService('token', 'id', '', makeHistory())
     expect(service.soldierService).toBeDefined()
     expect(service.soldierService.create).toBeDefined()
-    expect(service.soldierService.discharge).toBeDefined()
+    expect(service.soldierService.updateStatus).toBeDefined()
   })
 
   it('exposes leaveRequestService', () => {
@@ -74,7 +74,7 @@ describe('DataService', () => {
     const ds = new DataService('token', 'sheet-id', 'Alpha_Company', makeHistory())
     vi.spyOn(ds.sheets, 'getValues').mockResolvedValue([])
     await ds.soldiers.list()
-    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company!A:L')
+    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company!A:M')
   })
 
   it('does not expose tasks, config, history, versions', () => {

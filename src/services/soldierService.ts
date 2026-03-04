@@ -17,13 +17,8 @@ export class SoldierService {
     return soldier
   }
 
-  async updateStatus(id: string, status: SoldierStatus, changedBy: string): Promise<void> {
-    await this.repo.update({ id, status })
-    await this.history.append('UPDATE_STATUS', 'Soldier', id, changedBy, `Status changed to ${status}`)
-  }
-
-  async discharge(id: string, changedBy: string): Promise<void> {
-    await this.repo.update({ id, status: 'Discharged' })
-    await this.history.append('DISCHARGE', 'Soldier', id, changedBy, `Soldier discharged`)
+  async updateStatus(id: string, status: SoldierStatus, changedBy: string, inactiveReason?: string): Promise<void> {
+    await this.repo.update({ id, status, inactiveReason: inactiveReason ?? '' })
+    await this.history.append('UPDATE_STATUS', 'Soldier', id, changedBy, `Status changed to ${status}${inactiveReason ? `: ${inactiveReason}` : ''}`)
   }
 }

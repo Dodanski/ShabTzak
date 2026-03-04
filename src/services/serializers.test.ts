@@ -22,7 +22,7 @@ describe('Data Serializers', () => {
       const row = serializeSoldier(soldier)
       expect(row).toEqual([
         '1', 'David Cohen', 'Driver', '2026-01-01', '2026-08-31',
-        '0', '2.5', 'Active', '16', '1', '2', '3',
+        '0', '2.5', 'Active', '16', '1', '2', '3', '',
       ])
     })
 
@@ -33,7 +33,7 @@ describe('Data Serializers', () => {
         initialFairness: 1, currentFairness: 1, status: 'Active',
         hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
       }
-      expect(serializeSoldier(soldier)).toHaveLength(12)
+      expect(serializeSoldier(soldier)).toHaveLength(13)
     })
   })
 

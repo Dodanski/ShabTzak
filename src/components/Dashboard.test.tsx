@@ -12,7 +12,7 @@ const ACTIVE: Soldier = {
   hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
 }
 
-const DISCHARGED: Soldier = { ...ACTIVE, id: 's2', status: 'Discharged' }
+const DISCHARGED: Soldier = { ...ACTIVE, id: 's2', status: 'Inactive' }
 
 const PENDING_REQUEST: LeaveRequest = {
   id: 'lr1', soldierId: 's1',

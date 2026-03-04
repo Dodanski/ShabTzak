@@ -28,7 +28,7 @@ const SOLDIERS: Soldier[] = [
   {
     id: 's2', name: 'Moshe Levi', role: 'Medic',
     serviceStart: '2026-02-01', serviceEnd: '2026-12-31',
-    initialFairness: 0, currentFairness: 1.0, status: 'Injured',
+    initialFairness: 0, currentFairness: 1.0, status: 'Inactive',
     hoursWorked: 8, weekendLeavesCount: 0, midweekLeavesCount: 1, afterLeavesCount: 0,
   },
 ]
@@ -160,9 +160,9 @@ describe('SoldiersPage', () => {
     expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
   })
 
-  it('filters soldiers by status Injured', async () => {
+  it('filters soldiers by status Inactive', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onDischarge={vi.fn()} onAddSoldier={vi.fn()} />)
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Injured')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Inactive')
     expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })

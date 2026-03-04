@@ -73,8 +73,8 @@ describe('Task Availability', () => {
       expect(isTaskAvailable(soldier, task, [], [])).toBe(true)
     })
 
-    it('returns false when soldier is injured', () => {
-      const soldier = makeSoldier({ status: 'Injured' })
+    it('returns false when soldier is inactive', () => {
+      const soldier = makeSoldier({ status: 'Inactive' })
       const task = makeTask()
       expect(isTaskAvailable(soldier, task, [], [])).toBe(false)
     })

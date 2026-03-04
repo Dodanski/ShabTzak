@@ -9,16 +9,17 @@ const HEADER_ROW = [
   'ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
+  'InactiveReason',
 ]
 
 const SOLDIER_ROW = [
   's1', 'David Cohen', 'Driver', '2026-01-01', '2026-08-31',
-  '0', '0', 'Active', '0', '0', '0', '0',
+  '0', '0', 'Active', '0', '0', '0', '0', '',
 ]
 
 const SOLDIER_ROW_2 = [
   's2', 'Moshe Levi', 'Medic', '2026-02-01', '2026-09-30',
-  '0', '1', 'Active', '8', '1', '0', '0',
+  '0', '1', 'Active', '8', '1', '0', '0', '',
 ]
 
 describe('SoldierRepository', () => {
@@ -114,7 +115,7 @@ describe('SoldierRepository', () => {
         serviceEnd: '2026-10-31',
       })
 
-      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:L1', [HEADER_ROW])
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:M1', [HEADER_ROW])
       expect(appendSpy).toHaveBeenCalledOnce()
     })
 
@@ -132,7 +133,7 @@ describe('SoldierRepository', () => {
       })
 
       // Writes proper header to A1 (overwriting the misplaced data row)
-      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:L1', [HEADER_ROW])
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:M1', [HEADER_ROW])
       // First append: rescued existing row; second append: new soldier
       expect(appendSpy).toHaveBeenCalledTimes(2)
       expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [SOLDIER_ROW])
@@ -161,7 +162,7 @@ describe('SoldierRepository', () => {
       ])
       const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
 
-      await repo.update({ id: 's1', status: 'Injured' })
+      await repo.update({ id: 's1', status: 'Inactive' })
 
       expect(updateSpy).toHaveBeenCalledOnce()
     })
@@ -169,6 +170,17 @@ describe('SoldierRepository', () => {
     it('throws if soldier not found', async () => {
       vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
       await expect(repo.update({ id: 'ghost' })).rejects.toThrow()
+    })
+
+    it('serializes inactiveReason when updating status to Inactive', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW, SOLDIER_ROW])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+
+      await repo.update({ id: 's1', status: 'Inactive', inactiveReason: 'Medical leave' })
+
+      const calledRow = updateSpy.mock.calls[0][2][0] as string[]
+      const reasonIdx = HEADER_ROW.indexOf('InactiveReason')
+      expect(calledRow[reasonIdx]).toBe('Medical leave')
     })
   })
 
@@ -179,7 +191,7 @@ describe('SoldierRepository', () => {
 
       await prefixedRepo.list()
 
-      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company!A:L')
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company!A:M')
     })
   })
 })

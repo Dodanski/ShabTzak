@@ -14,6 +14,7 @@ export function serializeSoldier(s: Soldier): string[] {
     String(s.weekendLeavesCount),
     String(s.midweekLeavesCount),
     String(s.afterLeavesCount),
+    s.inactiveReason ?? '',    // new column M
   ]
 }
 

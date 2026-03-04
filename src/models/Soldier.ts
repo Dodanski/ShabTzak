@@ -9,6 +9,7 @@ export interface Soldier {
   initialFairness: number
   currentFairness: number
   status: SoldierStatus
+  inactiveReason?: string
   hoursWorked: number
   weekendLeavesCount: number
   midweekLeavesCount: number
@@ -30,6 +31,7 @@ export interface UpdateSoldierInput {
   serviceStart?: string
   serviceEnd?: string
   status?: SoldierStatus
+  inactiveReason?: string
   hoursWorked?: number
   weekendLeavesCount?: number
   midweekLeavesCount?: number
