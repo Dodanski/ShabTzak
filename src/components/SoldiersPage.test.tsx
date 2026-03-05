@@ -213,4 +213,23 @@ describe('SoldiersPage', () => {
     await userEvent.type(endInput, '01/01/20')
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
   })
+
+  it('disables Save when a date field is cleared in edit form', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    const startInput = screen.getByDisplayValue('01/01/26')
+    await userEvent.clear(startInput)
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
+  })
+
+  it('clamps negative hoursWorked to 0 on Save', async () => {
+    const onUpdateSoldier = vi.fn()
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    const hoursInput = screen.getByDisplayValue('24')
+    await userEvent.clear(hoursInput)
+    await userEvent.type(hoursInput, '-5')
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(onUpdateSoldier).toHaveBeenCalledWith(expect.objectContaining({ hoursWorked: 0 }))
+  })
 })
