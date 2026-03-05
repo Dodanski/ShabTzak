@@ -43,4 +43,16 @@ describe('SoldierService', () => {
     await service.updateStatus('1234567', 'Inactive', 'admin@test.com', 'Medical leave')
     expect(repo.update).toHaveBeenCalledWith({ id: '1234567', status: 'Inactive', inactiveReason: 'Medical leave' })
   })
+
+  it('updateFields() calls repo.update and logs history', async () => {
+    await service.updateFields('1234567', { name: 'New Name', role: 'Medic' as const }, 'admin@test.com')
+    expect(repo.update).toHaveBeenCalledWith({ id: '1234567', name: 'New Name', role: 'Medic' })
+    expect(history.append).toHaveBeenCalledWith('UPDATE_FIELDS', 'Soldier', '1234567', 'admin@test.com', expect.any(String))
+  })
+
+  it('updateFields() uses newId for history entity when ID is changed', async () => {
+    await service.updateFields('1234567', { newId: '9999999' }, 'admin@test.com')
+    expect(repo.update).toHaveBeenCalledWith({ id: '1234567', newId: '9999999' })
+    expect(history.append).toHaveBeenCalledWith('UPDATE_FIELDS', 'Soldier', '9999999', 'admin@test.com', expect.any(String))
+  })
 })
