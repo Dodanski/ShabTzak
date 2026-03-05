@@ -21,7 +21,8 @@ import { MasterDataService } from './services/masterDataService'
 import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
 import AdminPanel from './components/AdminPanel'
-import type { CreateLeaveRequestInput, CreateSoldierInput, CreateTaskInput, Unit, Task, AppConfig } from './models'
+import type { HistoryEntry } from './services/historyService'
+import type { CreateLeaveRequestInput, CreateSoldierInput, UpdateSoldierInput, CreateTaskInput, Unit, Task, AppConfig } from './models'
 import type { SoldierRole, SoldierStatus } from './constants'
 
 type Section = 'dashboard' | 'soldiers' | 'tasks' | 'leave' | 'schedule' | 'history'
@@ -58,6 +59,8 @@ interface UnitAppProps {
 function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configData, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
   const scheduleDates = generateNextDays(30)
   const today = new Date().toISOString().split('T')[0]
   const scheduleEnd = scheduleDates[scheduleDates.length - 1] ?? today
@@ -67,6 +70,15 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
+
+  useEffect(() => {
+    if (section !== 'history' || !masterDs) return
+    setHistoryLoading(true)
+    masterDs.history.listAll()
+      .then(entries => setHistoryEntries(entries))
+      .catch(() => setHistoryEntries([]))
+      .finally(() => setHistoryLoading(false))
+  }, [section, masterDs])
 
   const { loading: tabsLoading, error: tabsError } = useMissingTabs(spreadsheetId, tabPrefix)
 
@@ -87,38 +99,43 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
     }
   }
 
-  async function handleEditId(soldierId: string, newId: string) {
-    try { await ds?.soldierService.updateId(soldierId, newId, auth.email ?? 'user'); reload(); addToast('ID updated', 'success') }
-    catch { addToast('Failed to update ID', 'error') }
+  async function handleUpdateSoldier(input: UpdateSoldierInput) {
+    try {
+      await ds?.soldierService.updateFields(input.id, input, auth.email ?? 'user')
+      reload()
+      addToast('Soldier updated', 'success')
+    } catch {
+      addToast('Failed to update soldier', 'error')
+    }
   }
 
   async function handleAddSoldier(input: CreateSoldierInput) {
-    try { await ds?.soldierService.create(input, 'user'); reload(); addToast('Soldier added', 'success') }
+    try { await ds?.soldierService.create(input, auth.email ?? 'user'); reload(); addToast('Soldier added', 'success') }
     catch { addToast('Failed to add soldier', 'error') }
   }
 
   async function handleAdjustFairness(soldierId: string, delta: number, reason: string) {
-    try { await ds?.fairnessUpdate.applyManualAdjustment(soldierId, delta, reason, 'user'); reload(); addToast('Fairness adjusted', 'success') }
+    try { await ds?.fairnessUpdate.applyManualAdjustment(soldierId, delta, reason, auth.email ?? 'user'); reload(); addToast('Fairness adjusted', 'success') }
     catch { addToast('Failed to adjust fairness', 'error') }
   }
 
   async function handleSubmitLeave(input: CreateLeaveRequestInput) {
-    try { await ds?.leaveRequestService.submit(input, 'user'); setShowLeaveForm(false); reload(); addToast('Leave request submitted', 'success') }
+    try { await ds?.leaveRequestService.submit(input, auth.email ?? 'user'); setShowLeaveForm(false); reload(); addToast('Leave request submitted', 'success') }
     catch { addToast('Failed to submit leave request', 'error') }
   }
 
   async function handleApprove(id: string) {
-    try { await ds?.leaveRequestService.approve(id, 'user'); reload(); addToast('Leave request approved', 'success') }
+    try { await ds?.leaveRequestService.approve(id, auth.email ?? 'user'); reload(); addToast('Leave request approved', 'success') }
     catch { addToast('Failed to approve leave request', 'error') }
   }
 
   async function handleAddTask(input: CreateTaskInput) {
-    try { await masterDs?.taskService.create(input, 'user'); reload(); addToast('Task added', 'success') }
+    try { await masterDs?.taskService.create(input, auth.email ?? 'user'); reload(); addToast('Task added', 'success') }
     catch { addToast('Failed to add task', 'error') }
   }
 
   async function handleDeny(id: string) {
-    try { await ds?.leaveRequestService.deny(id, 'user'); reload(); addToast('Leave request denied', 'success') }
+    try { await ds?.leaveRequestService.deny(id, auth.email ?? 'user'); reload(); addToast('Leave request denied', 'success') }
     catch { addToast('Failed to deny leave request', 'error') }
   }
 
@@ -136,11 +153,11 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       await runSchedule()
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
-      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, 'user')
+      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')
       for (const assignment of leaveSchedule.assignments) {
         if (!existingIds.has(assignment.id)) {
           await ds.fairnessUpdate.applyLeaveAssignment(
-            assignment.soldierId, assignment.leaveType, assignment.isWeekend, 'user'
+            assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
           )
         }
       }
@@ -202,7 +219,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
         <SoldiersPage
           soldiers={soldiers}
           onUpdateStatus={handleUpdateStatus}
-          onEditId={handleEditId}
+          onUpdateSoldier={handleUpdateSoldier}
           onAddSoldier={handleAddSoldier}
           onAdjustFairness={handleAdjustFairness}
           leaveAssignments={leaveAssignments}
@@ -257,7 +274,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       )}
 
       {section === 'history' && (
-        <HistoryPage entries={[]} loading={loading} />
+        <HistoryPage entries={historyEntries} loading={historyLoading} />
       )}
 
     </AppShell>

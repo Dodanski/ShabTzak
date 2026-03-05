@@ -157,6 +157,6 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /generate schedule/i })).toBeInTheDocument())
     await userEvent.click(screen.getByRole('button', { name: /generate schedule/i }))
 
-    await waitFor(() => expect(applyLeaveAssignment).toHaveBeenCalledWith('s1', 'Long', true, 'user'))
+    await waitFor(() => expect(applyLeaveAssignment).toHaveBeenCalledWith('s1', 'Long', true, 'commander@test.com'))
   })
 })
