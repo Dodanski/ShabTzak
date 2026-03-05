@@ -50,6 +50,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
   const editStartISO = parseDisplayDateInput(editForm.serviceStart)
   const editEndISO = parseDisplayDateInput(editForm.serviceEnd)
   const editEndBeforeStart = editStartISO && editEndISO && editEndISO <= editStartISO
+  const editDatesInvalid = !editStartISO || !editEndISO
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -103,7 +104,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
       role: editForm.role,
       serviceStart: startISO,
       serviceEnd: endISO,
-      hoursWorked: parseInt(editForm.hoursWorked) || 0,
+      hoursWorked: Math.max(0, parseInt(editForm.hoursWorked) || 0),
     })
     setEditingFor(null)
   }
@@ -410,7 +411,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={() => handleEditSave(s.id)}
-                            disabled={!!editEndBeforeStart}
+                            disabled={!!editEndBeforeStart || editDatesInvalid}
                             className="px-2 py-1 text-xs bg-olive-700 text-white rounded hover:bg-olive-800 disabled:opacity-50"
                           >
                             Save
