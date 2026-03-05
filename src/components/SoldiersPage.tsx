@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ROLES } from '../constants'
-import type { Soldier, CreateSoldierInput, SoldierRole, SoldierStatus, AppConfig, LeaveAssignment } from '../models'
+import type { Soldier, CreateSoldierInput, UpdateSoldierInput, SoldierRole, SoldierStatus, AppConfig, LeaveAssignment } from '../models'
 import FairnessBar from './FairnessBar'
 import { calculateLeaveEntitlement, countUsedLeaveDays } from '../utils/leaveQuota'
 import { formatDisplayDate, parseDisplayDateInput } from '../utils/dateUtils'
@@ -10,7 +10,7 @@ interface SoldiersPageProps {
   loading?: boolean
   onUpdateStatus: (soldierId: string, status: SoldierStatus, reason?: string) => void
   onAddSoldier: (input: CreateSoldierInput) => void
-  onEditId?: (soldierId: string, newId: string) => void
+  onUpdateSoldier?: (input: UpdateSoldierInput) => void
   onAdjustFairness?: (soldierId: string, delta: number, reason: string) => void
   configData?: AppConfig | null
   leaveAssignments?: LeaveAssignment[]
@@ -24,7 +24,7 @@ const EMPTY_FORM: CreateSoldierInput = {
   serviceEnd: '',
 }
 
-export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onEditId, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
+export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onUpdateSoldier, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
@@ -37,12 +37,19 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
   const [sortAsc, setSortAsc] = useState(true)
   const [pendingInactiveId, setPendingInactiveId] = useState<string | null>(null)
   const [pendingReason, setPendingReason] = useState('')
-  const [editingIdFor, setEditingIdFor] = useState<string | null>(null)
-  const [editIdValue, setEditIdValue] = useState('')
+  const [editingFor, setEditingFor] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({
+    newId: '', name: '', role: 'Driver' as SoldierRole,
+    serviceStart: '', serviceEnd: '', hoursWorked: '',
+  })
 
   const startISO = parseDisplayDateInput(form.serviceStart)
   const endISO = parseDisplayDateInput(form.serviceEnd)
   const endBeforeStart = startISO && endISO && endISO <= startISO
+
+  const editStartISO = parseDisplayDateInput(editForm.serviceStart)
+  const editEndISO = parseDisplayDateInput(editForm.serviceEnd)
+  const editEndBeforeStart = editStartISO && editEndISO && editEndISO <= editStartISO
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -72,17 +79,33 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
     }
   }
 
-  function handleEditIdOpen(soldier: Soldier) {
-    setEditingIdFor(soldier.id)
-    setEditIdValue(soldier.id)
+  function handleEditOpen(s: Soldier) {
+    setEditingFor(s.id)
+    setEditForm({
+      newId: s.id,
+      name: s.name,
+      role: s.role,
+      serviceStart: formatDisplayDate(s.serviceStart),
+      serviceEnd: formatDisplayDate(s.serviceEnd),
+      hoursWorked: String(s.hoursWorked),
+    })
   }
 
-  function handleEditIdSave(oldId: string) {
-    if (editIdValue.trim() && editIdValue.trim() !== oldId) {
-      onEditId?.(oldId, editIdValue.trim())
-    }
-    setEditingIdFor(null)
-    setEditIdValue('')
+  function handleEditSave(originalId: string) {
+    if (editEndBeforeStart) return
+    const startISO = parseDisplayDateInput(editForm.serviceStart)
+    const endISO = parseDisplayDateInput(editForm.serviceEnd)
+    if (!startISO || !endISO) return
+    onUpdateSoldier?.({
+      id: originalId,
+      ...(editForm.newId !== originalId && { newId: editForm.newId }),
+      name: editForm.name,
+      role: editForm.role,
+      serviceStart: startISO,
+      serviceEnd: endISO,
+      hoursWorked: parseInt(editForm.hoursWorked) || 0,
+    })
+    setEditingFor(null)
   }
 
   function handleConfirmInactive(soldierId: string) {
@@ -302,9 +325,9 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                       </td>
                     )}
                     <td className="px-4 py-2 text-right space-x-2">
-                      {onEditId && (
+                      {onUpdateSoldier && (
                         <button
-                          onClick={() => editingIdFor === s.id ? setEditingIdFor(null) : handleEditIdOpen(s)}
+                          onClick={() => editingFor === s.id ? setEditingFor(null) : handleEditOpen(s)}
                           className="text-xs text-olive-700 hover:text-olive-800"
                         >
                           Edit
@@ -319,27 +342,81 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                     </td>
                   </tr>
 
-                  {editingIdFor === s.id && (
+                  {editingFor === s.id && (
                     <tr className="bg-olive-50 border-t">
-                      <td colSpan={configData ? 10 : 9} className="px-4 py-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <label className="text-xs text-olive-600">ID</label>
-                          <input
-                            type="text"
-                            value={editIdValue}
-                            onChange={e => setEditIdValue(e.target.value)}
-                            className="w-32 border rounded px-2 py-1 text-xs font-mono"
-                            placeholder="Army ID"
-                          />
+                      <td colSpan={configData ? 10 : 9} className="px-4 py-3">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Army ID</label>
+                            <input
+                              type="text"
+                              value={editForm.newId}
+                              onChange={e => setEditForm(f => ({ ...f, newId: e.target.value }))}
+                              className="w-full border rounded px-2 py-1 text-xs font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Name</label>
+                            <input
+                              type="text"
+                              value={editForm.name}
+                              onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                              className="w-full border rounded px-2 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Role</label>
+                            <select
+                              value={editForm.role}
+                              onChange={e => setEditForm(f => ({ ...f, role: e.target.value as SoldierRole }))}
+                              className="w-full border rounded px-2 py-1 text-xs"
+                              aria-label="Role"
+                            >
+                              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Service start (dd/mm/yy)</label>
+                            <input
+                              type="text"
+                              placeholder="dd/mm/yy"
+                              value={editForm.serviceStart}
+                              onChange={e => setEditForm(f => ({ ...f, serviceStart: e.target.value }))}
+                              className="w-full border rounded px-2 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Service end (dd/mm/yy)</label>
+                            <input
+                              type="text"
+                              placeholder="dd/mm/yy"
+                              value={editForm.serviceEnd}
+                              onChange={e => setEditForm(f => ({ ...f, serviceEnd: e.target.value }))}
+                              className={`w-full border rounded px-2 py-1 text-xs ${editEndBeforeStart ? 'border-red-400' : ''}`}
+                            />
+                            {editEndBeforeStart && <p className="text-xs text-red-600 mt-1">End must be after start</p>}
+                          </div>
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Hours worked</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editForm.hoursWorked}
+                              onChange={e => setEditForm(f => ({ ...f, hoursWorked: e.target.value }))}
+                              className="w-full border rounded px-2 py-1 text-xs"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-2">
                           <button
-                            onClick={() => handleEditIdSave(s.id)}
-                            disabled={!editIdValue.trim()}
+                            onClick={() => handleEditSave(s.id)}
+                            disabled={!!editEndBeforeStart}
                             className="px-2 py-1 text-xs bg-olive-700 text-white rounded hover:bg-olive-800 disabled:opacity-50"
                           >
                             Save
                           </button>
                           <button
-                            onClick={() => setEditingIdFor(null)}
+                            onClick={() => setEditingFor(null)}
                             className="text-xs text-gray-500 hover:text-gray-700"
                           >
                             Cancel

@@ -170,4 +170,47 @@ describe('SoldiersPage', () => {
     expect(rows[0]).toHaveTextContent('David Cohen')
     expect(rows[1]).toHaveTextContent('Moshe Levi')
   })
+
+  it('shows full edit form when Edit button is clicked', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    expect(screen.getByDisplayValue('David Cohen')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('1111111')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('24')).toBeInTheDocument()
+  })
+
+  it('pre-fills dates in dd/mm/yy format', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    expect(screen.getByDisplayValue('01/01/26')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('31/12/26')).toBeInTheDocument()
+  })
+
+  it('calls onUpdateSoldier with updated fields on Save', async () => {
+    const onUpdateSoldier = vi.fn()
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    const nameInput = screen.getByDisplayValue('David Cohen')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'David Levi')
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(onUpdateSoldier).toHaveBeenCalledWith(expect.objectContaining({ id: '1111111', name: 'David Levi' }))
+  })
+
+  it('closes edit form on Cancel', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    expect(screen.getByDisplayValue('David Cohen')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+    expect(screen.queryByDisplayValue('David Cohen')).not.toBeInTheDocument()
+  })
+
+  it('disables Save when end date is before start date in edit form', async () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
+    const endInput = screen.getByDisplayValue('31/12/26')
+    await userEvent.clear(endInput)
+    await userEvent.type(endInput, '01/01/20')
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
+  })
 })
