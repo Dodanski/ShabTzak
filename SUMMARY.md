@@ -67,8 +67,9 @@ AuthContext (OAuth token)
 
 **`SoldierRepository`** (`src/services/soldierRepository.ts`)
 - `tabName = tabPrefix || 'Soldiers'` — reads from `"א'"` tab (not `"א'_Soldiers"`)
-- Sheet range is `A:M` (13 columns); `HEADER_ROW` ends with `'InactiveReason'`
+- Sheet range is `A:N` (14 columns); `HEADER_ROW` is `['ID', 'First Name', 'Last Name', 'Role', ...]`
 - `create(input)` uses `input.id` directly (army ID supplied by user — no auto-generation)
+- Auto-migrates old `Name` column to `First Name`/`Last Name` on first soldier creation
 
 **`SoldierService`** (`src/services/soldierService.ts`)
 - `create(input, changedBy)` — army ID must be in `input.id`
@@ -120,10 +121,14 @@ python3 scripts/import-soldiers.py \
 ```
 Get the OAuth token from DevTools → Network → any `sheets.googleapis.com` request → Authorization header (strip `"Bearer "`).
 
-Soldier tab format (English headers, 13 columns):
-`ID | Name | Role | ServiceStart | ServiceEnd | InitialFairness | CurrentFairness | Status | HoursWorked | WeekendLeavesCount | MidweekLeavesCount | AfterLeavesCount | InactiveReason`
+Soldier tab format (English headers, 14 columns):
+`ID | First Name | Last Name | Role | ServiceStart | ServiceEnd | InitialFairness | CurrentFairness | Status | HoursWorked | WeekendLeavesCount | MidweekLeavesCount | AfterLeavesCount | InactiveReason`
 
-> **Note:** Existing sheets with 12 columns will still parse correctly — `InactiveReason` gracefully defaults to `undefined` for missing headers.
+> **Note:** Parser supports legacy formats:
+> - Old 12-column format with `Name` column (migrates to new format on first soldier creation)
+> - 13-column format with `FirstName`/`LastName` (no spaces)
+> - Current 14-column format with `First Name`/`Last Name` (with spaces)
+> - Header matching is case-insensitive and whitespace-tolerant
 
 ---
 
@@ -157,10 +162,30 @@ App
 **`CreateTaskInput`** — same minus `id` (all optional except `taskType, startTime, endTime, roleRequirements`)
 **`UpdateTaskInput`** — `id` (required) + all Task fields optional
 **`Unit`** — `id, name, spreadsheetId, tabPrefix, createdAt, createdBy`
-**`Soldier`** — `id` (army ID, user-supplied), `name, role, serviceStart, serviceEnd, initialFairness, currentFairness, status: 'Active'|'Inactive', inactiveReason?, hoursWorked, weekendLeavesCount, midweekLeavesCount, afterLeavesCount`
-**`CreateSoldierInput`** — `id` (required, army number), `name, role, serviceStart, serviceEnd`
+**`Soldier`** — `id` (army ID, user-supplied), `firstName, lastName, role, serviceStart, serviceEnd, initialFairness, currentFairness, status: 'Active'|'Inactive', inactiveReason?, hoursWorked, weekendLeavesCount, midweekLeavesCount, afterLeavesCount`
+**`CreateSoldierInput`** — `id` (required, army number), `firstName, lastName, role, serviceStart, serviceEnd`
 
 ---
+
+## Recent changes (2026-03-07)
+
+1. **GitHub Pages deployment** — Added CI/GitHub Actions workflow to automatically build, test, and deploy to GitHub Pages
+   - Workflow: `.github/workflows/ci.yml` now includes `upload-pages-artifact` and `deploy-pages` steps
+   - Requires GitHub Secrets: `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, `VITE_SPREADSHEET_ID`, `VITE_ADMIN_EMAIL`
+   - App now live at: `https://dodanski.github.io/ShabTzak/`
+
+2. **Soldier name column format fix** — Updated spreadsheet to use "First Name" and "Last Name" columns (with spaces)
+   - `parseSoldier()` now looks for columns with spaces first: `"First Name"` and `"Last Name"`
+   - Falls back to no-space format: `"FirstName"` and `"LastName"` for backward compatibility
+   - Falls back to old `"Name"` column for very old data
+   - Header matching now case-insensitive and whitespace-tolerant to handle Google Sheets quirks
+   - `HEADER_ROW` in `SoldierRepository` updated to use spaced format
+   - Debug logging in dev mode shows what headers are detected
+
+3. **Schedule generation fix** — Fixed type annotation for `useScheduleGenerator` hook
+   - `generate` function now correctly typed as `() => Promise<void>` (was `() => void`)
+   - This fixed the issue where "Generate Schedule" button didn't wait for completion
+   - Success toast now appears after schedule is generated
 
 ## Recent changes (2026-03-06)
 
