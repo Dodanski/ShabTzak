@@ -101,7 +101,8 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
 
   async function handleUpdateSoldier(input: UpdateSoldierInput) {
     try {
-      await ds?.soldierService.updateFields(input.id, input, auth.email ?? 'user')
+      const { id, ...fields } = input
+      await ds?.soldierService.updateFields(id, fields, auth.email ?? 'user')
       reload()
       addToast('Soldier updated', 'success')
     } catch {
