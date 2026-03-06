@@ -303,7 +303,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
         {!loading && activeTab === 'roles' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
-            <h3 className="text-lg font-semibold text-olive-800">Roles</h3>
+            <h2 className="font-semibold text-olive-800">Roles</h2>
             {roles.length === 0 && (
               <p className="text-sm text-gray-400">No roles configured. Add one below.</p>
             )}
