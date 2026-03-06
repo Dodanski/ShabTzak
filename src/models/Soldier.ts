@@ -2,7 +2,8 @@ import { SoldierRole, SoldierStatus } from '../constants'
 
 export interface Soldier {
   id: string
-  name: string
+  firstName: string
+  lastName: string
   role: SoldierRole
   serviceStart: string // ISO date
   serviceEnd: string // ISO date
@@ -18,7 +19,8 @@ export interface Soldier {
 
 export interface CreateSoldierInput {
   id: string          // army ID number, e.g. "1234567" — user-supplied
-  name: string
+  firstName: string
+  lastName: string
   role: SoldierRole
   serviceStart: string
   serviceEnd: string
@@ -27,7 +29,8 @@ export interface CreateSoldierInput {
 export interface UpdateSoldierInput {
   id: string
   newId?: string          // if set, replaces the ID column in the sheet
-  name?: string
+  firstName?: string
+  lastName?: string
   role?: SoldierRole
   serviceStart?: string
   serviceEnd?: string
