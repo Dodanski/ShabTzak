@@ -7,7 +7,7 @@ import type { Soldier, CreateSoldierInput, UpdateSoldierInput } from '../models'
 const CACHE_KEY = 'soldiers'
 
 const HEADER_ROW = [
-  'ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd',
+  'ID', 'FirstName', 'LastName', 'Role', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
   'InactiveReason',
@@ -26,7 +26,7 @@ export class SoldierRepository {
     this.cache = cache
     // Soldiers live in the unit-named tab (e.g. "א'") not a dedicated "Soldiers" tab
     this.tabName = tabPrefix || 'Soldiers'
-    this.range = `${this.tabName}!A:M`
+    this.range = `${this.tabName}!A:N`
   }
 
   private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
@@ -54,7 +54,8 @@ export class SoldierRepository {
   async create(input: CreateSoldierInput): Promise<Soldier> {
     const soldier: Soldier = {
       id: input.id,
-      name: input.name,
+      firstName: input.firstName,
+      lastName: input.lastName,
       role: input.role,
       serviceStart: input.serviceStart,
       serviceEnd: input.serviceEnd,
@@ -75,12 +76,22 @@ export class SoldierRepository {
       const rescuedRows = allRows.filter(r => r.length > 0)
       await this.sheets.updateValues(
         this.spreadsheetId,
-        `${this.tabName}!A1:M1`,
+        `${this.tabName}!A1:N1`,
         [HEADER_ROW]
       )
       if (rescuedRows.length > 0) {
         await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
       }
+    }
+
+    // Auto-migrate old Name column to FirstName/LastName
+    const hasNameColumn = allRows[0]?.includes('Name') && !allRows[0]?.includes('FirstName')
+    if (hasNameColumn) {
+      await this.sheets.updateValues(
+        this.spreadsheetId,
+        `${this.tabName}!A1:N1`,
+        [HEADER_ROW]
+      )
     }
 
     const row = serializeSoldier(soldier)
@@ -102,7 +113,8 @@ export class SoldierRepository {
     const updated: Soldier = {
       ...existing,
       ...(input.newId !== undefined && { id: input.newId }),
-      ...(input.name !== undefined && { name: input.name }),
+      ...(input.firstName !== undefined && { firstName: input.firstName }),
+      ...(input.lastName !== undefined && { lastName: input.lastName }),
       ...(input.role !== undefined && { role: input.role }),
       ...(input.serviceStart !== undefined && { serviceStart: input.serviceStart }),
       ...(input.serviceEnd !== undefined && { serviceEnd: input.serviceEnd }),
@@ -120,7 +132,7 @@ export class SoldierRepository {
     const sheetRow = rowIndex + 2
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${this.tabName}!A${sheetRow}:M${sheetRow}`,
+      `${this.tabName}!A${sheetRow}:N${sheetRow}`,
       [updatedRow]
     )
     this.cache.invalidate(CACHE_KEY)

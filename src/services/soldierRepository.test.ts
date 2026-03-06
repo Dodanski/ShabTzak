@@ -6,6 +6,13 @@ import { SheetCache } from './cache'
 const SHEET_ID = 'test-sheet-id'
 
 const HEADER_ROW = [
+  'ID', 'FirstName', 'LastName', 'Role', 'ServiceStart', 'ServiceEnd',
+  'InitialFairness', 'CurrentFairness', 'Status',
+  'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
+  'InactiveReason',
+]
+
+const OLD_HEADER_ROW = [
   'ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
@@ -13,12 +20,12 @@ const HEADER_ROW = [
 ]
 
 const SOLDIER_ROW = [
-  's1', 'David Cohen', 'Driver', '2026-01-01', '2026-08-31',
+  's1', 'David', 'Cohen', 'Driver', '2026-01-01', '2026-08-31',
   '0', '0', 'Active', '0', '0', '0', '0', '',
 ]
 
 const SOLDIER_ROW_2 = [
-  's2', 'Moshe Levi', 'Medic', '2026-02-01', '2026-09-30',
+  's2', 'Moshe', 'Levi', 'Medic', '2026-02-01', '2026-09-30',
   '0', '1', 'Active', '8', '1', '0', '0', '',
 ]
 
@@ -42,8 +49,11 @@ describe('SoldierRepository', () => {
       const soldiers = await repo.list()
       expect(soldiers).toHaveLength(2)
       expect(soldiers[0].id).toBe('s1')
-      expect(soldiers[0].name).toBe('David Cohen')
+      expect(soldiers[0].firstName).toBe('David')
+      expect(soldiers[0].lastName).toBe('Cohen')
       expect(soldiers[1].id).toBe('s2')
+      expect(soldiers[1].firstName).toBe('Moshe')
+      expect(soldiers[1].lastName).toBe('Levi')
     })
 
     it('returns empty array when only header row exists', async () => {
@@ -72,7 +82,8 @@ describe('SoldierRepository', () => {
 
       const soldier = await repo.getById('s2')
       expect(soldier).not.toBeNull()
-      expect(soldier!.name).toBe('Moshe Levi')
+      expect(soldier!.firstName).toBe('Moshe')
+      expect(soldier!.lastName).toBe('Levi')
     })
 
     it('returns null for unknown id', async () => {
@@ -89,14 +100,16 @@ describe('SoldierRepository', () => {
 
       const soldier = await repo.create({
         id: 'test-id',
-        name: 'Yoni Ben',
+        firstName: 'Yoni',
+        lastName: 'Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
         serviceEnd: '2026-10-31',
       })
 
       expect(appendSpy).toHaveBeenCalledOnce()
-      expect(soldier.name).toBe('Yoni Ben')
+      expect(soldier.firstName).toBe('Yoni')
+      expect(soldier.lastName).toBe('Ben')
       expect(soldier.role).toBe('Squad Leader')
       expect(soldier.status).toBe('Active')
       expect(soldier.id).toBeTruthy()
@@ -109,13 +122,14 @@ describe('SoldierRepository', () => {
 
       await repo.create({
         id: 'test-id',
-        name: 'Yoni Ben',
+        firstName: 'Yoni',
+        lastName: 'Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
         serviceEnd: '2026-10-31',
       })
 
-      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:M1', [HEADER_ROW])
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:N1', [HEADER_ROW])
       expect(appendSpy).toHaveBeenCalledOnce()
     })
 
@@ -126,14 +140,15 @@ describe('SoldierRepository', () => {
 
       await repo.create({
         id: 'test-id',
-        name: 'Yoni Ben',
+        firstName: 'Yoni',
+        lastName: 'Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
         serviceEnd: '2026-10-31',
       })
 
       // Writes proper header to A1 (overwriting the misplaced data row)
-      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:M1', [HEADER_ROW])
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:N1', [HEADER_ROW])
       // First append: rescued existing row; second append: new soldier
       expect(appendSpy).toHaveBeenCalledTimes(2)
       expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [SOLDIER_ROW])
@@ -145,7 +160,8 @@ describe('SoldierRepository', () => {
 
       const soldier = await repo.create({
         id: '9876543',
-        name: 'Yoni Ben',
+        firstName: 'Yoni',
+        lastName: 'Ben',
         role: 'Squad Leader',
         serviceStart: '2026-03-01',
         serviceEnd: '2026-10-31',
@@ -184,6 +200,27 @@ describe('SoldierRepository', () => {
     })
   })
 
+  describe('auto-migration from old Name column', () => {
+    it('create() detects old Name column and rewrites header', async () => {
+      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([OLD_HEADER_ROW])
+      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
+
+      await repo.create({
+        id: 'test-id',
+        firstName: 'Yoni',
+        lastName: 'Ben',
+        role: 'Squad Leader',
+        serviceStart: '2026-03-01',
+        serviceEnd: '2026-10-31',
+      })
+
+      // Detect old header and rewrite it with new format
+      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'Soldiers!A1:N1', [HEADER_ROW])
+      expect(appendSpy).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('tabPrefix', () => {
     it('uses prefixed tab name when tabPrefix is provided', async () => {
       const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
@@ -191,7 +228,7 @@ describe('SoldierRepository', () => {
 
       await prefixedRepo.list()
 
-      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company!A:M')
+      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company!A:N')
     })
   })
 })
