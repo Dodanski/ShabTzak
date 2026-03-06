@@ -26,6 +26,7 @@ const BASE_PROPS = {
   taskAssignments: [],
   leaveAssignments: [],
   conflicts: [],
+  roles: ['Driver', 'Medic'],
   onGenerate: vi.fn(),
   onManualAssign: vi.fn(),
 }

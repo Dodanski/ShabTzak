@@ -2,10 +2,6 @@ import { useState } from 'react'
 import ScheduleCalendar from './ScheduleCalendar'
 import { formatScheduleAsText, exportToPdf, exportToCsv, downloadCsv } from '../utils/exportUtils'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment, ScheduleConflict } from '../models'
-import type { SoldierRole } from '../constants'
-import { ROLES } from '../constants'
-
-const ASSIGNMENT_ROLES: Array<SoldierRole | 'Any'> = [...ROLES, 'Any'] as Array<SoldierRole | 'Any'>
 
 interface SchedulePageProps {
   soldiers: Soldier[]
@@ -14,18 +10,20 @@ interface SchedulePageProps {
   taskAssignments: TaskAssignment[]
   leaveAssignments: LeaveAssignment[]
   conflicts: ScheduleConflict[]
+  roles: string[]
   onGenerate: () => void
-  onManualAssign: (soldierId: string, taskId: string, role: SoldierRole) => void
+  onManualAssign: (soldierId: string, taskId: string, role: string) => void
 }
 
 export default function SchedulePage({
-  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, onGenerate, onManualAssign,
+  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign,
 }: SchedulePageProps) {
+  const assignmentRoles: string[] = [...roles, 'Any']
   const [copied, setCopied] = useState(false)
   const [showManual, setShowManual] = useState(false)
   const [manualSoldierId, setManualSoldierId] = useState('')
   const [manualTaskId, setManualTaskId] = useState('')
-  const [manualRole, setManualRole] = useState<SoldierRole>(ROLES[0])
+  const [manualRole, setManualRole] = useState<string>(roles[0] ?? '')
 
   function handleCopyWhatsApp() {
     const text = formatScheduleAsText(leaveAssignments, soldiers)
@@ -46,7 +44,7 @@ export default function SchedulePage({
     onManualAssign(manualSoldierId, manualTaskId, manualRole)
     setManualSoldierId('')
     setManualTaskId('')
-    setManualRole(ROLES[0])
+    setManualRole(roles[0] ?? '')
   }
 
   return (
@@ -135,10 +133,10 @@ export default function SchedulePage({
                 id="manual-role"
                 aria-label="Role"
                 value={manualRole}
-                onChange={e => setManualRole(e.target.value as SoldierRole)}
+                onChange={e => setManualRole(e.target.value)}
                 className="w-full border rounded px-3 py-1.5 text-sm"
               >
-                {ASSIGNMENT_ROLES.map(r => (
+                {assignmentRoles.map(r => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
