@@ -10,13 +10,13 @@ const CONFIG: AppConfig = {
 
 const SOLDIERS: Soldier[] = [
   {
-    id: 's1', name: 'David', role: 'Driver',
+    id: 's1', firstName: 'David', lastName: 'Ben', role: 'Driver',
     serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 0, status: 'Active',
     hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
   },
   {
-    id: 's2', name: 'Moshe', role: 'Driver',
+    id: 's2', firstName: 'Moshe', lastName: 'Levi', role: 'Driver',
     serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 0, status: 'Active',
     hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,

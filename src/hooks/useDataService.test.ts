@@ -82,7 +82,7 @@ describe('useDataService', () => {
   })
 
   it('loads soldiers when authenticated', async () => {
-    const SOLDIERS = [{ id: 's1', name: 'David' }]
+    const SOLDIERS = [{ id: 's1', firstName: 'David', lastName: 'Ben' }]
     vi.mocked(DataService).mockImplementationOnce(
       function () { return makeMockDs({ soldiers: { list: vi.fn().mockResolvedValue(SOLDIERS) } }) as any }
     )

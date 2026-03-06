@@ -16,7 +16,7 @@ const BASE_CONFIG: AppConfig = {
 }
 
 const BASE_SOLDIER: Soldier = {
-  id: 's1', name: 'David', role: 'Driver',
+  id: 's1', firstName: 'David', lastName: 'Ben', role: 'Driver',
   serviceStart: '2026-01-01', serviceEnd: '2026-04-10', // 99 days = ~9.9 cycles × 4 = 39.6 → 39 days
   initialFairness: 0, currentFairness: 0, status: 'Active',
   hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,

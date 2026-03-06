@@ -1,6 +1,6 @@
 # ShabTzak — Project Summary
 
-> **For the next agent.** Read this before touching any code. Current state is clean: 521 tests passing, build clean, deployed to GitHub Pages.
+> **For the next agent.** Read this before touching any code. Current state is clean: 536 tests passing, build clean, deployed to GitHub Pages.
 
 ---
 
@@ -162,6 +162,18 @@ App
 
 ---
 
+## Recent changes (2026-03-06)
+
+1. **Soldier name split** — `name: string` → `firstName: string + lastName: string`
+2. **SoldierRepository** — 14-column header (A:N) with `FirstName` and `LastName`; auto-migrates old `Name` column
+3. **Backward compatibility** — `parseSoldier()` handles both old `Name` and new `FirstName`/`LastName` columns
+4. **Helper function** — `fullName(soldier)` utility for displaying names
+5. **SoldiersPage** — table shows two name columns; add/edit forms have separate firstName/lastName inputs
+6. **Validation** — `validateSoldier()` now requires both firstName and lastName
+7. **Components updated** — ScheduleCalendar, LeaveRequestsPage, LeaveRequestForm, exportUtils all use `fullName()`
+8. **SoldierService** — create message uses full name from input
+9. **All tests passing** — 536 tests (up from 532)
+
 ## Recent changes (2026-03-05)
 
 1. **Full soldier edit** — inline edit panel per row; editable fields: ID, name, role, service start/end (dd/mm/yy input), hours worked; `SoldierService.updateFields()` added
@@ -197,7 +209,7 @@ App
 
 ```bash
 npm run dev          # Vite dev server
-npm test             # Vitest (521 tests)
+npm test             # Vitest (536 tests)
 npm run build        # TypeScript + Vite build
 npm run deploy       # build + gh-pages publish
 ```

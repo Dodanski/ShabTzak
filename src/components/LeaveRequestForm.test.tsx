@@ -7,13 +7,13 @@ import React from 'react'
 
 const SOLDIERS: Soldier[] = [
   {
-    id: 's1', name: 'David Cohen', role: 'Driver',
+    id: 's1', firstName: 'David', lastName: 'Cohen', role: 'Driver',
     serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 0, status: 'Active',
     hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
   },
   {
-    id: 's2', name: 'Moshe Levi', role: 'Medic',
+    id: 's2', firstName: 'Moshe', lastName: 'Levi', role: 'Medic',
     serviceStart: '2026-02-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 0, status: 'Active',
     hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,

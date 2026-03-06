@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { CONSTRAINT_TYPES, PRIORITY_MIN, PRIORITY_MAX } from '../constants'
 import type { Soldier, CreateLeaveRequestInput, ConstraintType } from '../models'
+import { fullName } from '../utils/helpers'
 
 interface LeaveRequestFormProps {
   soldiers: Soldier[]
@@ -37,7 +38,7 @@ export default function LeaveRequestForm({ soldiers, onSubmit, onCancel }: Leave
           required
         >
           {activeSoldiers.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>{fullName(s)}</option>
           ))}
         </select>
       </div>
