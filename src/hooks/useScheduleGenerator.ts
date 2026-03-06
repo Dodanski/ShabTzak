@@ -3,7 +3,7 @@ import type { DataService } from '../services/dataService'
 import type { ScheduleConflict, Task, AppConfig } from '../models'
 
 export interface UseScheduleGeneratorResult {
-  generate: () => void
+  generate: () => Promise<void>
   loading: boolean
   conflicts: ScheduleConflict[]
   error: Error | null
