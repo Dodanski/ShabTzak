@@ -40,6 +40,7 @@ vi.mock('./services/masterDataService', () => {
     initialize = vi.fn().mockResolvedValue(undefined)
     resolveRole = mockResolveRole
     tasks = { list: vi.fn().mockResolvedValue([]) }
+    roles = { list: vi.fn().mockResolvedValue([]) }
     config = {
       read: vi.fn().mockResolvedValue({
         leaveRatioDaysInBase: 3,

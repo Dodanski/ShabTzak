@@ -53,10 +53,11 @@ interface UnitAppProps {
   masterDs: MasterDataService | null
   tasks: Task[]
   configData: AppConfig | null
+  roles: string[]
   onBackToAdmin?: () => void
 }
 
-function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configData, onBackToAdmin }: UnitAppProps) {
+function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configData, roles, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([])
@@ -224,6 +225,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           onAddSoldier={handleAddSoldier}
           onAdjustFairness={handleAdjustFairness}
           leaveAssignments={leaveAssignments}
+          roles={roles}
         />
       )}
 
@@ -231,6 +233,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
         <TasksPage
           tasks={tasks}
           onAddTask={handleAddTask}
+          roles={roles}
         />
       )}
 
@@ -271,6 +274,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           conflicts={conflicts}
           onGenerate={handleGenerateSchedule}
           onManualAssign={handleManualAssign}
+          roles={roles}
         />
       )}
 
@@ -291,6 +295,7 @@ function AppContent() {
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [configData, setConfigData] = useState<AppConfig | null>(null)
+  const [roles, setRoles] = useState<string[]>([])
 
   useEffect(() => {
     if (!auth.isAuthenticated || !auth.email || !auth.accessToken) {
@@ -308,13 +313,14 @@ function AppContent() {
           setActiveUnit(resolved.unit)
           setAppMode('unit')
         }
-        return Promise.all([master.tasks.list(), master.config.read()])
+        return Promise.all([master.tasks.list(), master.config.read(), master.roles.list()])
       })
       .then(result => {
         if (!result) return
-        const [loadedTasks, loadedConfig] = result
+        const [loadedTasks, loadedConfig, loadedRoles] = result
         setTasks(loadedTasks ?? [])
         setConfigData(loadedConfig)
+        setRoles(loadedRoles ?? [])
       })
       .catch(() => setAppMode('denied'))
   }, [auth.isAuthenticated, auth.email, auth.accessToken])
@@ -347,6 +353,7 @@ function AppContent() {
       masterDs={masterDs}
       tasks={tasks}
       configData={configData}
+      roles={roles}
       onBackToAdmin={isAdmin ? () => { setActiveUnit(null); setAppMode('admin') } : undefined}
     />
   )
