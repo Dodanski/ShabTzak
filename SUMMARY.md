@@ -1,6 +1,6 @@
 # ShabTzak — Project Summary
 
-> **For the next agent.** Read this before touching any code. Current state is clean: 505 tests passing, build clean, pushed to `origin/main`.
+> **For the next agent.** Read this before touching any code. Current state is clean: 510 tests passing, build clean, pushed to `origin/main`.
 
 ---
 
@@ -190,7 +190,7 @@ App
 
 ```bash
 npm run dev          # Vite dev server
-npm test             # Vitest (505 tests)
+npm test             # Vitest (510 tests)
 npm run build        # TypeScript + Vite build
 npm run deploy       # build + gh-pages publish
 ```
