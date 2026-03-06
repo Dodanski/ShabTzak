@@ -5,7 +5,7 @@ import ScheduleCalendar from './ScheduleCalendar'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
 
 const SOLDIER: Soldier = {
-  id: 's1', name: 'David Cohen', role: 'Driver',
+  id: 's1', firstName: 'David', lastName: 'Cohen', role: 'Driver',
   serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
   initialFairness: 0, currentFairness: 0, status: 'Active',
   hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,

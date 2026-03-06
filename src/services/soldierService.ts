@@ -1,6 +1,7 @@
 import type { SoldierRepository } from './soldierRepository'
 import type { HistoryService } from './historyService'
 import type { Soldier, CreateSoldierInput, SoldierStatus, UpdateSoldierInput } from '../models'
+import { fullName } from '../utils/helpers'
 
 /**
  * Orchestrates soldier CRUD with audit history logging.
@@ -13,7 +14,8 @@ export class SoldierService {
 
   async create(input: CreateSoldierInput, changedBy: string): Promise<Soldier> {
     const soldier = await this.repo.create(input)
-    await this.history.append('CREATE', 'Soldier', soldier.id, changedBy, `Created soldier ${soldier.name}`)
+    const name = `${input.firstName} ${input.lastName}`
+    await this.history.append('CREATE', 'Soldier', soldier.id, changedBy, `Created soldier ${name}`)
     return soldier
   }
 

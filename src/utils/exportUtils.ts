@@ -1,4 +1,5 @@
 import type { Soldier, LeaveAssignment } from '../models'
+import { fullName } from './helpers'
 
 /**
  * Formats leave assignments as human-readable text suitable for WhatsApp sharing.
@@ -11,7 +12,7 @@ export function formatScheduleAsText(
     return 'No leave assignments scheduled.'
   }
 
-  const soldierMap = new Map(soldiers.map(s => [s.id, s.name]))
+  const soldierMap = new Map(soldiers.map(s => [s.id, fullName(s)]))
 
   const lines = assignments.map(a => {
     const name = soldierMap.get(a.soldierId) ?? a.soldierId
@@ -35,7 +36,7 @@ export function exportToPdf(): void {
  * Converts leave assignments to a CSV string.
  */
 export function exportToCsv(soldiers: Soldier[], assignments: LeaveAssignment[]): string {
-  const soldierMap = new Map(soldiers.map(s => [s.id, s.name]))
+  const soldierMap = new Map(soldiers.map(s => [s.id, fullName(s)]))
   const header = 'Soldier,Start Date,End Date,Leave Type,Weekend'
   if (assignments.length === 0) return header
   const rows = assignments.map(a => {

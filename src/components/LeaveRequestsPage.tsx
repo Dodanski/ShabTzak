@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Soldier, LeaveRequest } from '../models'
 import { formatDisplayDate } from '../utils/dateUtils'
+import { fullName } from '../utils/helpers'
 
 interface LeaveRequestsPageProps {
   leaveRequests: LeaveRequest[]
@@ -61,7 +62,7 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
                 const soldier = soldierMap.get(req.soldierId)
                 return (
                   <tr key={req.id} className="border-t">
-                    <td className="px-4 py-2">{soldier?.name ?? req.soldierId}</td>
+                    <td className="px-4 py-2">{soldier ? fullName(soldier) : req.soldierId}</td>
                     <td className="px-4 py-2 text-olive-600">{formatDisplayDate(req.startDate)} – {formatDisplayDate(req.endDate)}</td>
                     <td className="px-4 py-2 text-olive-500">{req.leaveType}</td>
                     <td className="px-4 py-2 text-olive-500">{req.priority}</td>

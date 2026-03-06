@@ -2,6 +2,7 @@ import { buildAvailabilityMatrix } from '../algorithms/availabilityMatrix'
 import type { AvailabilityStatus } from '../algorithms/availabilityMatrix'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
 import { formatDisplayDate } from '../utils/dateUtils'
+import { fullName } from '../utils/helpers'
 
 interface ScheduleCalendarProps {
   soldiers: Soldier[]
@@ -44,7 +45,7 @@ export default function ScheduleCalendar({
             {soldiers.map(soldier => (
               <tr key={soldier.id}>
                 <td className="px-2 py-1 font-medium text-olive-800 sticky left-0 bg-white whitespace-nowrap">
-                  {soldier.name}
+                  {fullName(soldier)}
                 </td>
                 {dates.map(d => {
                   const status = matrix.get(d)?.get(soldier.id) ?? 'available'
