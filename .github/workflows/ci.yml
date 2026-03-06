@@ -34,9 +34,10 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_GOOGLE_CLIENT_ID: placeholder
-          VITE_GOOGLE_API_KEY: placeholder
-          VITE_SPREADSHEET_ID: placeholder
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+          VITE_SPREADSHEET_ID: ${{ secrets.VITE_SPREADSHEET_ID }}
+          VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
