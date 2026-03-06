@@ -1,4 +1,5 @@
 import { getRestPeriodEnd } from './taskAvailability'
+import { fullName } from '../utils/helpers'
 import type { Soldier, Task, TaskSchedule, ScheduleConflict } from '../models'
 
 /**
@@ -40,7 +41,7 @@ export function detectTaskConflicts(
         const soldier = soldierMap.get(soldierId)
         conflicts.push({
           type: 'REST_PERIOD_VIOLATION',
-          message: `${soldier?.name ?? soldierId} lacks rest between tasks ${currTask.id} and ${nextTask.id}`,
+          message: `${soldier ? fullName(soldier) : soldierId} lacks rest between tasks ${currTask.id} and ${nextTask.id}`,
           affectedSoldierIds: [soldierId],
           affectedTaskIds: [currTask.id, nextTask.id],
           suggestions: ['Increase time between assignments for this soldier'],

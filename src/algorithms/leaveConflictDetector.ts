@@ -1,5 +1,6 @@
 import { getDateRange, parseDate, formatDate, calculateNights } from '../utils/dateUtils'
 import { meetsMinimumPresence } from './presenceValidator'
+import { fullName } from '../utils/helpers'
 import type { Soldier, LeaveSchedule, AppConfig, ScheduleConflict } from '../models'
 
 /**
@@ -53,7 +54,7 @@ export function detectLeaveConflicts(
     if (totalDays > quotaDays) {
       conflicts.push({
         type: 'OVER_QUOTA',
-        message: `${soldier.name} has ${totalDays} leave days, exceeding quota of ${quotaDays.toFixed(1)}`,
+        message: `${fullName(soldier)} has ${totalDays} leave days, exceeding quota of ${quotaDays.toFixed(1)}`,
         affectedSoldierIds: [soldier.id],
         affectedRequestIds: leaves.map(a => a.id),
         suggestions: ['Remove some leave assignments for this soldier'],

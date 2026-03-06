@@ -1,4 +1,5 @@
 import { parseDate } from '../utils/dateUtils'
+import { fullName } from '../utils/helpers'
 import type { Soldier, LeaveAssignment, ScheduleConflict } from '../models'
 
 function datesOverlap(
@@ -28,7 +29,7 @@ export function getLeaveConflicts(
   if (soldier.status === 'Inactive') {
     conflicts.push({
       type: 'NO_ROLE_AVAILABLE',
-      message: `Soldier ${soldier.name} is ${soldier.status} and cannot take leave`,
+      message: `Soldier ${fullName(soldier)} is ${soldier.status} and cannot take leave`,
       affectedSoldierIds: [soldier.id],
       suggestions: [],
     })
@@ -41,7 +42,7 @@ export function getLeaveConflicts(
   ) {
     conflicts.push({
       type: 'NO_ROLE_AVAILABLE',
-      message: `Requested dates fall outside ${soldier.name}'s service period`,
+      message: `Requested dates fall outside ${fullName(soldier)}'s service period`,
       affectedSoldierIds: [soldier.id],
       suggestions: ['Choose dates within the soldier\'s service period'],
     })

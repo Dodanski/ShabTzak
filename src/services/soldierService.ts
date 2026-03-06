@@ -1,7 +1,6 @@
 import type { SoldierRepository } from './soldierRepository'
 import type { HistoryService } from './historyService'
 import type { Soldier, CreateSoldierInput, SoldierStatus, UpdateSoldierInput } from '../models'
-import { fullName } from '../utils/helpers'
 
 /**
  * Orchestrates soldier CRUD with audit history logging.

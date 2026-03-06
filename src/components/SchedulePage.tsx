@@ -107,7 +107,7 @@ export default function SchedulePage({
               >
                 <option value="">Select soldier…</option>
                 {soldiers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>{fullName(s)}</option>
                 ))}
               </select>
             </div>
