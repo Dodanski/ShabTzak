@@ -74,7 +74,7 @@ describe('DataService', () => {
     const ds = new DataService('token', 'sheet-id', 'Alpha_Company', makeHistory())
     vi.spyOn(ds.sheets, 'getValues').mockResolvedValue([])
     await ds.soldiers.list()
-    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company!A:M')
+    expect(ds.sheets.getValues).toHaveBeenCalledWith('sheet-id', 'Alpha_Company!A:N')
   })
 
   it('does not expose tasks, config, history, versions', () => {
