@@ -28,6 +28,11 @@ const mockMasterDs = {
     create: vi.fn().mockResolvedValue({ id: 'cmd-2', email: 'cmd2@example.com', unitId: 'unit-1', addedAt: '', addedBy: '' }),
     remove: vi.fn().mockResolvedValue(undefined),
   },
+  roles: {
+    list: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+  },
   tasks: { list: vi.fn().mockResolvedValue([
     { id: 't1', taskType: 'Guard', startTime: '06:00', endTime: '14:00', durationHours: 8, roleRequirements: [], minRestAfter: 6, isSpecial: false }
   ]) },
@@ -107,5 +112,10 @@ describe('AdminPanel', () => {
     await waitFor(() => screen.getByRole('button', { name: /^config$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^config$/i }))
     await waitFor(() => expect(screen.getByText('leaveRatioDaysInBase')).toBeInTheDocument())
+  })
+
+  it('shows a Roles tab', () => {
+    render(<AdminPanel masterDs={mockMasterDs as any} currentAdminEmail="admin@test.com" onEnterUnit={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /roles/i })).toBeInTheDocument()
   })
 })

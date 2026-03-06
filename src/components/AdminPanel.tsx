@@ -5,7 +5,7 @@ import type { Admin, Unit, Commander, Task, AppConfig, CreateTaskInput, UpdateTa
 import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
 
-type AdminTab = 'admins' | 'units' | 'commanders' | 'tasks' | 'config'
+type AdminTab = 'admins' | 'units' | 'commanders' | 'roles' | 'tasks' | 'config'
 
 interface AdminPanelProps {
   masterDs: MasterDataService
@@ -20,6 +20,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [units, setUnits] = useState<Unit[]>([])
   const [commanders, setCommanders] = useState<Commander[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [roles, setRoles] = useState<string[]>([])
+  const [newRoleName, setNewRoleName] = useState('')
   const [configData, setConfigData] = useState<AppConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,14 +35,15 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
   async function reload() {
     setLoading(true)
-    const [a, u, c, t, cfg] = await Promise.all([
+    const [a, u, c, r, t, cfg] = await Promise.all([
       masterDs.admins.list(),
       masterDs.units.list(),
       masterDs.commanders.list(),
+      masterDs.roles.list(),
       masterDs.tasks.list(),
       masterDs.config.read(),
     ])
-    setAdmins(a); setUnits(u); setCommanders(c); setTasks(t); setConfigData(cfg)
+    setAdmins(a); setUnits(u); setCommanders(c); setRoles(r); setTasks(t); setConfigData(cfg)
     setLoading(false)
   }
 
@@ -112,6 +115,28 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     }
   }
 
+  async function handleAddRole() {
+    if (!newRoleName.trim()) return
+    setError(null)
+    try {
+      await masterDs.roles.create(newRoleName.trim())
+      setNewRoleName('')
+      await reload()
+    } catch {
+      setError('Failed to add role')
+    }
+  }
+
+  async function handleDeleteRole(name: string) {
+    setError(null)
+    try {
+      await masterDs.roles.delete(name)
+      await reload()
+    } catch {
+      setError('Failed to delete role')
+    }
+  }
+
   async function handleAddTask(input: CreateTaskInput) {
     try { await masterDs.taskService.create(input, currentAdminEmail); await reload() }
     catch { /* ignore */ }
@@ -151,6 +176,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           <button className={tabClass('admins')} onClick={() => setActiveTab('admins')}>Admins</button>
           <button className={tabClass('units')} onClick={() => setActiveTab('units')}>Units</button>
           <button className={tabClass('commanders')} onClick={() => setActiveTab('commanders')}>Commanders</button>
+          <button className={tabClass('roles')} onClick={() => setActiveTab('roles')}>Roles</button>
           <button className={tabClass('tasks')} onClick={() => setActiveTab('tasks')}>Tasks</button>
           <button className={tabClass('config')} onClick={() => setActiveTab('config')}>Config</button>
         </div>
@@ -275,9 +301,48 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           </div>
         )}
 
+        {!loading && activeTab === 'roles' && (
+          <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
+            <h3 className="text-lg font-semibold text-olive-800">Roles</h3>
+            {roles.length === 0 && (
+              <p className="text-sm text-gray-400">No roles configured. Add one below.</p>
+            )}
+            {roles.length > 0 && (
+              <ul className="space-y-1">
+                {roles.map(r => (
+                  <li key={r} className="flex items-center justify-between px-3 py-2 bg-white rounded border border-olive-100">
+                    <span className="text-sm">{r}</span>
+                    <button
+                      onClick={() => handleDeleteRole(r)}
+                      className="text-xs text-red-600 hover:text-red-800"
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <input
+                placeholder="New role name"
+                value={newRoleName}
+                onChange={e => setNewRoleName(e.target.value)}
+                className="flex-1 border rounded px-3 py-1.5 text-sm"
+              />
+              <button
+                onClick={handleAddRole}
+                disabled={!newRoleName.trim()}
+                className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded hover:bg-olive-800 disabled:opacity-50"
+              >
+                Add Role
+              </button>
+            </div>
+          </div>
+        )}
+
         {!loading && activeTab === 'tasks' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4">
-            <TasksPage tasks={tasks} onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} />
+            <TasksPage tasks={tasks} onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} roles={roles} />
           </div>
         )}
 
