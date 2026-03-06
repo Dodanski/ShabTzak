@@ -3,7 +3,8 @@ import type { Soldier, Task, LeaveRequest, LeaveAssignment } from '../models'
 export function serializeSoldier(s: Soldier): string[] {
   return [
     s.id,
-    s.name,
+    s.firstName,
+    s.lastName,
     s.role,
     s.serviceStart,
     s.serviceEnd,
@@ -14,7 +15,7 @@ export function serializeSoldier(s: Soldier): string[] {
     String(s.weekendLeavesCount),
     String(s.midweekLeavesCount),
     String(s.afterLeavesCount),
-    s.inactiveReason ?? '',    // new column M
+    s.inactiveReason ?? '',
   ]
 }
 

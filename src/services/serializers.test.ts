@@ -7,7 +7,8 @@ describe('Data Serializers', () => {
     it('serializes a soldier to a row', () => {
       const soldier: Soldier = {
         id: '1',
-        name: 'David Cohen',
+        firstName: 'David',
+        lastName: 'Cohen',
         role: 'Driver',
         serviceStart: '2026-01-01',
         serviceEnd: '2026-08-31',
@@ -21,19 +22,43 @@ describe('Data Serializers', () => {
       }
       const row = serializeSoldier(soldier)
       expect(row).toEqual([
-        '1', 'David Cohen', 'Driver', '2026-01-01', '2026-08-31',
+        '1', 'David', 'Cohen', 'Driver', '2026-01-01', '2026-08-31',
         '0', '2.5', 'Active', '16', '1', '2', '3', '',
       ])
     })
 
     it('produces same length as header row', () => {
       const soldier: Soldier = {
-        id: '2', name: 'Moshe', role: 'Medic',
+        id: '2', firstName: 'Moshe', lastName: 'Levi', role: 'Medic',
         serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
         initialFairness: 1, currentFairness: 1, status: 'Active',
         hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
       }
-      expect(serializeSoldier(soldier)).toHaveLength(13)
+      expect(serializeSoldier(soldier)).toHaveLength(14)
+    })
+
+    it('serializeSoldier writes firstName and lastName as separate columns', () => {
+      const soldier: Soldier = {
+        id: '1234567',
+        firstName: 'John',
+        lastName: 'Doe',
+        role: 'Driver',
+        serviceStart: '2026-01-01',
+        serviceEnd: '2026-12-31',
+        initialFairness: 0,
+        currentFairness: 0,
+        status: 'Active',
+        hoursWorked: 0,
+        weekendLeavesCount: 0,
+        midweekLeavesCount: 0,
+        afterLeavesCount: 0,
+      }
+      const row = serializeSoldier(soldier)
+      expect(row[0]).toBe('1234567')
+      expect(row[1]).toBe('John')
+      expect(row[2]).toBe('Doe')
+      expect(row[3]).toBe('Driver')
+      expect(row.length).toBe(14)
     })
   })
 
