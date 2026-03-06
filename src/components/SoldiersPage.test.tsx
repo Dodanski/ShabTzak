@@ -20,13 +20,13 @@ const BASE_CONFIG: AppConfig = {
 
 const SOLDIERS: Soldier[] = [
   {
-    id: '1111111', name: 'David Cohen', role: 'Driver',
+    id: '1111111', firstName: 'David', lastName: 'Cohen', role: 'Driver',
     serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 2.5, status: 'Active',
     hoursWorked: 24, weekendLeavesCount: 1, midweekLeavesCount: 0, afterLeavesCount: 0,
   },
   {
-    id: '2222222', name: 'Moshe Levi', role: 'Medic',
+    id: '2222222', firstName: 'Moshe', lastName: 'Levi', role: 'Medic',
     serviceStart: '2026-02-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 1.0, status: 'Inactive',
     inactiveReason: 'Medical leave',
@@ -35,10 +35,12 @@ const SOLDIERS: Soldier[] = [
 ]
 
 describe('SoldiersPage', () => {
-  it('renders all soldier names', () => {
+  it('renders all soldier names with first and last name columns', () => {
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
-    expect(screen.getByText('David Cohen')).toBeInTheDocument()
-    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+    expect(screen.getByText('David')).toBeInTheDocument()
+    expect(screen.getByText('Cohen')).toBeInTheDocument()
+    expect(screen.getByText('Moshe')).toBeInTheDocument()
+    expect(screen.getByText('Levi')).toBeInTheDocument()
   })
 
   it('shows loading indicator when loading', () => {
@@ -94,11 +96,21 @@ describe('SoldiersPage', () => {
     expect(screen.getByText('Hours')).toBeInTheDocument()
   })
 
-  it('shows add form with Army ID field when Add Soldier button is clicked', async () => {
+  it('shows First Name and Last Name as separate table columns', () => {
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
+    // Check that both first and last names appear in the table
+    expect(screen.getByText('David')).toBeInTheDocument()
+    expect(screen.getByText('Cohen')).toBeInTheDocument()
+    expect(screen.getByText('Moshe')).toBeInTheDocument()
+    expect(screen.getByText('Levi')).toBeInTheDocument()
+  })
+
+  it('shows add form with Army ID and name fields when Add Soldier button is clicked', async () => {
     render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
     expect(screen.getByPlaceholderText(/army id/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/name/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/first name/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/last name/i)).toBeInTheDocument()
   })
 
   it('calls onAddSoldier with army id and form data on submit', async () => {
@@ -106,12 +118,13 @@ describe('SoldiersPage', () => {
     render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={onAddSoldier} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
     await userEvent.type(screen.getByPlaceholderText(/army id/i), '9876543')
-    await userEvent.type(screen.getByPlaceholderText(/name/i), 'Yoni Ben')
+    await userEvent.type(screen.getByPlaceholderText(/first name/i), 'Yoni')
+    await userEvent.type(screen.getByPlaceholderText(/last name/i), 'Ben')
     await userEvent.type(screen.getByLabelText(/service start/i), '01/03/26')
     await userEvent.type(screen.getByLabelText(/service end/i), '31/12/26')
     await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
     expect(onAddSoldier).toHaveBeenCalledWith(
-      expect.objectContaining({ id: '9876543', name: 'Yoni Ben' })
+      expect.objectContaining({ id: '9876543', firstName: 'Yoni', lastName: 'Ben' })
     )
   })
 
@@ -127,15 +140,17 @@ describe('SoldiersPage', () => {
   it('filters soldiers by status Active', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Active')
-    expect(screen.getByText('David Cohen')).toBeInTheDocument()
-    expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
+    expect(screen.getByText('David')).toBeInTheDocument()
+    expect(screen.getByText('Cohen')).toBeInTheDocument()
+    expect(screen.queryByText('Moshe')).not.toBeInTheDocument()
   })
 
   it('filters soldiers by status Inactive', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Inactive')
-    expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
-    expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
+    expect(screen.queryByText('David')).not.toBeInTheDocument()
+    expect(screen.getByText('Moshe')).toBeInTheDocument()
+    expect(screen.getByText('Levi')).toBeInTheDocument()
   })
 
   it('shows Adjust button for each soldier', () => {
@@ -165,16 +180,23 @@ describe('SoldiersPage', () => {
 
   it('sorts soldiers by name ascending when Name header clicked', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
-    await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
+    // Find the Name header that has sort indicator (not First Name or Last Name)
+    const headers = screen.getAllByRole('columnheader')
+    const nameHeader = headers.find(h => h.textContent?.match(/^Name/) && !h.textContent?.includes('First') && !h.textContent?.includes('Last'))
+    expect(nameHeader).toBeDefined()
+    await userEvent.click(nameHeader!)
     const rows = screen.getAllByRole('row').slice(1)
-    expect(rows[0]).toHaveTextContent('David Cohen')
-    expect(rows[1]).toHaveTextContent('Moshe Levi')
+    expect(rows[0]).toHaveTextContent('David')
+    expect(rows[0]).toHaveTextContent('Cohen')
+    expect(rows[1]).toHaveTextContent('Moshe')
+    expect(rows[1]).toHaveTextContent('Levi')
   })
 
   it('shows full edit form when Edit button is clicked', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
-    expect(screen.getByDisplayValue('David Cohen')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('David')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Cohen')).toBeInTheDocument()
     expect(screen.getByDisplayValue('1111111')).toBeInTheDocument()
     expect(screen.getByDisplayValue('24')).toBeInTheDocument()
   })
@@ -190,19 +212,19 @@ describe('SoldiersPage', () => {
     const onUpdateSoldier = vi.fn()
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
-    const nameInput = screen.getByDisplayValue('David Cohen')
-    await userEvent.clear(nameInput)
-    await userEvent.type(nameInput, 'David Levi')
+    const lastNameInput = screen.getByDisplayValue('Cohen')
+    await userEvent.clear(lastNameInput)
+    await userEvent.type(lastNameInput, 'Levi')
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
-    expect(onUpdateSoldier).toHaveBeenCalledWith(expect.objectContaining({ id: '1111111', name: 'David Levi' }))
+    expect(onUpdateSoldier).toHaveBeenCalledWith(expect.objectContaining({ id: '1111111', lastName: 'Levi' }))
   })
 
   it('closes edit form on Cancel', async () => {
     render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
-    expect(screen.getByDisplayValue('David Cohen')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Cohen')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
-    expect(screen.queryByDisplayValue('David Cohen')).not.toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Cohen')).not.toBeInTheDocument()
   })
 
   it('disables Save when end date is before start date in edit form', async () => {

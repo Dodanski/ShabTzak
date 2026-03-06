@@ -18,7 +18,8 @@ interface SoldiersPageProps {
 
 const EMPTY_FORM: CreateSoldierInput = {
   id: '',
-  name: '',
+  firstName: '',
+  lastName: '',
   role: '',
   serviceStart: '',
   serviceEnd: '',
@@ -39,7 +40,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
   const [pendingReason, setPendingReason] = useState('')
   const [editingFor, setEditingFor] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
-    newId: '', name: '', role: '' as SoldierRole,
+    newId: '', firstName: '', lastName: '', role: '' as SoldierRole,
     serviceStart: '', serviceEnd: '', hoursWorked: '',
   })
 
@@ -84,7 +85,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
     setEditingFor(s.id)
     setEditForm({
       newId: s.id,
-      name: s.name,
+      firstName: s.firstName,
+      lastName: s.lastName,
       role: s.role,
       serviceStart: formatDisplayDate(s.serviceStart),
       serviceEnd: formatDisplayDate(s.serviceEnd),
@@ -100,7 +102,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
     onUpdateSoldier?.({
       id: originalId,
       ...(editForm.newId !== originalId && { newId: editForm.newId }),
-      name: editForm.name,
+      firstName: editForm.firstName,
+      lastName: editForm.lastName,
       role: editForm.role,
       serviceStart: startISO,
       serviceEnd: endISO,
@@ -130,7 +133,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
   const filteredSoldiers = soldiers
     .filter(s => {
-      const nameMatch = nameFilter === '' || s.name.toLowerCase().includes(nameFilter.toLowerCase())
+      const fullNameStr = `${s.firstName} ${s.lastName}`.toLowerCase()
+      const nameMatch = nameFilter === '' || fullNameStr.includes(nameFilter.toLowerCase())
       const roleMatch = roleFilter === '' || s.role === roleFilter
       const statusMatch = statusFilter === '' || s.status === statusFilter
       return nameMatch && roleMatch && statusMatch
@@ -138,7 +142,11 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
     .sort((a, b) => {
       if (!sortKey) return 0
       let cmp = 0
-      if (sortKey === 'name') cmp = a.name.localeCompare(b.name)
+      if (sortKey === 'name') {
+        const aName = `${a.firstName} ${a.lastName}`
+        const bName = `${b.firstName} ${b.lastName}`
+        cmp = aName.localeCompare(bName)
+      }
       if (sortKey === 'fairness') cmp = a.currentFairness - b.currentFairness
       return sortAsc ? cmp : -cmp
     })
@@ -200,9 +208,18 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
           </div>
           <div>
             <input
-              placeholder="Name"
-              value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="First Name"
+              value={form.firstName}
+              onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+              required
+              className="w-full border rounded px-3 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <input
+              placeholder="Last Name"
+              value={form.lastName}
+              onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
               required
               className="w-full border rounded px-3 py-1.5 text-sm"
             />
@@ -280,6 +297,8 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                 >
                   Name{sortKey === 'name' ? (sortAsc ? ' ▲' : ' ▼') : ''}
                 </th>
+                <th className="text-left px-4 py-2">First Name</th>
+                <th className="text-left px-4 py-2">Last Name</th>
                 <th className="text-left px-4 py-2">Role</th>
                 <th
                   className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-600"
@@ -311,7 +330,9 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                       )}
                     </td>
                     <td className="px-4 py-2 text-xs text-olive-500 font-mono">{s.id}</td>
-                    <td className="px-4 py-2">{s.name}</td>
+                    <td className="px-4 py-2">{`${s.firstName} ${s.lastName}`}</td>
+                    <td className="px-4 py-2">{s.firstName}</td>
+                    <td className="px-4 py-2">{s.lastName}</td>
                     <td className="px-4 py-2 text-olive-500">{s.role}</td>
                     <td className="px-4 py-2">
                       <FairnessBar score={s.currentFairness} average={avgFairness} />
@@ -345,7 +366,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {editingFor === s.id && (
                     <tr className="bg-olive-50 border-t">
-                      <td colSpan={configData ? 10 : 9} className="px-4 py-3">
+                      <td colSpan={configData ? 12 : 11} className="px-4 py-3">
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                           <div>
                             <label className="block text-xs text-olive-600 mb-1">Army ID</label>
@@ -357,11 +378,20 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-olive-600 mb-1">Name</label>
+                            <label className="block text-xs text-olive-600 mb-1">First Name</label>
                             <input
                               type="text"
-                              value={editForm.name}
-                              onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                              value={editForm.firstName}
+                              onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))}
+                              className="w-full border rounded px-2 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-olive-600 mb-1">Last Name</label>
+                            <input
+                              type="text"
+                              value={editForm.lastName}
+                              onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))}
                               className="w-full border rounded px-2 py-1 text-xs"
                             />
                           </div>
@@ -429,7 +459,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {pendingInactiveId === s.id && (
                     <tr className="bg-red-50 border-t">
-                      <td colSpan={configData ? 10 : 9} className="px-4 py-2">
+                      <td colSpan={configData ? 12 : 11} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-red-700">Reason for deactivation:</span>
                           <input
@@ -458,7 +488,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
                   {adjustingId === s.id && (
                     <tr className="bg-olive-50 border-t">
-                      <td colSpan={configData ? 10 : 9} className="px-4 py-2">
+                      <td colSpan={configData ? 12 : 11} className="px-4 py-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <label className="text-xs text-olive-600" htmlFor={`delta-${s.id}`}>Delta</label>
                           <input
