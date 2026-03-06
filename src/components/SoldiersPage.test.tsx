@@ -36,43 +36,43 @@ const SOLDIERS: Soldier[] = [
 
 describe('SoldiersPage', () => {
   it('renders all soldier names', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getByText('David Cohen')).toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })
 
   it('shows loading indicator when loading', () => {
-    render(<SoldiersPage soldiers={[]} loading onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={[]} loading onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
   it('shows empty state when no soldiers', () => {
-    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getByText(/no soldiers/i)).toBeInTheDocument()
   })
 
   it('shows a checked checkbox for Active soldiers and unchecked for Inactive', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
     expect(checkboxes[0]).toBeChecked()
     expect(checkboxes[1]).not.toBeChecked()
   })
 
   it('shows inactiveReason text next to inactive soldiers', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getByText('Medical leave')).toBeInTheDocument()
   })
 
   it('calls onUpdateStatus with Active when unchecked (Inactive) soldier checkbox is clicked', async () => {
     const onUpdateStatus = vi.fn()
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={onUpdateStatus} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={onUpdateStatus} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
     await userEvent.click(checkboxes[1])
     expect(onUpdateStatus).toHaveBeenCalledWith('2222222', 'Active', undefined)
   })
 
   it('shows inline reason input when Active soldier checkbox is unchecked', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
     await userEvent.click(checkboxes[0])
     expect(screen.getByPlaceholderText(/reason/i)).toBeInTheDocument()
@@ -80,7 +80,7 @@ describe('SoldiersPage', () => {
 
   it('calls onUpdateStatus with Inactive + reason when Confirm is clicked', async () => {
     const onUpdateStatus = vi.fn()
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={onUpdateStatus} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={onUpdateStatus} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     const checkboxes = screen.getAllByRole('checkbox', { name: /active status/i })
     await userEvent.click(checkboxes[0])
     await userEvent.type(screen.getByPlaceholderText(/reason/i), 'Sick')
@@ -89,13 +89,13 @@ describe('SoldiersPage', () => {
   })
 
   it('shows Fairness and Hours column headers', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getByText('Fairness')).toBeInTheDocument()
     expect(screen.getByText('Hours')).toBeInTheDocument()
   })
 
   it('shows add form with Army ID field when Add Soldier button is clicked', async () => {
-    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
     expect(screen.getByPlaceholderText(/army id/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/name/i)).toBeInTheDocument()
@@ -103,7 +103,7 @@ describe('SoldiersPage', () => {
 
   it('calls onAddSoldier with army id and form data on submit', async () => {
     const onAddSoldier = vi.fn()
-    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={onAddSoldier} />)
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={onAddSoldier} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
     await userEvent.type(screen.getByPlaceholderText(/army id/i), '9876543')
     await userEvent.type(screen.getByPlaceholderText(/name/i), 'Yoni Ben')
@@ -116,7 +116,7 @@ describe('SoldiersPage', () => {
   })
 
   it('disables Add button and shows error when end date is before start date', async () => {
-    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={[]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
     await userEvent.type(screen.getByLabelText(/service start/i), '01/12/26')
     await userEvent.type(screen.getByLabelText(/service end/i), '01/01/26')
@@ -125,27 +125,27 @@ describe('SoldiersPage', () => {
   })
 
   it('filters soldiers by status Active', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Active')
     expect(screen.getByText('David Cohen')).toBeInTheDocument()
     expect(screen.queryByText('Moshe Levi')).not.toBeInTheDocument()
   })
 
   it('filters soldiers by status Inactive', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /filter by status/i }), 'Inactive')
     expect(screen.queryByText('David Cohen')).not.toBeInTheDocument()
     expect(screen.getByText('Moshe Levi')).toBeInTheDocument()
   })
 
   it('shows Adjust button for each soldier', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getAllByRole('button', { name: /adjust/i })).toHaveLength(2)
   })
 
   it('calls onAdjustFairness on submit', async () => {
     const onAdjustFairness = vi.fn()
-    render(<SoldiersPage soldiers={[SOLDIERS[0]]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={onAdjustFairness} />)
+    render(<SoldiersPage soldiers={[SOLDIERS[0]]} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} onAdjustFairness={onAdjustFairness} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('button', { name: /adjust/i }))
     await userEvent.type(screen.getByLabelText(/delta/i), '2')
     await userEvent.type(screen.getByLabelText(/reason/i), 'Extra duty')
@@ -154,17 +154,17 @@ describe('SoldiersPage', () => {
   })
 
   it('shows Quota column header when configData is provided', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[]} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} configData={BASE_CONFIG} leaveAssignments={[]} roles={['Driver', 'Medic']} />)
     expect(screen.getByText('Quota')).toBeInTheDocument()
   })
 
   it('renders a name filter input', () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     expect(screen.getByPlaceholderText(/search soldiers/i)).toBeInTheDocument()
   })
 
   it('sorts soldiers by name ascending when Name header clicked', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getByRole('columnheader', { name: /name/i }))
     const rows = screen.getAllByRole('row').slice(1)
     expect(rows[0]).toHaveTextContent('David Cohen')
@@ -172,7 +172,7 @@ describe('SoldiersPage', () => {
   })
 
   it('shows full edit form when Edit button is clicked', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     expect(screen.getByDisplayValue('David Cohen')).toBeInTheDocument()
     expect(screen.getByDisplayValue('1111111')).toBeInTheDocument()
@@ -180,7 +180,7 @@ describe('SoldiersPage', () => {
   })
 
   it('pre-fills dates in dd/mm/yy format', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     expect(screen.getByDisplayValue('01/01/26')).toBeInTheDocument()
     expect(screen.getByDisplayValue('31/12/26')).toBeInTheDocument()
@@ -188,7 +188,7 @@ describe('SoldiersPage', () => {
 
   it('calls onUpdateSoldier with updated fields on Save', async () => {
     const onUpdateSoldier = vi.fn()
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     const nameInput = screen.getByDisplayValue('David Cohen')
     await userEvent.clear(nameInput)
@@ -198,7 +198,7 @@ describe('SoldiersPage', () => {
   })
 
   it('closes edit form on Cancel', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     expect(screen.getByDisplayValue('David Cohen')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
@@ -206,7 +206,7 @@ describe('SoldiersPage', () => {
   })
 
   it('disables Save when end date is before start date in edit form', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     const endInput = screen.getByDisplayValue('31/12/26')
     await userEvent.clear(endInput)
@@ -215,7 +215,7 @@ describe('SoldiersPage', () => {
   })
 
   it('disables Save when a date field is cleared in edit form', async () => {
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     const startInput = screen.getByDisplayValue('01/01/26')
     await userEvent.clear(startInput)
@@ -224,12 +224,27 @@ describe('SoldiersPage', () => {
 
   it('clamps negative hoursWorked to 0 on Save', async () => {
     const onUpdateSoldier = vi.fn()
-    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} />)
+    render(<SoldiersPage soldiers={SOLDIERS} onUpdateSoldier={onUpdateSoldier} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Driver', 'Medic']} />)
     await userEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0])
     const hoursInput = screen.getByDisplayValue('24')
     await userEvent.clear(hoursInput)
     await userEvent.type(hoursInput, '-5')
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(onUpdateSoldier).toHaveBeenCalledWith(expect.objectContaining({ hoursWorked: 0 }))
+  })
+
+  it('renders role options from the roles prop in add form', async () => {
+    render(<SoldiersPage soldiers={[]} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={['Alpha', 'Beta']} />)
+    await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
+    expect(screen.getAllByRole('option', { name: 'Alpha' }).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByRole('option', { name: 'Beta' }).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows no role options in add form when roles is empty', async () => {
+    render(<SoldiersPage soldiers={[]} onUpdateSoldier={vi.fn()} onUpdateStatus={vi.fn()} onAddSoldier={vi.fn()} roles={[]} />)
+    await userEvent.click(screen.getByRole('button', { name: /add soldier/i }))
+    const selects = screen.getAllByRole('combobox')
+    const roleSelect = selects.find(s => s.getAttribute('aria-label') === 'Role')
+    expect(roleSelect?.querySelectorAll('option')).toHaveLength(0)
   })
 })

@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { ROLES } from '../constants'
 import type { Soldier, CreateSoldierInput, UpdateSoldierInput, SoldierRole, SoldierStatus, AppConfig, LeaveAssignment } from '../models'
 import FairnessBar from './FairnessBar'
 import { calculateLeaveEntitlement, countUsedLeaveDays } from '../utils/leaveQuota'
@@ -14,17 +13,18 @@ interface SoldiersPageProps {
   onAdjustFairness?: (soldierId: string, delta: number, reason: string) => void
   configData?: AppConfig | null
   leaveAssignments?: LeaveAssignment[]
+  roles?: string[]
 }
 
 const EMPTY_FORM: CreateSoldierInput = {
   id: '',
   name: '',
-  role: 'Driver',
+  role: '',
   serviceStart: '',
   serviceEnd: '',
 }
 
-export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onUpdateSoldier, onAdjustFairness, configData, leaveAssignments = [] }: SoldiersPageProps) {
+export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onUpdateSoldier, onAdjustFairness, configData, leaveAssignments = [], roles = [] }: SoldiersPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
@@ -39,7 +39,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
   const [pendingReason, setPendingReason] = useState('')
   const [editingFor, setEditingFor] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
-    newId: '', name: '', role: 'Driver' as SoldierRole,
+    newId: '', name: '', role: '' as SoldierRole,
     serviceStart: '', serviceEnd: '', hoursWorked: '',
   })
 
@@ -152,7 +152,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-olive-800">Soldiers</h2>
         <button
-          onClick={() => setShowForm(s => !s)}
+          onClick={() => { setForm(f => ({ ...f, role: roles[0] ?? '' })); setShowForm(s => !s) }}
           className="px-3 py-1.5 text-sm bg-olive-700 text-white rounded-lg hover:bg-olive-800"
         >
           Add Soldier
@@ -173,7 +173,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
           className="border rounded px-3 py-1.5 text-sm"
         >
           <option value="">All roles</option>
-          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          {roles.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <select
           value={statusFilter}
@@ -214,7 +214,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
               className="w-full border rounded px-3 py-1.5 text-sm"
               aria-label="Role"
             >
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              {roles.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div>
@@ -373,7 +373,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
                               className="w-full border rounded px-2 py-1 text-xs"
                               aria-label="Role"
                             >
-                              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                              {roles.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
                           </div>
                           <div>
