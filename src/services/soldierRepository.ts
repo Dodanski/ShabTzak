@@ -7,7 +7,7 @@ import type { Soldier, CreateSoldierInput, UpdateSoldierInput } from '../models'
 const CACHE_KEY = 'soldiers'
 
 const HEADER_ROW = [
-  'ID', 'FirstName', 'LastName', 'Role', 'ServiceStart', 'ServiceEnd',
+  'ID', 'First Name', 'Last Name', 'Role', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
   'InactiveReason',
@@ -84,9 +84,11 @@ export class SoldierRepository {
       }
     }
 
-    // Auto-migrate old Name column to FirstName/LastName
-    const hasNameColumn = allRows[0]?.includes('Name') && !allRows[0]?.includes('FirstName')
-    if (hasNameColumn) {
+    // Auto-migrate old Name column to First Name/Last Name
+    const hasOldNameColumn = allRows[0]?.includes('Name') &&
+      !allRows[0]?.includes('First Name') &&
+      !allRows[0]?.includes('FirstName')
+    if (hasOldNameColumn) {
       await this.sheets.updateValues(
         this.spreadsheetId,
         `${this.tabName}!A1:N1`,

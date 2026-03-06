@@ -26,16 +26,25 @@ function safeGet(row: string[], headers: string[], name: string): string {
 export function parseSoldier(row: string[], headers: string[]): Soldier {
   if (row.length === 0) throw new Error('Cannot parse empty row')
 
-  // Handle both old (Name) and new (FirstName/LastName) formats
-  const hasFirstNameColumn = headers.includes('FirstName')
-  const hasLastNameColumn = headers.includes('LastName')
+  // Handle multiple column name formats:
+  // - New: "First Name" and "Last Name" (with spaces)
+  // - Fallback: "FirstName" and "LastName" (no spaces)
+  // - Old: "Name" column only
+  const hasFirstNameSpaced = headers.includes('First Name')
+  const hasLastNameSpaced = headers.includes('Last Name')
+  const hasFirstNameNoSpace = headers.includes('FirstName')
+  const hasLastNameNoSpace = headers.includes('LastName')
   const hasNameColumn = headers.includes('Name')
 
   let firstName = ''
   let lastName = ''
 
-  if (hasFirstNameColumn && hasLastNameColumn) {
-    // New format: separate columns
+  if (hasFirstNameSpaced && hasLastNameSpaced) {
+    // Current format: "First Name" and "Last Name" with spaces
+    firstName = get(row, headers, 'First Name')
+    lastName = get(row, headers, 'Last Name')
+  } else if (hasFirstNameNoSpace && hasLastNameNoSpace) {
+    // Fallback: no spaces
     firstName = get(row, headers, 'FirstName')
     lastName = get(row, headers, 'LastName')
   } else if (hasNameColumn) {

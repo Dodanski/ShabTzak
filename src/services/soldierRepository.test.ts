@@ -6,7 +6,7 @@ import { SheetCache } from './cache'
 const SHEET_ID = 'test-sheet-id'
 
 const HEADER_ROW = [
-  'ID', 'FirstName', 'LastName', 'Role', 'ServiceStart', 'ServiceEnd',
+  'ID', 'First Name', 'Last Name', 'Role', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
   'InactiveReason',
