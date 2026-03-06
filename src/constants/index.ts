@@ -8,7 +8,7 @@ export const ROLES = [
   'Weapons Specialist',
 ] as const
 
-export type SoldierRole = typeof ROLES[number]
+export type SoldierRole = string
 
 // Leave types
 export const LEAVE_TYPES = ['After', 'Long'] as const

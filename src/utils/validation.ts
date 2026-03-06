@@ -1,4 +1,4 @@
-import { ROLES, CONSTRAINT_TYPES, PRIORITY_MIN, PRIORITY_MAX } from '../constants'
+import { CONSTRAINT_TYPES, PRIORITY_MIN, PRIORITY_MAX } from '../constants'
 import type { CreateSoldierInput, CreateLeaveRequestInput, CreateTaskInput } from '../models'
 import { parseDate } from './dateUtils'
 
@@ -17,10 +17,6 @@ export function validateSoldier(input: CreateSoldierInput): ValidationErrors | n
     errors.name = 'Name is required'
   } else if (input.name.length < 2) {
     errors.name = 'Name must be at least 2 characters'
-  }
-
-  if (!input.role || !ROLES.includes(input.role as any)) {
-    errors.role = 'Please select a valid role'
   }
 
   if (!input.serviceStart) {

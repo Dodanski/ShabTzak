@@ -31,15 +31,10 @@ describe('Validation Utils', () => {
       expect(errors).toHaveProperty('name')
     })
 
-    it('returns error for invalid role', () => {
-      const input: any = {
-        name: 'David',
-        role: 'InvalidRole',
-        serviceStart: '2026-01-01',
-        serviceEnd: '2026-08-31',
-      }
+    it('does not return a role error for any non-empty role string', () => {
+      const input = { id: '1234567', name: 'Yoni', role: 'UnknownRole', serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
       const errors = validateSoldier(input)
-      expect(errors).toHaveProperty('role')
+      expect(errors?.role).toBeUndefined()
     })
 
     it('returns error for end date before start date', () => {
