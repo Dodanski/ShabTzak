@@ -7,6 +7,7 @@ import { TaskRepository } from './taskRepository'
 import { ConfigRepository } from './configRepository'
 import { HistoryService } from './historyService'
 import { TaskService } from './taskService'
+import { RolesService } from './rolesService'
 import { MASTER_SHEET_TABS } from '../constants'
 import type { Unit } from '../models'
 
@@ -14,6 +15,7 @@ const ADMIN_TAB_HEADERS: Record<string, string[][]> = {
   [MASTER_SHEET_TABS.TASKS]: [['ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours', 'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays']],
   [MASTER_SHEET_TABS.CONFIG]: [['Key', 'Value']],
   [MASTER_SHEET_TABS.HISTORY]: [['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details']],
+  [MASTER_SHEET_TABS.ROLES]: [['RoleName']],
 }
 
 export type ResolvedRole =
@@ -29,6 +31,7 @@ export class MasterDataService {
   readonly config: ConfigRepository
   readonly history: HistoryService
   readonly taskService: TaskService
+  readonly roles: RolesService
   readonly sheets: GoogleSheetsService
   private spreadsheetId: string
 
@@ -43,6 +46,7 @@ export class MasterDataService {
     this.config = new ConfigRepository(this.sheets, spreadsheetId)
     this.history = new HistoryService(this.sheets, spreadsheetId)
     this.taskService = new TaskService(this.tasks, this.history)
+    this.roles = new RolesService(this.sheets, spreadsheetId)
   }
 
   /**
