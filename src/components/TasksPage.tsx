@@ -19,7 +19,7 @@ const EMPTY_FORM: TaskFormState = {
   startTime: '',
   durationHours: 1,
   roleRequirements: [],
-  pendingRole: 'Driver',
+  pendingRole: 'Any',
   pendingCount: 1,
 }
 
@@ -53,7 +53,7 @@ function taskToFormState(task: Task): TaskFormState {
     startTime,
     durationHours: task.durationHours,
     roleRequirements: task.roleRequirements,
-    pendingRole: 'Driver',
+    pendingRole: 'Any',
     pendingCount: 1,
   }
 }

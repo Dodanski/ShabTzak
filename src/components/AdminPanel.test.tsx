@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import AdminPanel from './AdminPanel'
 
@@ -117,5 +118,37 @@ describe('AdminPanel', () => {
   it('shows a Roles tab', () => {
     render(<AdminPanel masterDs={mockMasterDs as any} currentAdminEmail="admin@test.com" onEnterUnit={vi.fn()} />)
     expect(screen.getByRole('button', { name: /roles/i })).toBeInTheDocument()
+  })
+
+  it('renders Roles tab with empty state when no roles are configured', async () => {
+    render(<AdminPanel masterDs={mockMasterDs as any} currentAdminEmail="admin@test.com" onEnterUnit={vi.fn()} />)
+    const rolesTab = screen.getByRole('button', { name: /^roles$/i })
+    await userEvent.click(rolesTab)
+    expect(screen.getByText(/no roles configured/i)).toBeInTheDocument()
+  })
+
+  it('calls masterDs.roles.create when Add Role is submitted', async () => {
+    render(<AdminPanel masterDs={mockMasterDs as any} currentAdminEmail="admin@test.com" onEnterUnit={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /^roles$/i }))
+    const input = screen.getByPlaceholderText(/new role name/i)
+    await userEvent.type(input, 'Sniper')
+    await userEvent.click(screen.getByRole('button', { name: /add role/i }))
+    expect(mockMasterDs.roles.create).toHaveBeenCalledWith('Sniper')
+  })
+
+  it('calls masterDs.roles.delete when Delete is clicked', async () => {
+    const mockDs = {
+      ...mockMasterDs,
+      roles: {
+        list: vi.fn().mockResolvedValue(['Driver']),
+        create: vi.fn().mockResolvedValue(undefined),
+        delete: vi.fn().mockResolvedValue(undefined),
+      },
+    }
+    render(<AdminPanel masterDs={mockDs as any} currentAdminEmail="admin@test.com" onEnterUnit={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /^roles$/i }))
+    await screen.findByText('Driver')
+    await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+    expect(mockDs.roles.delete).toHaveBeenCalledWith('Driver')
   })
 })
