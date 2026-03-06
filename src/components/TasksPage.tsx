@@ -1,16 +1,5 @@
 import { useState } from 'react'
 import type { Task, CreateTaskInput, UpdateTaskInput, RoleRequirement } from '../models'
-import type { SoldierRole } from '../constants'
-
-const FORM_ROLES: Array<SoldierRole | 'Any'> = [
-  'Driver',
-  'Radio Operator',
-  'Medic',
-  'Squad Leader',
-  'Operations Room',
-  'Weapons Specialist',
-  'Any',
-]
 
 interface TaskFormState {
   taskType: string
@@ -19,7 +8,7 @@ interface TaskFormState {
   startTime: string
   durationHours: number
   roleRequirements: RoleRequirement[]
-  pendingRole: SoldierRole | 'Any'
+  pendingRole: string
   pendingCount: number
 }
 
@@ -36,6 +25,7 @@ const EMPTY_FORM: TaskFormState = {
 
 interface TasksPageProps {
   tasks: Task[]
+  roles?: string[]
   onAddTask?: (input: CreateTaskInput) => void
   onUpdateTask?: (input: UpdateTaskInput) => void
   loading?: boolean
@@ -68,7 +58,8 @@ function taskToFormState(task: Task): TaskFormState {
   }
 }
 
-export default function TasksPage({ tasks, onAddTask, onUpdateTask, loading }: TasksPageProps) {
+export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, loading }: TasksPageProps) {
+  const formRoles: string[] = [...roles, 'Any']
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<TaskFormState>(EMPTY_FORM)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -169,10 +160,10 @@ export default function TasksPage({ tasks, onAddTask, onUpdateTask, loading }: T
           <select
             aria-label="Role"
             value={f.pendingRole}
-            onChange={e => setF(prev => ({ ...prev, pendingRole: e.target.value as SoldierRole | 'Any' }))}
+            onChange={e => setF(prev => ({ ...prev, pendingRole: e.target.value }))}
             className="border rounded px-2 py-1.5 text-sm"
           >
-            {FORM_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            {formRoles.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
           <input
             aria-label="Role count"

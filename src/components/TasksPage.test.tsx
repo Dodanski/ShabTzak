@@ -22,40 +22,40 @@ const TASKS: Task[] = [
 
 describe('TasksPage', () => {
   it('renders page heading', () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByText('Tasks')).toBeInTheDocument()
   })
 
   it('renders task types', () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByText('Guard')).toBeInTheDocument()
     expect(screen.getByText('Patrol')).toBeInTheDocument()
   })
 
   it('renders start times', () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByText('06:00')).toBeInTheDocument()
   })
 
   it('shows empty state when no tasks', () => {
-    render(<TasksPage tasks={[]} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={[]} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByText(/no tasks/i)).toBeInTheDocument()
   })
 
   it('shows Add Task button', () => {
-    render(<TasksPage tasks={[]} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={[]} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument()
   })
 
   it('shows form when Add Task clicked', async () => {
-    render(<TasksPage tasks={[]} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={[]} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: /add task/i }))
     expect(screen.getByLabelText(/task type/i)).toBeInTheDocument()
   })
 
   it('calls onAddTask when form submitted', async () => {
     const onAddTask = vi.fn()
-    render(<TasksPage tasks={[]} onAddTask={onAddTask} />)
+    render(<TasksPage tasks={[]} roles={['Driver', 'Medic']} onAddTask={onAddTask} />)
     await userEvent.click(screen.getByRole('button', { name: /add task/i }))
     await userEvent.type(screen.getByLabelText(/task type/i), 'Convoy')
     await userEvent.type(screen.getByLabelText(/start time/i), '08:00')
@@ -64,35 +64,35 @@ describe('TasksPage', () => {
   })
 
   it('shows loading state', () => {
-    render(<TasksPage tasks={[]} onAddTask={vi.fn()} loading />)
+    render(<TasksPage tasks={[]} roles={['Driver', 'Medic']} onAddTask={vi.fn()} loading />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
   it('shows Roles column header when tasks have role requirements', () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByText('Roles')).toBeInTheDocument()
   })
 
   it('renders role requirements as text badges', () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByText(/driver.*1/i)).toBeInTheDocument()
     expect(screen.getByText(/medic.*2/i)).toBeInTheDocument()
   })
 
   it('renders a type filter input', () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     expect(screen.getByPlaceholderText(/filter by type/i)).toBeInTheDocument()
   })
 
   it('filters tasks by type', async () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     await userEvent.type(screen.getByPlaceholderText(/filter by type/i), 'Guard')
     expect(screen.getByText('Guard')).toBeInTheDocument()
     expect(screen.queryByText('Patrol')).not.toBeInTheDocument()
   })
 
   it('shows all tasks when type filter is cleared', async () => {
-    render(<TasksPage tasks={TASKS} onAddTask={vi.fn()} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} onAddTask={vi.fn()} />)
     const filter = screen.getByPlaceholderText(/filter by type/i)
     await userEvent.type(filter, 'Guard')
     await userEvent.clear(filter)
@@ -101,7 +101,7 @@ describe('TasksPage', () => {
   })
 
   it('hides Add Task button when onAddTask is not provided', () => {
-    render(<TasksPage tasks={TASKS} />)
+    render(<TasksPage tasks={TASKS} roles={['Driver', 'Medic']} />)
     expect(screen.queryByRole('button', { name: /add task/i })).not.toBeInTheDocument()
   })
 })
