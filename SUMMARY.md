@@ -72,6 +72,7 @@ AuthContext (OAuth token)
 **`SoldierService`** (`src/services/soldierService.ts`)
 - `create(input, changedBy)` — army ID must be in `input.id`
 - `updateStatus(id, status, changedBy, inactiveReason?)` — sets Active or Inactive; no `discharge()` method
+- `updateFields(id, input, changedBy)` — updates name, role, serviceStart, serviceEnd, hoursWorked, or newId; `input` is `Omit<UpdateSoldierInput, 'id'>`
 
 **`ScheduleService`** (`src/services/scheduleService.ts`)
 - `generateLeaveSchedule(config, startDate, endDate, changedBy)` — config passed as param
@@ -160,6 +161,13 @@ App
 
 ---
 
+## Recent changes (2026-03-05)
+
+1. **Full soldier edit** — inline edit panel per row; editable fields: ID, name, role, service start/end (dd/mm/yy input), hours worked; `SoldierService.updateFields()` added
+2. **`changedBy`** — all handlers in `App.tsx` now use `auth.email ?? 'user'`
+3. **`HistoryPage`** — lazy-loads from `masterDs.history.listAll()` when the history section is opened
+4. **`SetupPage` deleted** — orphaned component removed
+
 ## Recent changes (2026-03-03/04)
 
 1. **Date display** — `formatDisplayDate(iso)` now returns `DD/MM/YY` (was `DD/MM`)
@@ -172,9 +180,6 @@ App
 
 ## Known / potential issues
 
-- **`changedBy`** now uses `auth.email ?? 'user'` in `handleUpdateStatus`; still `'user'` in other handlers
-- **`HistoryPage`** always renders with empty `entries={[]}` — history not wired to load from `masterDs.history`
-- **`SetupPage.tsx`** exists but is not reachable in current UI (orphaned component)
 - Task editing is admin-only (commanders see tasks read-only in UnitApp's Tasks section)
 - `soldier_list.xlsx` is gitignored; keep it locally for re-runs of the import script
 - Soldier import script (`scripts/import-soldiers.py`) uses old 12-column format — needs `InactiveReason` column added if re-run
