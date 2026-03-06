@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ScheduleCalendar from './ScheduleCalendar'
 import { formatScheduleAsText, exportToPdf, exportToCsv, downloadCsv } from '../utils/exportUtils'
+import { fullName } from '../utils/helpers'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment, ScheduleConflict } from '../models'
 
 interface SchedulePageProps {
