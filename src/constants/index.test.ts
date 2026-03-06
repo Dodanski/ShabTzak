@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { ROLES, CONSTRAINT_TYPES, DEFAULT_CONFIG, SHEET_TABS, MASTER_SHEET_TABS } from './index'
+import { CONSTRAINT_TYPES, DEFAULT_CONFIG, SHEET_TABS, MASTER_SHEET_TABS } from './index'
 
 describe('Constants', () => {
-  it('exports soldier roles', () => {
-    expect(ROLES).toHaveLength(6)
-    expect(ROLES).toContain('Driver')
-    expect(ROLES).toContain('Medic')
-  })
-
   it('exports constraint types', () => {
     expect(CONSTRAINT_TYPES).toHaveLength(10)
     expect(CONSTRAINT_TYPES).toContain('Family event')

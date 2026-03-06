@@ -1,13 +1,3 @@
-// Soldier roles
-export const ROLES = [
-  'Driver',
-  'Radio Operator',
-  'Medic',
-  'Squad Leader',
-  'Operations Room',
-  'Weapons Specialist',
-] as const
-
 export type SoldierRole = string
 
 // Leave types

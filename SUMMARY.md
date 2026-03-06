@@ -1,6 +1,6 @@
 # ShabTzak — Project Summary
 
-> **For the next agent.** Read this before touching any code. Current state is clean: 510 tests passing, build clean, pushed to `origin/main`.
+> **For the next agent.** Read this before touching any code. Current state is clean: 518 tests passing, build clean, pushed to `origin/main`.
 
 ---
 
@@ -28,6 +28,7 @@ Shabbat shift-scheduling web app for IDF units. Admins manage units, commanders,
 | `Tasks` | Task definitions (shared across all units) |
 | `Config` | Global config (leaveRatio, minBasePresence, etc.) |
 | `History` | Audit log |
+| `Roles` | Role definitions |
 
 **Per-unit spreadsheet** (ID stored in Units row, same spreadsheet can be shared) — managed by `DataService`:
 
@@ -88,7 +89,7 @@ AuthContext (OAuth token)
 
 ```typescript
 SHEET_TABS = { TASK_SCHEDULE, LEAVE_REQUESTS, LEAVE_SCHEDULE }  // 3 tabs only
-MASTER_SHEET_TABS = { ADMINS, UNITS, COMMANDERS, TASKS, CONFIG, HISTORY }
+MASTER_SHEET_TABS = { ADMINS, UNITS, COMMANDERS, TASKS, CONFIG, HISTORY, ROLES }
 ```
 
 ### tabPrefix logic
@@ -167,6 +168,12 @@ App
 2. **`changedBy`** — all handlers in `App.tsx` now use `auth.email ?? 'user'`
 3. **`HistoryPage`** — lazy-loads from `masterDs.history.listAll()` when the history section is opened
 4. **`SetupPage` deleted** — orphaned component removed
+5. **`ROLES` constant removed** from `src/constants/index.ts`; `SoldierRole` is now `string`
+6. **New `Roles` tab** in admin spreadsheet (`RoleName` column); auto-created empty on first run
+7. **`RolesService` added**: `src/services/rolesService.ts` — `list()`, `create(name)`, `delete(name)`
+8. **`MasterDataService.roles: RolesService`** field added
+9. **Admin panel** has new **Roles** tab to add/delete roles
+10. **`SoldiersPage`, `TasksPage`, `SchedulePage`** now accept `roles: string[]` prop
 
 ## Recent changes (2026-03-03/04)
 
@@ -190,7 +197,7 @@ App
 
 ```bash
 npm run dev          # Vite dev server
-npm test             # Vitest (510 tests)
+npm test             # Vitest (518 tests)
 npm run build        # TypeScript + Vite build
 npm run deploy       # build + gh-pages publish
 ```
