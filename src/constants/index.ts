@@ -77,4 +77,5 @@ export const MASTER_SHEET_TABS = {
   TASKS: 'Tasks',
   CONFIG: 'Config',
   HISTORY: 'History',
+  ROLES: 'Roles',
 } as const
