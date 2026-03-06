@@ -25,9 +25,29 @@ function safeGet(row: string[], headers: string[], name: string): string {
 
 export function parseSoldier(row: string[], headers: string[]): Soldier {
   if (row.length === 0) throw new Error('Cannot parse empty row')
+
+  // Handle both old (Name) and new (FirstName/LastName) formats
+  const hasFirstNameColumn = headers.includes('FirstName')
+  const hasLastNameColumn = headers.includes('LastName')
+  const hasNameColumn = headers.includes('Name')
+
+  let firstName = ''
+  let lastName = ''
+
+  if (hasFirstNameColumn && hasLastNameColumn) {
+    // New format: separate columns
+    firstName = get(row, headers, 'FirstName')
+    lastName = get(row, headers, 'LastName')
+  } else if (hasNameColumn) {
+    // Old format: Name column → lastName
+    firstName = ''
+    lastName = get(row, headers, 'Name')
+  }
+
   return {
     id: get(row, headers, 'ID'),
-    name: get(row, headers, 'Name'),
+    firstName,
+    lastName,
     role: get(row, headers, 'Role') as Soldier['role'],
     serviceStart: get(row, headers, 'ServiceStart'),
     serviceEnd: get(row, headers, 'ServiceEnd'),

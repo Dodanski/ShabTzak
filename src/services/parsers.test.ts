@@ -17,7 +17,8 @@ describe('Data Parsers', () => {
     it('parses a soldier row correctly', () => {
       const soldier = parseSoldier(dataRow, headerRow)
       expect(soldier.id).toBe('1')
-      expect(soldier.name).toBe('David Cohen')
+      expect(soldier.firstName).toBe('')
+      expect(soldier.lastName).toBe('David Cohen')
       expect(soldier.role).toBe('Driver')
       expect(soldier.serviceStart).toBe('2026-01-01')
       expect(soldier.serviceEnd).toBe('2026-08-31')
@@ -32,6 +33,22 @@ describe('Data Parsers', () => {
 
     it('throws for missing required fields', () => {
       expect(() => parseSoldier([], headerRow)).toThrow()
+    })
+
+    it('parseSoldier handles old Name column format', () => {
+      const oldRow = ['1234567', 'John Doe', 'Driver', '2026-01-01', '2026-12-31', '0', '0', 'Active', '0', '0', '0', '0', '']
+      const oldHeaders = ['ID', 'Name', 'Role', 'ServiceStart', 'ServiceEnd', 'InitialFairness', 'CurrentFairness', 'Status', 'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount', 'InactiveReason']
+      const soldier = parseSoldier(oldRow, oldHeaders)
+      expect(soldier.firstName).toBe('')
+      expect(soldier.lastName).toBe('John Doe')
+    })
+
+    it('parseSoldier handles new FirstName/LastName columns', () => {
+      const newRow = ['1234567', 'John', 'Doe', 'Driver', '2026-01-01', '2026-12-31', '0', '0', 'Active', '0', '0', '0', '0', '']
+      const newHeaders = ['ID', 'FirstName', 'LastName', 'Role', 'ServiceStart', 'ServiceEnd', 'InitialFairness', 'CurrentFairness', 'Status', 'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount', 'InactiveReason']
+      const soldier = parseSoldier(newRow, newHeaders)
+      expect(soldier.firstName).toBe('John')
+      expect(soldier.lastName).toBe('Doe')
     })
   })
 
