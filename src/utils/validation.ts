@@ -13,10 +13,12 @@ export function validateSoldier(input: CreateSoldierInput): ValidationErrors | n
     errors.id = 'Army ID is required'
   }
 
-  if (!input.name || input.name.trim() === '') {
-    errors.name = 'Name is required'
-  } else if (input.name.length < 2) {
-    errors.name = 'Name must be at least 2 characters'
+  if (!input.firstName || input.firstName.trim() === '') {
+    errors.firstName = 'First name is required'
+  }
+
+  if (!input.lastName || input.lastName.trim() === '') {
+    errors.lastName = 'Last name is required'
   }
 
   if (!input.serviceStart) {

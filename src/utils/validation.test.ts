@@ -13,7 +13,8 @@ describe('Validation Utils', () => {
     it('returns null for valid soldier', () => {
       const input: CreateSoldierInput = {
         id: '1234567',
-        name: 'David',
+        firstName: 'David',
+        lastName: 'Cohen',
         role: 'Driver',
         serviceStart: '2026-01-01',
         serviceEnd: '2026-08-31',
@@ -21,18 +22,56 @@ describe('Validation Utils', () => {
       expect(validateSoldier(input)).toBeNull()
     })
 
-    it('returns error for missing name', () => {
+    it('returns error for missing firstName', () => {
       const input: any = {
+        lastName: 'Cohen',
         role: 'Driver',
         serviceStart: '2026-01-01',
         serviceEnd: '2026-08-31',
       }
       const errors = validateSoldier(input)
-      expect(errors).toHaveProperty('name')
+      expect(errors).toHaveProperty('firstName')
+    })
+
+    it('returns error for missing lastName', () => {
+      const input: any = {
+        firstName: 'David',
+        role: 'Driver',
+        serviceStart: '2026-01-01',
+        serviceEnd: '2026-08-31',
+      }
+      const errors = validateSoldier(input)
+      expect(errors).toHaveProperty('lastName')
+    })
+
+    it('returns error when firstName is empty', () => {
+      const input: CreateSoldierInput = {
+        id: '1234567',
+        firstName: '',
+        lastName: 'Cohen',
+        role: 'Driver',
+        serviceStart: '2026-01-01',
+        serviceEnd: '2026-08-31',
+      }
+      const errors = validateSoldier(input)
+      expect(errors).toHaveProperty('firstName')
+    })
+
+    it('returns error when lastName is empty', () => {
+      const input: CreateSoldierInput = {
+        id: '1234567',
+        firstName: 'David',
+        lastName: '',
+        role: 'Driver',
+        serviceStart: '2026-01-01',
+        serviceEnd: '2026-08-31',
+      }
+      const errors = validateSoldier(input)
+      expect(errors).toHaveProperty('lastName')
     })
 
     it('does not return a role error for any non-empty role string', () => {
-      const input = { id: '1234567', name: 'Yoni', role: 'UnknownRole', serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
+      const input = { id: '1234567', firstName: 'Yoni', lastName: 'Ben', role: 'UnknownRole', serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
       const errors = validateSoldier(input)
       expect(errors?.role).toBeUndefined()
     })
@@ -40,7 +79,8 @@ describe('Validation Utils', () => {
     it('returns error for end date before start date', () => {
       const input: CreateSoldierInput = {
         id: '1234567',
-        name: 'David',
+        firstName: 'David',
+        lastName: 'Cohen',
         role: 'Driver',
         serviceStart: '2026-08-31',
         serviceEnd: '2026-01-01',
@@ -50,13 +90,13 @@ describe('Validation Utils', () => {
     })
 
     it('returns error when id is missing', () => {
-      const input = { id: '', name: 'Yoni', role: 'Driver' as SoldierRole, serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
+      const input = { id: '', firstName: 'Yoni', lastName: 'Ben', role: 'Driver' as SoldierRole, serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
       const errors = validateSoldier(input)
       expect(errors?.id).toBeTruthy()
     })
 
     it('returns no id error when id is provided', () => {
-      const input = { id: '1234567', name: 'Yoni', role: 'Driver' as SoldierRole, serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
+      const input = { id: '1234567', firstName: 'Yoni', lastName: 'Ben', role: 'Driver' as SoldierRole, serviceStart: '2026-01-01', serviceEnd: '2026-12-31' }
       const errors = validateSoldier(input)
       expect(errors?.id).toBeUndefined()
     })
