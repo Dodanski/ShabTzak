@@ -1,13 +1,16 @@
 import type { Soldier, Task, LeaveRequest, LeaveAssignment } from '../models'
 
-function idx(headers: string[], name: string): number {
-  const i = headers.indexOf(name)
-  if (i === -1) throw new Error(`Header "${name}" not found`)
-  return i
-}
-
 function get(row: string[], headers: string[], name: string): string {
-  return row[idx(headers, name)] ?? ''
+  // Try exact match first
+  let i = headers.indexOf(name)
+  if (i !== -1) return row[i] ?? ''
+
+  // Try case-insensitive + trimmed match as fallback
+  const normalizedName = name.toLowerCase().trim()
+  i = headers.findIndex(h => h.toLowerCase().trim() === normalizedName)
+  if (i !== -1) return row[i] ?? ''
+
+  throw new Error(`Header "${name}" not found`)
 }
 
 function getNum(row: string[], headers: string[], name: string): number {
@@ -23,6 +26,11 @@ function safeGet(row: string[], headers: string[], name: string): string {
   return i === -1 ? '' : (row[i] ?? '')
 }
 
+function hasHeader(headers: string[], name: string): boolean {
+  const normalizedName = name.toLowerCase().trim()
+  return headers.some(h => h.toLowerCase().trim() === normalizedName)
+}
+
 export function parseSoldier(row: string[], headers: string[]): Soldier {
   if (row.length === 0) throw new Error('Cannot parse empty row')
 
@@ -30,11 +38,17 @@ export function parseSoldier(row: string[], headers: string[]): Soldier {
   // - New: "First Name" and "Last Name" (with spaces)
   // - Fallback: "FirstName" and "LastName" (no spaces)
   // - Old: "Name" column only
-  const hasFirstNameSpaced = headers.includes('First Name')
-  const hasLastNameSpaced = headers.includes('Last Name')
-  const hasFirstNameNoSpace = headers.includes('FirstName')
-  const hasLastNameNoSpace = headers.includes('LastName')
-  const hasNameColumn = headers.includes('Name')
+  const hasFirstNameSpaced = hasHeader(headers, 'First Name')
+  const hasLastNameSpaced = hasHeader(headers, 'Last Name')
+  const hasFirstNameNoSpace = hasHeader(headers, 'FirstName')
+  const hasLastNameNoSpace = hasHeader(headers, 'LastName')
+  const hasNameColumn = hasHeader(headers, 'Name')
+
+  // Debug: log headers to help diagnose parsing issues
+  if (import.meta.env.DEV) {
+    console.debug('[parseSoldier] Headers:', headers)
+    console.debug('[parseSoldier] Has "First Name":', hasFirstNameSpaced, 'Has "Last Name":', hasLastNameSpaced)
+  }
 
   let firstName = ''
   let lastName = ''
