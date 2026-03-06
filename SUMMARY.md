@@ -1,6 +1,6 @@
 # ShabTzak — Project Summary
 
-> **For the next agent.** Read this before touching any code. Current state is clean: 518 tests passing, build clean, pushed to `origin/main`.
+> **For the next agent.** Read this before touching any code. Current state is clean: 521 tests passing, build clean, deployed to GitHub Pages.
 
 ---
 
@@ -146,7 +146,7 @@ App
            └─ HistoryPage
 ```
 
-**AdminPanel tabs:** Admins | Units | Commanders | Tasks | Config
+**AdminPanel tabs:** Admins | Units | Commanders | Roles | Tasks | Config
 **UnitApp sections:** dashboard | soldiers | tasks | leave | schedule | history
 
 ---
@@ -197,7 +197,7 @@ App
 
 ```bash
 npm run dev          # Vite dev server
-npm test             # Vitest (518 tests)
+npm test             # Vitest (521 tests)
 npm run build        # TypeScript + Vite build
 npm run deploy       # build + gh-pages publish
 ```
