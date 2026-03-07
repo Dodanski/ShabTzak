@@ -113,10 +113,18 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         specialDurationDays: Math.ceil(n / 24),
       }
     }
+
+    // For regular tasks: combine today's date with the time
+    const today = new Date().toISOString().split('T')[0]
+    const combinedStart = `${today}T${f.startTime}:00`
+    const startMs = new Date(combinedStart).getTime()
+    const endMs = startMs + n * 60 * 60 * 1000
+    const endTime = new Date(endMs).toISOString().split('T')[0] + 'T' + new Date(endMs).toISOString().split('T')[1].slice(0, 5) + ':00'
+
     return {
       taskType: f.taskType,
-      startTime: f.startTime,
-      endTime: '',
+      startTime: combinedStart,
+      endTime,
       durationHours: n,
       roleRequirements: f.roleRequirements,
       isSpecial: false,
