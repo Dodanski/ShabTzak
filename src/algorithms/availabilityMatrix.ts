@@ -10,6 +10,13 @@ function isOnLeaveOnDate(assignment: LeaveAssignment, dateStr: string): boolean 
 
 function taskCoversDate(task: Task, dateStr: string): boolean {
   const date = parseDate(dateStr)
+
+  // Tasks must have full ISO datetimes (with dates) to be scheduled
+  // Time-only formats are not supported for scheduling
+  if (!task.startTime.includes('T') || !task.endTime.includes('T')) {
+    return false
+  }
+
   const taskStartDate = parseDate(task.startTime.split('T')[0])
   const taskEndDate = parseDate(task.endTime.split('T')[0])
   return taskStartDate <= date && date <= taskEndDate
