@@ -62,7 +62,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const scheduleDates = generateNextDays(30)
+  const scheduleDates = generateNextDays(80)
   const today = new Date().toISOString().split('T')[0]
   const scheduleEnd = scheduleDates[scheduleDates.length - 1] ?? today
 
