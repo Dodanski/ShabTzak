@@ -93,7 +93,13 @@ export class LeaveAssignmentRepository {
 
   async setLocked(id: string, locked: boolean): Promise<void> {
     const { headers, rows } = await this.fetchAll()
-    const idIdx = headers.indexOf('ID')
+
+    // Find ID column with case-insensitive + whitespace-tolerant matching
+    const idIdx = headers.findIndex(h => h.toLowerCase().trim() === 'id')
+    if (idIdx === -1) {
+      throw new Error('ID column not found in headers')
+    }
+
     const rowIndex = rows.findIndex(r => r[idIdx] === id)
 
     if (rowIndex === -1) {
