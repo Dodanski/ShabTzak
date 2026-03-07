@@ -34,24 +34,24 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
   return (
     <div className="min-h-screen bg-olive-50">
       <header className="bg-white border-b-2 border-olive-700 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
 
           {/* Left: unit logo + optional unit name */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <img
               src={`${import.meta.env.BASE_URL}logo-unit.jpg`}
               alt="זאבי הגבעה"
-              className="h-8 w-8 object-contain rounded"
+              className="h-7 sm:h-8 w-7 sm:w-8 object-contain rounded"
             />
             {unitName && (
-              <span className="text-sm font-medium text-olive-600 border-l border-olive-200 pl-3">
+              <span className="text-xs sm:text-sm font-medium text-olive-600 border-l border-olive-200 pl-2 sm:pl-3">
                 {unitName}
               </span>
             )}
           </div>
 
           {/* Center: nav links */}
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
             {navLinks.map(({ href, label }) => {
               const isActive = hash === href || (href === '#' && (hash === '' || hash === '#'))
               return (
@@ -61,8 +61,8 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
                   aria-current={isActive ? 'page' : undefined}
                   className={
                     isActive
-                      ? 'text-olive-700 font-semibold border-b-2 border-olive-700 pb-0.5'
-                      : 'text-olive-500 hover:text-olive-700'
+                      ? 'text-olive-700 font-semibold border-b-2 border-olive-700 pb-0.5 px-1'
+                      : 'text-olive-500 hover:text-olive-700 px-1'
                   }
                 >
                   {label}
@@ -72,25 +72,25 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
           </nav>
 
           {/* Right: back to admin + sign out */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
             {onBackToAdmin && (
               <button
                 onClick={onBackToAdmin}
-                className="text-sm text-olive-500 hover:text-olive-700 transition-colors"
+                className="text-olive-500 hover:text-olive-700 transition-colors px-2 py-1"
               >
-                ← Admin Panel
+                ← Admin
               </button>
             )}
             <button
               onClick={signOut}
-              className="text-sm text-olive-400 hover:text-red-600 transition-colors"
+              className="text-olive-400 hover:text-red-600 transition-colors px-2 py-1"
             >
               Sign out
             </button>
           </div>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-6">
         {children}
       </main>
     </div>

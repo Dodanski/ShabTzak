@@ -286,31 +286,32 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
 
       {soldiers.length > 0 && (
         <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm">
             <thead className="bg-olive-700 text-white">
               <tr>
-                <th className="text-left px-4 py-2">Active</th>
-                <th className="text-left px-4 py-2">ID</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2">Active</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">ID</th>
                 <th
-                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-600"
+                  className="text-left px-2 sm:px-4 py-1 sm:py-2 cursor-pointer select-none hover:bg-olive-600 text-xs sm:text-sm"
                   onClick={() => handleSortClick('name')}
                 >
                   Name{sortKey === 'name' ? (sortAsc ? ' ▲' : ' ▼') : ''}
                 </th>
-                <th className="text-left px-4 py-2">First Name</th>
-                <th className="text-left px-4 py-2">Last Name</th>
-                <th className="text-left px-4 py-2">Role</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">First Name</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">Last Name</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">Role</th>
                 <th
-                  className="text-left px-4 py-2 cursor-pointer select-none hover:bg-olive-600"
+                  className="text-left px-2 sm:px-4 py-1 sm:py-2 cursor-pointer select-none hover:bg-olive-600 text-xs sm:text-sm"
                   onClick={() => handleSortClick('fairness')}
                 >
                   Fairness{sortKey === 'fairness' ? (sortAsc ? ' ▲' : ' ▼') : ''}
                 </th>
-                <th className="text-left px-4 py-2">Hours</th>
-                <th className="text-left px-4 py-2">Start</th>
-                <th className="text-left px-4 py-2">End</th>
-                {configData && <th className="text-left px-4 py-2">Quota</th>}
-                <th className="px-4 py-2" />
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">Hours</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">Start</th>
+                <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">End</th>
+                {configData && <th className="text-left px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">Quota</th>}
+                <th className="px-2 sm:px-4 py-1 sm:py-2" />
               </tr>
             </thead>
             <tbody>
@@ -523,6 +524,7 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

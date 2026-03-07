@@ -49,32 +49,32 @@ export default function SchedulePage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 flex-wrap">
-        <h2 className="text-xl font-semibold text-olive-800 mr-auto">Schedule</h2>
+    <div className="space-y-3 sm:space-y-6">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <h2 className="text-lg sm:text-xl font-semibold text-olive-800 mr-auto">Schedule</h2>
         <button
           onClick={handleCopyWhatsApp}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          {copied ? 'Copied!' : 'Copy for WhatsApp'}
+          {copied ? 'Copied!' : 'Copy'}
         </button>
         <button
           onClick={handleExportCsv}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          Export CSV
+          CSV
         </button>
         <button
           onClick={exportToPdf}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
         >
           Print
         </button>
         <button
           onClick={onGenerate}
-          className="px-4 py-2 bg-olive-700 text-white text-sm rounded-lg hover:bg-olive-800"
+          className="px-3 sm:px-4 py-1 sm:py-2 bg-olive-700 text-white text-xs sm:text-sm rounded-lg hover:bg-olive-800"
         >
-          Generate Schedule
+          Generate
         </button>
       </div>
 
