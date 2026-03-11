@@ -90,15 +90,29 @@ export function parseTask(row: string[], headers: string[]): Task {
   const roleReqRaw = get(row, headers, 'RoleRequirements')
   const roleRequirements = roleReqRaw ? JSON.parse(roleReqRaw) : []
   const specialDaysRaw = get(row, headers, 'SpecialDurationDays')
+  const isSpecial = getBool(row, headers, 'IsSpecial')
+
+  // Parse start and end times
+  // For recurring tasks, times are stored as HH:MM:SS - prepend today's date
+  // For pillbox tasks, times are full ISO datetimes
+  const normalizeTime = (timeStr: string): string => {
+    if (!timeStr) return ''
+    // If it already has 'T' (is full ISO), return as-is
+    if (timeStr.includes('T')) return timeStr
+    // Otherwise it's time-only, prepend today's date
+    const today = new Date().toISOString().split('T')[0]
+    return `${today}T${timeStr}`
+  }
+
   return {
     id: get(row, headers, 'ID'),
     taskType: get(row, headers, 'TaskType'),
-    startTime: get(row, headers, 'StartTime'),
-    endTime: get(row, headers, 'EndTime'),
+    startTime: normalizeTime(get(row, headers, 'StartTime')),
+    endTime: normalizeTime(get(row, headers, 'EndTime')),
     durationHours: getNum(row, headers, 'DurationHours'),
     roleRequirements,
     minRestAfter: getNum(row, headers, 'MinRestAfter'),
-    isSpecial: getBool(row, headers, 'IsSpecial'),
+    isSpecial,
     specialDurationDays: specialDaysRaw ? parseInt(specialDaysRaw) : undefined,
   }
 }

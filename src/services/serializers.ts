@@ -20,11 +20,20 @@ export function serializeSoldier(s: Soldier): string[] {
 }
 
 export function serializeTask(t: Task): string[] {
+  // For regular recurring tasks, store only the time part (HH:MM:SS)
+  // For pillbox tasks, keep the full datetime
+  const startTimeStr = !t.isSpecial
+    ? t.startTime.split('T')[1] // Extract time only: HH:MM:SS
+    : t.startTime // Keep full datetime for pillbox
+  const endTimeStr = !t.isSpecial
+    ? t.endTime.split('T')[1] // Extract time only: HH:MM:SS
+    : t.endTime // Keep full datetime for pillbox
+
   return [
     t.id,
     t.taskType,
-    t.startTime,
-    t.endTime,
+    startTimeStr,
+    endTimeStr,
     String(t.durationHours),
     JSON.stringify(t.roleRequirements),
     String(t.minRestAfter),

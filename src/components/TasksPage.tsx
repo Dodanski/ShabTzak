@@ -257,7 +257,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         )}
 
         <div>
-          <label htmlFor={isEdit ? 'edit-task-start' : 'task-start'} className="block text-xs text-olive-600 mb-1">Start time (24-hour)</label>
+          <label htmlFor={isEdit ? 'edit-task-start' : 'task-start'} className="block text-xs text-olive-600 mb-1">Start time (HH:MM, 24-hour format)</label>
           <input
             id={isEdit ? 'edit-task-start' : 'task-start'}
             aria-label="Start time"
@@ -266,8 +266,9 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
             onChange={e => setF(prev => ({ ...prev, startTime: e.target.value }))}
             required
             className="w-full border rounded px-3 py-1.5 text-sm"
-            lang="en-GB"
+            step="300"
           />
+          <p className="text-xs text-gray-400 mt-0.5">Use 00:00 to 23:59 format (e.g., 06:00, 14:30)</p>
         </div>
 
         <div>
