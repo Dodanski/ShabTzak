@@ -30,8 +30,6 @@ export function serializeTask(t: Task): string[] {
     String(t.minRestAfter),
     String(t.isSpecial),
     t.specialDurationDays != null ? String(t.specialDurationDays) : '',
-    t.recurrence ?? '',
-    t.recurrenceEndDate ?? '',
   ]
 }
 

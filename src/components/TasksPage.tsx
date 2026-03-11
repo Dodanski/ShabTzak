@@ -10,8 +10,6 @@ interface TaskFormState {
   roleRequirements: RoleRequirement[]
   pendingRole: string
   pendingCount: number
-  recurrence: 'daily' | 'pillbox' | 'none'
-  recurrenceEndDate: string
 }
 
 const EMPTY_FORM: TaskFormState = {
@@ -23,8 +21,6 @@ const EMPTY_FORM: TaskFormState = {
   roleRequirements: [],
   pendingRole: 'Any',
   pendingCount: 1,
-  recurrence: 'daily',
-  recurrenceEndDate: '',
 }
 
 interface TasksPageProps {
@@ -59,8 +55,6 @@ function taskToFormState(task: Task): TaskFormState {
     roleRequirements: task.roleRequirements,
     pendingRole: 'Any',
     pendingCount: 1,
-    recurrence: (task.recurrence as 'daily' | 'pillbox' | 'none') ?? 'daily',
-    recurrenceEndDate: task.recurrenceEndDate ?? '',
   }
 }
 
@@ -117,8 +111,6 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         roleRequirements: f.roleRequirements,
         isSpecial: true,
         specialDurationDays: Math.ceil(n / 24),
-        recurrence: f.recurrence !== 'none' ? f.recurrence : undefined,
-        recurrenceEndDate: f.recurrenceEndDate || undefined,
       }
     }
 
@@ -136,8 +128,6 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
       durationHours: n,
       roleRequirements: f.roleRequirements,
       isSpecial: false,
-      recurrence: f.recurrence !== 'none' ? f.recurrence : undefined,
-      recurrenceEndDate: f.recurrenceEndDate || undefined,
     }
   }
 
@@ -291,38 +281,8 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
             required
             className="w-full border rounded px-3 py-1.5 text-sm"
           />
+          <p className="text-xs text-gray-500 mt-1">All tasks recur daily throughout the 80-day schedule period</p>
         </div>
-
-        <div>
-          <label htmlFor={isEdit ? 'edit-task-recurrence' : 'task-recurrence'} className="block text-xs text-olive-600 mb-1">Recurrence</label>
-          <select
-            id={isEdit ? 'edit-task-recurrence' : 'task-recurrence'}
-            aria-label="Task recurrence"
-            value={f.recurrence}
-            onChange={e => setF(prev => ({ ...prev, recurrence: e.target.value as 'daily' | 'pillbox' | 'none' }))}
-            className="w-full border rounded px-3 py-1.5 text-sm"
-          >
-            <option value="daily">Daily (repeat every day)</option>
-            <option value="pillbox">Pillbox (multi-day, recur sequentially)</option>
-            <option value="none">One-time (no recurrence)</option>
-          </select>
-        </div>
-
-        {(f.recurrence === 'daily' || f.recurrence === 'pillbox') && (
-          <div>
-            <label htmlFor={isEdit ? 'edit-task-recurrence-end' : 'task-recurrence-end'} className="block text-xs text-olive-600 mb-1">
-              Recurrence end date (leave blank to use schedule end)
-            </label>
-            <input
-              id={isEdit ? 'edit-task-recurrence-end' : 'task-recurrence-end'}
-              aria-label="Recurrence end date"
-              type="date"
-              value={f.recurrenceEndDate}
-              onChange={e => setF(prev => ({ ...prev, recurrenceEndDate: e.target.value }))}
-              className="w-full border rounded px-3 py-1.5 text-sm"
-            />
-          </div>
-        )}
 
         {renderRoleFields(f, setF, isEdit)}
 

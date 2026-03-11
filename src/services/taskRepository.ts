@@ -11,7 +11,6 @@ const CACHE_KEY = 'tasks'
 const HEADER_ROW = [
   'ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours',
   'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays',
-  'Recurrence', 'RecurrenceEndDate',
 ]
 
 function generateId(): string {
