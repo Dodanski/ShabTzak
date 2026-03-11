@@ -1,4 +1,39 @@
 const SHEETS_API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
+const MAX_RETRIES = 3
+const BASE_DELAY_MS = 500 // Start with 500ms delay
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = MAX_RETRIES,
+): Promise<T> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+
+      // Check if it's a 429 (Too Many Requests) error
+      if (!lastError.message.includes('429') || attempt === maxRetries) {
+        // If not a rate limit error or we've exhausted retries, throw
+        if (!lastError.message.includes('429')) throw lastError
+        if (attempt === maxRetries) throw lastError
+      }
+
+      // Exponential backoff: 500ms, 1s, 2s
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt)
+      console.warn(`[API Rate Limited] Retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`)
+      await sleep(delay)
+    }
+  }
+
+  throw lastError
+}
 
 export class GoogleSheetsService {
   private accessToken: string
@@ -29,19 +64,22 @@ export class GoogleSheetsService {
    * Get values from a range
    */
   async getValues(spreadsheetId: string, range: string): Promise<any[][]> {
-    const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${range}`
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      },
+    return retryWithBackoff(async () => {
+      const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${range}`
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      })
+
+      if (!response.ok) {
+        const statusText = `${response.status} ${response.statusText}`
+        throw new Error(`Failed to fetch values: ${statusText}`)
+      }
+
+      const data = await response.json()
+      return data.values || []
     })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch values: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    return data.values || []
   }
 
   /**
@@ -52,19 +90,22 @@ export class GoogleSheetsService {
     range: string,
     values: any[][]
   ): Promise<void> {
-    const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${range}?valueInputOption=RAW`
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ values }),
-    })
+    return retryWithBackoff(async () => {
+      const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${range}?valueInputOption=RAW`
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ values }),
+      })
 
-    if (!response.ok) {
-      throw new Error(`Failed to update values: ${response.statusText}`)
-    }
+      if (!response.ok) {
+        const statusText = `${response.status} ${response.statusText}`
+        throw new Error(`Failed to update values: ${statusText}`)
+      }
+    })
   }
 
   /**
@@ -75,19 +116,22 @@ export class GoogleSheetsService {
     range: string,
     values: any[][]
   ): Promise<void> {
-    const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ values }),
-    })
+    return retryWithBackoff(async () => {
+      const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ values }),
+      })
 
-    if (!response.ok) {
-      throw new Error(`Failed to append values: ${response.statusText}`)
-    }
+      if (!response.ok) {
+        const statusText = `${response.status} ${response.statusText}`
+        throw new Error(`Failed to append values: ${statusText}`)
+      }
+    })
   }
 
   /**

@@ -67,7 +67,6 @@ export class ScheduleService {
     // (tasks array should contain all tasks from spreadsheet, expanded if recurring)
     const schedule = scheduleTasks(tasks, soldiers, existing, tasks)
 
-    console.log('[scheduleService] generateTaskSchedule:', { scheduledCount: schedule.assignments.length, existingCount: existing.length })
 
     // Persist only assignments that aren't already stored
     const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}:${a.assignedRole}`))
@@ -83,7 +82,6 @@ export class ScheduleService {
         })
       }
     }
-    console.log('[scheduleService] Task assignments persisted:', persistedCount)
 
     await this.history.append(
       'GENERATE_TASK_SCHEDULE', 'TaskSchedule', '',

@@ -152,10 +152,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   async function handleGenerateSchedule() {
     if (!ds || !configData) return
     try {
-      console.log('[App] Starting schedule generation...')
-      console.log('[App] Tasks to schedule:', tasks.length)
       await runSchedule()
-      console.log('[App] runSchedule completed')
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
       const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')
@@ -166,7 +163,6 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           )
         }
       }
-      console.log('[App] Fairness updated, reloading...')
       reload()
       addToast('Schedule generated', 'success')
     } catch (e) {

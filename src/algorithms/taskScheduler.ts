@@ -21,8 +21,6 @@ export function scheduleTasks(
   // Use all tasks in system for rest period checking, fallback to just scheduled tasks
   const tasksForValidation = allTasksInSystem || tasks
 
-  console.log('[taskScheduler] Input:', { taskCount: tasks.length, soldierCount: soldiers.length, existingCount: existingAssignments.length, allTasksInSystemCount: allTasksInSystem?.length ?? 'not provided' })
-  console.log('[taskScheduler] Tasks to schedule:', tasks.map(t => ({ id: t.id, type: t.taskType, start: t.startTime, end: t.endTime, date: t.startTime.split('T')[0] })))
 
   // Group tasks by date for visibility
   const tasksByDate: Record<string, number> = {}
@@ -30,7 +28,6 @@ export function scheduleTasks(
     const date = task.startTime.split('T')[0]
     tasksByDate[date] = (tasksByDate[date] ?? 0) + 1
   }
-  console.log('[taskScheduler] Tasks to schedule by date:', tasksByDate)
 
   // Process tasks in chronological order
   const sortedTasks = [...tasks].sort(
@@ -93,10 +90,6 @@ export function scheduleTasks(
       assignmentsByDate[date] = (assignmentsByDate[date] ?? 0) + 1
     }
   }
-
-  const newAssignmentCount = result.length - existingAssignments.length
-  console.log('[taskScheduler] Result:', { newAssignmentCount, totalAssignments: result.length, startDate, endDate })
-  console.log('[taskScheduler] Assignments by date:', assignmentsByDate)
 
   return {
     startDate,
