@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ScheduleCalendar from './ScheduleCalendar'
+import TaskModeCalendar from './TaskModeCalendar'
 import { formatScheduleAsText, exportToPdf, exportToCsv, downloadCsv } from '../utils/exportUtils'
 import { fullName } from '../utils/helpers'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment, ScheduleConflict } from '../models'
@@ -25,6 +26,14 @@ export default function SchedulePage({
   const [manualSoldierId, setManualSoldierId] = useState('')
   const [manualTaskId, setManualTaskId] = useState('')
   const [manualRole, setManualRole] = useState<string>(roles[0] ?? '')
+  const [mode, setMode] = useState<'soldier' | 'task'>('soldier')
+  const [weekStartDate, setWeekStartDate] = useState(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const monday = new Date(today.setDate(diff))
+    return monday.toISOString().split('T')[0]
+  })
 
   function handleCopyWhatsApp() {
     const text = formatScheduleAsText(leaveAssignments, soldiers)
@@ -48,10 +57,68 @@ export default function SchedulePage({
     setManualRole(roles[0] ?? '')
   }
 
+  function goToPreviousWeek() {
+    const d = new Date(weekStartDate)
+    d.setDate(d.getDate() - 7)
+    setWeekStartDate(d.toISOString().split('T')[0])
+  }
+
+  function goToNextWeek() {
+    const d = new Date(weekStartDate)
+    d.setDate(d.getDate() + 7)
+    setWeekStartDate(d.toISOString().split('T')[0])
+  }
+
+  function goToToday() {
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const monday = new Date(today.setDate(diff))
+    setWeekStartDate(monday.toISOString().split('T')[0])
+  }
+
+  function handleWeekPickerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const date = new Date(e.target.value)
+    const dayOfWeek = date.getDay()
+    const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const monday = new Date(date.setDate(diff))
+    setWeekStartDate(monday.toISOString().split('T')[0])
+  }
+
   return (
-    <div className="space-y-3 sm:space-y-6">
+    <div className="space-y-3 sm:space-y-6 h-full flex flex-col">
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <h2 className="text-lg sm:text-xl font-semibold text-olive-800 mr-auto">Schedule</h2>
+
+        {mode === 'task' && (
+          <>
+            <button
+              onClick={goToPreviousWeek}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              ← Week
+            </button>
+            <input
+              type="date"
+              value={weekStartDate}
+              onChange={handleWeekPickerChange}
+              className="px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-lg"
+            />
+            <button
+              onClick={goToNextWeek}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Week →
+            </button>
+            <button
+              onClick={goToToday}
+              className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Today
+            </button>
+          </>
+        )}
+
         <button
           onClick={handleCopyWhatsApp}
           className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -71,6 +138,16 @@ export default function SchedulePage({
           Print
         </button>
         <button
+          onClick={() => setMode(mode === 'soldier' ? 'task' : 'soldier')}
+          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-lg font-medium ${
+            mode === 'soldier'
+              ? 'bg-olive-100 text-olive-700 border border-olive-300'
+              : 'bg-blue-100 text-blue-700 border border-blue-300'
+          }`}
+        >
+          {mode === 'soldier' ? 'Task' : 'Soldier'} Mode
+        </button>
+        <button
           onClick={onGenerate}
           className="px-3 sm:px-4 py-1 sm:py-2 bg-olive-700 text-white text-xs sm:text-sm rounded-lg hover:bg-olive-800"
         >
@@ -78,21 +155,33 @@ export default function SchedulePage({
         </button>
       </div>
 
-      <ScheduleCalendar
-        soldiers={soldiers}
-        dates={dates}
-        tasks={tasks}
-        taskAssignments={taskAssignments}
-        leaveAssignments={leaveAssignments}
-      />
+      {mode === 'soldier' ? (
+        <ScheduleCalendar
+          soldiers={soldiers}
+          dates={dates}
+          tasks={tasks}
+          taskAssignments={taskAssignments}
+          leaveAssignments={leaveAssignments}
+        />
+      ) : (
+        <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <TaskModeCalendar
+            soldiers={soldiers}
+            tasks={tasks}
+            taskAssignments={taskAssignments}
+            weekStart={weekStartDate}
+          />
+        </div>
+      )}
 
-      <div>
-        <button
-          onClick={() => setShowManual(s => !s)}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
-          Add manual assignment
-        </button>
+      {mode === 'soldier' && (
+        <div>
+          <button
+            onClick={() => setShowManual(s => !s)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Add manual assignment
+          </button>
 
         {showManual && (
           <form onSubmit={handleManualSubmit} className="mt-3 bg-white rounded-lg border border-olive-200 shadow-sm p-4 space-y-3">
@@ -150,10 +239,12 @@ export default function SchedulePage({
             </button>
           </form>
         )}
-      </div>
+        </div>
+      )}
 
-      <div>
-        <h3 className="text-sm font-semibold text-olive-700 mb-2">Conflicts</h3>
+      {mode === 'soldier' && (
+        <div>
+          <h3 className="text-sm font-semibold text-olive-700 mb-2">Conflicts</h3>
         {conflicts.length === 0 ? (
           <p className="text-sm text-green-600">No conflicts detected.</p>
         ) : (
@@ -171,7 +262,8 @@ export default function SchedulePage({
             ))}
           </ul>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
