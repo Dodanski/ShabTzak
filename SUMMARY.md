@@ -70,10 +70,16 @@ Old tasks with just times are silently skipped in the schedule calendar (see `av
 - Soldier names split into `firstName`/`lastName` with case-insensitive header matching
 - Approve/deny leave requests with robust ID column lookup
 - Task scheduling requires full ISO datetimes
+- **Task schedule generation now working** - soldiers assigned to tasks via greedy algorithm
+- **Weekly Task Calendar view** - Time-based calendar showing tasks with soldier assignments
+  - Toggle "Soldier/Task Mode" button on Schedule page
+  - Click task to see assigned soldiers in side panel
+  - Week navigation with Previous/Next buttons and date picker
 - 80-day schedule period (until May 25)
 - GitHub Pages deployment with CI/CD
 - Responsive design for mobile/tablet
 - 536 passing tests
+- **Added debug logging** for task schedule generation troubleshooting
 
 ### Known Issues ⚠️
 1. **Tasks:** Old tasks in spreadsheet with just times (e.g., `"08:00"`) won't appear in calendar. Users must create NEW tasks from app.
@@ -81,8 +87,9 @@ Old tasks with just times are silently skipped in the schedule calendar (see `av
    - Task has full ISO datetime (date + time)
    - Soldier's service period overlaps the task date
    - At least one soldier is assigned to the task
-3. **Responsive design:** Mobile UI is improved but may still need refinement on very small screens
-4. **Test suite:** Tests are expensive; focus on integration tests for critical paths (task creation → scheduling → display)
+3. **Task mode calendar:** Time display is 6am-10pm; tasks outside this range may not be visible
+4. **Responsive design:** Mobile UI is improved but may still need refinement on very small screens
+5. **Test suite:** Tests are expensive; focus on integration tests for critical paths (task creation → scheduling → display)
 
 ---
 
@@ -101,7 +108,9 @@ App
            ├─ SoldiersPage (inline editing)
            ├─ TasksPage (read-only for commanders)
            ├─ LeaveRequestsPage (approve/deny)
-           ├─ SchedulePage (calendar + generate)
+           ├─ SchedulePage (dual-mode calendar + generate)
+           │   ├─ ScheduleCalendar (soldier mode - daily grid)
+           │   └─ TaskModeCalendar (task mode - weekly calendar)
            └─ HistoryPage (audit log)
 ```
 
@@ -133,8 +142,9 @@ Add these as GitHub Secrets for CI/CD deployment.
 
 ## Next Steps for New Agent
 
-1. **Verify schedule generator works:** Create test task with full ISO datetime, generate schedule, check calendar
-2. **Debug responsive design:** Test on multiple screen sizes; may need further refinement
-3. **Optimize tests:** Replace expensive component tests with focused integration tests
-4. **Improve soldier service dates:** Add validation to prevent scheduling soldiers outside their service period
-5. **Fix: Date input for tasks should default to today's date** to prevent user confusion
+1. **Remove debug logging:** Clean up console.log statements in taskScheduler.ts, scheduleService.ts, and App.tsx once task scheduling is verified stable
+2. **Extend task time range:** Make the 6am-10pm range configurable or dynamic based on actual task times
+3. **Improve responsive design:** Test task calendar on mobile; may need redesign for small screens
+4. **Optimize tests:** Replace expensive component tests with focused integration tests for task scheduling
+5. **Add task mode state persistence:** Save user's preferred view mode (soldier/task) to localStorage
+6. **Soldier service dates validation:** Add validation to prevent scheduling soldiers outside their service period
