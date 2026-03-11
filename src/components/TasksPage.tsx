@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TimeInput24 from './TimeInput24'
 import type { Task, CreateTaskInput, UpdateTaskInput, RoleRequirement } from '../models'
 
 interface TaskFormState {
@@ -257,18 +258,15 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         )}
 
         <div>
-          <label htmlFor={isEdit ? 'edit-task-start' : 'task-start'} className="block text-xs text-olive-600 mb-1">Start time (HH:MM, 24-hour format)</label>
-          <input
+          <label className="block text-xs text-olive-600 mb-2">Start time (24-hour format)</label>
+          <TimeInput24
             id={isEdit ? 'edit-task-start' : 'task-start'}
-            aria-label="Start time"
-            type="time"
             value={f.startTime}
-            onChange={e => setF(prev => ({ ...prev, startTime: e.target.value }))}
+            onChange={time => setF(prev => ({ ...prev, startTime: time }))}
             required
-            className="w-full border rounded px-3 py-1.5 text-sm"
-            step="300"
+            className="border rounded px-2 py-1.5 text-sm"
           />
-          <p className="text-xs text-gray-400 mt-0.5">Use 00:00 to 23:59 format (e.g., 06:00, 14:30)</p>
+          <p className="text-xs text-gray-400 mt-2">Enter hours (0-23) and minutes (0-59)</p>
         </div>
 
         <div>
