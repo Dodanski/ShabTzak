@@ -33,14 +33,18 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
     ? soldiers.filter(s => taskAssignments.some(a => a.taskId === selectedTask.id && a.soldierId === s.id))
     : []
 
-  // Time range for display (6 to 22 = 6am to 10pm)
-  const MIN_HOUR = 6
-  const MAX_HOUR = 22
-  const HOUR_HEIGHT = 60 // pixels
+  // Time range for display: 00:00 to 06:00 (24/7 with day boundary at 06:00)
+  // Display shows 00:00-23:59 for current day, then wraps
+  const HOUR_HEIGHT = 40 // pixels per hour
+  const TOTAL_HOURS = 24
 
-  function timeToPixels(timeStr: string): number {
+  function timeToPixels(timeStr: string, taskDate: string, dayDate: string): number {
     const [hours, minutes] = timeStr.split(':').map(Number)
-    return (hours - MIN_HOUR) * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT
+    // If task is on the next day after 06:00, shift down by 24 hours for display
+    if (taskDate > dayDate && hours >= 0 && hours < 6) {
+      return (24 + hours) * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT
+    }
+    return hours * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT
   }
 
   function durationToPixels(durationHours: number): number {
@@ -68,14 +72,14 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
         {/* Time grid */}
         <div className="flex">
           {/* Time labels */}
-          <div className="w-20 flex-shrink-0 bg-gray-50 border-r border-gray-200">
-            {Array.from({ length: MAX_HOUR - MIN_HOUR }, (_, i) => (
+          <div className="w-16 flex-shrink-0 bg-gray-50 border-r border-gray-200">
+            {Array.from({ length: TOTAL_HOURS }, (_, i) => (
               <div
-                key={MIN_HOUR + i}
+                key={i}
                 className="border-t border-gray-200 text-xs text-gray-500 pr-2 text-right"
                 style={{ height: HOUR_HEIGHT }}
               >
-                {String(MIN_HOUR + i).padStart(2, '0')}:00
+                {String(i).padStart(2, '0')}:00
               </div>
             ))}
           </div>
@@ -87,7 +91,7 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
                 key={date}
                 className="flex-1 min-w-[120px] border-l border-gray-200 relative"
                 style={{
-                  height: (MAX_HOUR - MIN_HOUR) * HOUR_HEIGHT,
+                  height: TOTAL_HOURS * HOUR_HEIGHT,
                   backgroundImage: `repeating-linear-gradient(
                     to bottom,
                     transparent 0,
@@ -101,7 +105,8 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
                   .filter(t => t.startTime.split('T')[0] === date)
                   .map(task => {
                     const startTime = task.startTime.split('T')[1] || '00:00'
-                    const top = timeToPixels(startTime)
+                    const taskDate = task.startTime.split('T')[0]
+                    const top = timeToPixels(startTime, taskDate, date)
                     const height = durationToPixels(task.durationHours)
 
                     return (

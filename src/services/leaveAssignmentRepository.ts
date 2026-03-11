@@ -14,7 +14,12 @@ const HEADER_ROW = [
 ]
 
 function generateId(): string {
-  return `assign-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  // Generate plain text ID: leave_YYYYMMDD_HHMM_RANDOM
+  const now = new Date()
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '')
+  const time = now.toISOString().slice(11, 16).replace(/:/g, '')
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase()
+  return `leave_${date}_${time}_${random}`
 }
 
 interface CreateLeaveAssignmentInput {
