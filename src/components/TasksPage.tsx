@@ -116,11 +116,22 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
     }
 
     // For regular tasks: combine today's date with the time
+    // Work in local time, not UTC, to avoid timezone offset issues
     const today = new Date().toISOString().split('T')[0]
     const combinedStart = `${today}T${f.startTime}:00`
-    const startMs = new Date(combinedStart).getTime()
-    const endMs = startMs + n * 60 * 60 * 1000
-    const endTime = new Date(endMs).toISOString().split('T')[0] + 'T' + new Date(endMs).toISOString().split('T')[1].slice(0, 5) + ':00'
+
+    // Create end time by adding hours to a local date
+    const startDate = new Date(combinedStart)
+    const endDate = new Date(startDate)
+    endDate.setHours(endDate.getHours() + n)
+
+    // Format end time as ISO-like string without timezone conversion
+    const endYear = endDate.getFullYear()
+    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0')
+    const endDay = String(endDate.getDate()).padStart(2, '0')
+    const endHour = String(endDate.getHours()).padStart(2, '0')
+    const endMin = String(endDate.getMinutes()).padStart(2, '0')
+    const endTime = `${endYear}-${endMonth}-${endDay}T${endHour}:${endMin}:00`
 
     return {
       taskType: f.taskType,
