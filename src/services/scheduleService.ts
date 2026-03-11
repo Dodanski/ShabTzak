@@ -65,10 +65,14 @@ export class ScheduleService {
 
     const schedule = scheduleTasks(tasks, soldiers, existing)
 
+    console.log('[scheduleService] generateTaskSchedule:', { scheduledCount: schedule.assignments.length, existingCount: existing.length })
+
     // Persist only assignments that aren't already stored
     const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}:${a.assignedRole}`))
+    let persistedCount = 0
     for (const assignment of schedule.assignments) {
       if (!existingKeys.has(`${assignment.taskId}:${assignment.soldierId}:${assignment.assignedRole}`)) {
+        persistedCount++
         await this.taskAssignments.create({
           taskId: assignment.taskId,
           soldierId: assignment.soldierId,
@@ -77,6 +81,7 @@ export class ScheduleService {
         })
       }
     }
+    console.log('[scheduleService] Task assignments persisted:', persistedCount)
 
     await this.history.append(
       'GENERATE_TASK_SCHEDULE', 'TaskSchedule', '',

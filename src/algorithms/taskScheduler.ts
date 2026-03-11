@@ -13,6 +13,9 @@ export function scheduleTasks(
 ): TaskSchedule {
   const result: TaskAssignment[] = [...existingAssignments]
 
+  console.log('[taskScheduler] Input:', { taskCount: tasks.length, soldierCount: soldiers.length, existingCount: existingAssignments.length })
+  console.log('[taskScheduler] Tasks:', tasks.map(t => ({ id: t.id, type: t.taskType, start: t.startTime, end: t.endTime })))
+
   // Process tasks in chronological order
   const sortedTasks = [...tasks].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
@@ -64,6 +67,9 @@ export function scheduleTasks(
   const endDate = tasks.length > 0
     ? tasks.reduce((max, t) => t.endTime > max ? t.endTime : max, tasks[0].endTime).split('T')[0]
     : ''
+
+  const newAssignmentCount = result.length - existingAssignments.length
+  console.log('[taskScheduler] Result:', { newAssignmentCount, totalAssignments: result.length, startDate, endDate })
 
   return {
     startDate,
