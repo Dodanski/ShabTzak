@@ -27,7 +27,7 @@ export function useScheduleGenerator(
     setError(null)
     try {
       // Expand recurring tasks to individual instances for the schedule period
-      const expandedTasks = expandRecurringTasks(tasks, startDate, endDate)
+      const expandedTasks = expandRecurringTasks(tasks, endDate)
       console.log('[useScheduleGenerator] Expanded recurring tasks:', { original: tasks.length, expanded: expandedTasks.length })
 
       const [leave, task] = await Promise.all([

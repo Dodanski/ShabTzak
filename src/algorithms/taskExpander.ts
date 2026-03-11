@@ -3,17 +3,15 @@ import type { Task } from '../models'
 /**
  * Expands recurring tasks into individual task instances for the schedule period.
  *
- * - Daily tasks: Create an instance for each day in [startDate, recurrenceEndDate or endDate]
+ * - Daily tasks: Create an instance for each day in [task.startTime.date, recurrenceEndDate or scheduleEndDate]
  * - Pillbox tasks: Create instances sequentially, each starting after the previous ends
  * - Non-recurring tasks: Return as-is
  */
 export function expandRecurringTasks(
   tasks: Task[],
-  scheduleStartDate: string, // YYYY-MM-DD
   scheduleEndDate: string, // YYYY-MM-DD
 ): Task[] {
   const expanded: Task[] = []
-  const taskStartDate = new Date(scheduleStartDate)
   const taskEndDate = new Date(scheduleEndDate)
 
   for (const task of tasks) {
