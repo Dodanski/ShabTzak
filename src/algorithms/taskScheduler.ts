@@ -14,7 +14,15 @@ export function scheduleTasks(
   const result: TaskAssignment[] = [...existingAssignments]
 
   console.log('[taskScheduler] Input:', { taskCount: tasks.length, soldierCount: soldiers.length, existingCount: existingAssignments.length })
-  console.log('[taskScheduler] Tasks:', tasks.map(t => ({ id: t.id, type: t.taskType, start: t.startTime, end: t.endTime })))
+  console.log('[taskScheduler] Tasks:', tasks.map(t => ({ id: t.id, type: t.taskType, start: t.startTime, end: t.endTime, date: t.startTime.split('T')[0] })))
+
+  // Group tasks by date for visibility
+  const tasksByDate: Record<string, number> = {}
+  for (const task of tasks) {
+    const date = task.startTime.split('T')[0]
+    tasksByDate[date] = (tasksByDate[date] ?? 0) + 1
+  }
+  console.log('[taskScheduler] Tasks by date:', tasksByDate)
 
   // Process tasks in chronological order
   const sortedTasks = [...tasks].sort(
@@ -68,8 +76,19 @@ export function scheduleTasks(
     ? tasks.reduce((max, t) => t.endTime > max ? t.endTime : max, tasks[0].endTime).split('T')[0]
     : ''
 
+  // Group assignments by date
+  const assignmentsByDate: Record<string, number> = {}
+  for (const assignment of result) {
+    const task = tasks.find(t => t.id === assignment.taskId)
+    if (task) {
+      const date = task.startTime.split('T')[0]
+      assignmentsByDate[date] = (assignmentsByDate[date] ?? 0) + 1
+    }
+  }
+
   const newAssignmentCount = result.length - existingAssignments.length
   console.log('[taskScheduler] Result:', { newAssignmentCount, totalAssignments: result.length, startDate, endDate })
+  console.log('[taskScheduler] Assignments by date:', assignmentsByDate)
 
   return {
     startDate,
