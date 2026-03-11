@@ -257,7 +257,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         )}
 
         <div>
-          <label htmlFor={isEdit ? 'edit-task-start' : 'task-start'} className="block text-xs text-olive-600 mb-1">Start time</label>
+          <label htmlFor={isEdit ? 'edit-task-start' : 'task-start'} className="block text-xs text-olive-600 mb-1">Start time (24-hour)</label>
           <input
             id={isEdit ? 'edit-task-start' : 'task-start'}
             aria-label="Start time"
@@ -266,6 +266,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
             onChange={e => setF(prev => ({ ...prev, startTime: e.target.value }))}
             required
             className="w-full border rounded px-3 py-1.5 text-sm"
+            lang="en-GB"
           />
         </div>
 
@@ -339,7 +340,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
           <table className="w-full text-sm">
             <thead className="bg-olive-700 text-white">
               <tr>
-                <th className="text-left px-4 py-2">Type</th>
+                <th className="text-left px-4 py-2">ID (Task Name)</th>
                 <th className="text-left px-4 py-2">Start</th>
                 <th className="text-left px-4 py-2">Duration</th>
                 <th className="text-left px-4 py-2">Roles</th>
@@ -349,7 +350,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
             <tbody>
               {filteredTasks.map(t => (
                 <tr key={t.id} className="border-t">
-                  <td className="px-4 py-2 font-medium">{t.taskType}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-olive-600 bg-olive-50">{t.taskType}</td>
                   <td className="px-4 py-2 text-olive-500 text-xs">{getDisplayTime(t.startTime)}</td>
                   <td className="px-4 py-2 text-olive-500">{t.durationHours}h</td>
                   <td className="px-4 py-2">

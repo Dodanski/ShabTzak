@@ -13,13 +13,9 @@ const HEADER_ROW = [
   'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays',
 ]
 
-function generateId(): string {
-  // Generate plain text ID: task_YYYYMMDD_HHMM_RANDOM
-  const now = new Date()
-  const date = now.toISOString().slice(0, 10).replace(/-/g, '')
-  const time = now.toISOString().slice(11, 16).replace(/:/g, '')
-  const random = Math.random().toString(36).slice(2, 6).toUpperCase()
-  return `task_${date}_${time}_${random}`
+function generateId(taskType: string): string {
+  // Use taskType (task name) as the ID - this is editable and user-friendly
+  return taskType
 }
 
 function calcDurationHours(startTime: string, endTime: string): number {
@@ -67,7 +63,7 @@ export class TaskRepository {
 
   async create(input: CreateTaskInput): Promise<Task> {
     const task: Task = {
-      id: generateId(),
+      id: generateId(input.taskType),
       taskType: input.taskType,
       startTime: input.startTime,
       endTime: input.endTime,

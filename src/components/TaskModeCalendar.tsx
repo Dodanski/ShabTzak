@@ -33,18 +33,21 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
     ? soldiers.filter(s => taskAssignments.some(a => a.taskId === selectedTask.id && a.soldierId === s.id))
     : []
 
-  // Time range for display: 00:00 to 06:00 (24/7 with day boundary at 06:00)
-  // Display shows 00:00-23:59 for current day, then wraps
+  // Time range for display: 06:00 to 05:59 (next day)
+  // Day boundary at 06:00 - display order: 06-23 (current day), then 00-05 (end of day)
   const HOUR_HEIGHT = 40 // pixels per hour
   const TOTAL_HOURS = 24
 
-  function timeToPixels(timeStr: string, taskDate: string, dayDate: string): number {
+  function timeToPixels(timeStr: string): number {
     const [hours, minutes] = timeStr.split(':').map(Number)
-    // If task is on the next day after 06:00, shift down by 24 hours for display
-    if (taskDate > dayDate && hours >= 0 && hours < 6) {
-      return (24 + hours) * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT
+    // Map hours to display position: 06-23 → 0-17, 00-05 → 18-23
+    let displayHour: number
+    if (hours >= 6) {
+      displayHour = hours - 6 // 06:00 → 0, 07:00 → 1, ..., 23:00 → 17
+    } else {
+      displayHour = hours + 18 // 00:00 → 18, 01:00 → 19, ..., 05:00 → 23
     }
-    return hours * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT
+    return displayHour * HOUR_HEIGHT + (minutes / 60) * HOUR_HEIGHT
   }
 
   function durationToPixels(durationHours: number): number {
@@ -73,15 +76,22 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
         <div className="flex">
           {/* Time labels */}
           <div className="w-16 flex-shrink-0 bg-gray-50 border-r border-gray-200">
-            {Array.from({ length: TOTAL_HOURS }, (_, i) => (
-              <div
-                key={i}
-                className="border-t border-gray-200 text-xs text-gray-500 pr-2 text-right"
-                style={{ height: HOUR_HEIGHT }}
-              >
-                {String(i).padStart(2, '0')}:00
-              </div>
-            ))}
+            {Array.from({ length: TOTAL_HOURS }, (_, i) => {
+              // Display hours in order: 06-23 (first 18 hours), then 00-05 (last 6 hours)
+              const displayHour = i < 18 ? i + 6 : i - 18
+              const isBoundary = i === 18 // Mark the 00:00 boundary
+              return (
+                <div
+                  key={i}
+                  className={`border-t text-xs pr-2 text-right ${
+                    isBoundary ? 'border-t-2 border-olive-300 bg-olive-50 text-olive-600 font-medium' : 'border-gray-200 text-gray-500'
+                  }`}
+                  style={{ height: HOUR_HEIGHT }}
+                >
+                  {String(displayHour).padStart(2, '0')}:00
+                </div>
+              )
+            })}
           </div>
 
           {/* Days columns */}
@@ -105,8 +115,7 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
                   .filter(t => t.startTime.split('T')[0] === date)
                   .map(task => {
                     const startTime = task.startTime.split('T')[1] || '00:00'
-                    const taskDate = task.startTime.split('T')[0]
-                    const top = timeToPixels(startTime, taskDate, date)
+                    const top = timeToPixels(startTime)
                     const height = durationToPixels(task.durationHours)
 
                     return (
