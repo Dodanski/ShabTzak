@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ScheduleCalendar from './ScheduleCalendar'
 import TaskModeCalendar from './TaskModeCalendar'
 import { formatScheduleAsText, exportToPdf, exportToCsv, downloadCsv } from '../utils/exportUtils'
@@ -15,10 +15,12 @@ interface SchedulePageProps {
   roles: string[]
   onGenerate: () => void
   onManualAssign: (soldierId: string, taskId: string, role: string) => void
+  onReload?: () => void
+  progress?: { completed: number; total: number } | null
 }
 
 export default function SchedulePage({
-  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign,
+  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign, onReload, progress,
 }: SchedulePageProps) {
   const assignmentRoles: string[] = [...roles, 'Any']
   const [copied, setCopied] = useState(false)
@@ -34,6 +36,22 @@ export default function SchedulePage({
     const monday = new Date(today.setDate(diff))
     return monday.toISOString().split('T')[0]
   })
+  const [lastReloadProgress, setLastReloadProgress] = useState(0)
+
+  // Auto-reload data every 7 days worth of assignments (~7 soldiers × 3 tasks)
+  useEffect(() => {
+    if (!progress || !onReload) return
+
+    const assignmentsPerWeek = 21 // Approximate: 7 soldiers × 3 tasks
+    const currentMilestone = Math.floor(progress.completed / assignmentsPerWeek)
+    const previousMilestone = Math.floor(lastReloadProgress / assignmentsPerWeek)
+
+    if (currentMilestone > previousMilestone) {
+      // New 7-day milestone reached, reload data
+      onReload()
+      setLastReloadProgress(progress.completed)
+    }
+  }, [progress, onReload, lastReloadProgress])
 
   function handleCopyWhatsApp() {
     const text = formatScheduleAsText(leaveAssignments, soldiers)
@@ -154,6 +172,22 @@ export default function SchedulePage({
           Generate
         </button>
       </div>
+
+      {progress && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-blue-800">Generating Schedule...</h3>
+            <span className="text-sm text-blue-600">{progress.completed} / {progress.total} assignments</span>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-3">
+            <div
+              className="bg-blue-600 h-3 rounded-full transition-all"
+              style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+            />
+          </div>
+          <p className="text-xs text-blue-600 mt-2">Data will update as it's processed. This may take a few minutes...</p>
+        </div>
+      )}
 
       {mode === 'soldier' ? (
         <ScheduleCalendar

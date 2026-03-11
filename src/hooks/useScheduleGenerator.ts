@@ -8,6 +8,7 @@ export interface UseScheduleGeneratorResult {
   loading: boolean
   conflicts: ScheduleConflict[]
   error: Error | null
+  progress: { completed: number; total: number } | null
 }
 
 export function useScheduleGenerator(
@@ -20,26 +21,31 @@ export function useScheduleGenerator(
   const [loading, setLoading] = useState(false)
   const [conflicts, setConflicts] = useState<ScheduleConflict[]>([])
   const [error, setError] = useState<Error | null>(null)
+  const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null)
 
   const generate = useCallback(async () => {
     if (!ds || !config) return
     setLoading(true)
     setError(null)
+    setProgress(null)
     try {
       // Expand recurring tasks to individual instances for the schedule period
       const expandedTasks = expandRecurringTasks(tasks, endDate)
 
       const [leave, task] = await Promise.all([
         ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user'),
-        ds.scheduleService.generateTaskSchedule(expandedTasks, 'user'),
+        ds.scheduleService.generateTaskSchedule(expandedTasks, 'user', (completed, total) => {
+          setProgress({ completed, total })
+        }),
       ])
       setConflicts([...leave.conflicts, ...task.conflicts])
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
+      setProgress(null)
     }
   }, [ds, tasks, config, startDate, endDate])
 
-  return { generate, loading, conflicts, error }
+  return { generate, loading, conflicts, error, progress }
 }

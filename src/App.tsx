@@ -88,7 +88,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
 
-  const { generate: runSchedule, conflicts } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
+  const { generate: runSchedule, conflicts, progress } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
 
   async function handleUpdateStatus(soldierId: string, status: SoldierStatus, reason?: string) {
     try {
@@ -277,7 +277,9 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           conflicts={conflicts}
           onGenerate={handleGenerateSchedule}
           onManualAssign={handleManualAssign}
+          onReload={reload}
           roles={roles}
+          progress={progress}
         />
       )}
 

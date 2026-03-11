@@ -57,7 +57,7 @@ export class ScheduleService {
     return schedule
   }
 
-  async generateTaskSchedule(tasks: Task[], changedBy: string): Promise<TaskSchedule> {
+  async generateTaskSchedule(tasks: Task[], changedBy: string, onProgress?: (completed: number, total: number) => void): Promise<TaskSchedule> {
     const [soldiers, existing] = await Promise.all([
       this.soldiers.list(),
       this.taskAssignments.list(),
@@ -67,20 +67,23 @@ export class ScheduleService {
     // (tasks array should contain all tasks from spreadsheet, expanded if recurring)
     const schedule = scheduleTasks(tasks, soldiers, existing, tasks)
 
-
     // Persist only assignments that aren't already stored
     const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}:${a.assignedRole}`))
-    let persistedCount = 0
-    for (const assignment of schedule.assignments) {
-      if (!existingKeys.has(`${assignment.taskId}:${assignment.soldierId}:${assignment.assignedRole}`)) {
-        persistedCount++
-        await this.taskAssignments.create({
-          taskId: assignment.taskId,
-          soldierId: assignment.soldierId,
-          assignedRole: assignment.assignedRole,
+    const newAssignments = schedule.assignments.filter(assignment =>
+      !existingKeys.has(`${assignment.taskId}:${assignment.soldierId}:${assignment.assignedRole}`)
+    )
+
+    // Batch create assignments with progress callback
+    if (newAssignments.length > 0) {
+      await this.taskAssignments.createBatch(
+        newAssignments.map(a => ({
+          taskId: a.taskId,
+          soldierId: a.soldierId,
+          assignedRole: a.assignedRole,
           createdBy: changedBy,
-        })
-      }
+        })),
+        onProgress
+      )
     }
 
     await this.history.append(
