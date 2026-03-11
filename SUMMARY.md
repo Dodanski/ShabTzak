@@ -58,7 +58,7 @@ Old tasks with just times are silently skipped in the schedule calendar (see `av
 | Type | Fields |
 |------|--------|
 | **Soldier** | `id` (army number), `firstName`, `lastName`, `role`, `serviceStart`, `serviceEnd`, `status` ('Active'/'Inactive'), `inactiveReason?`, fairness/hours/leave counts |
-| **Task** | `id`, `taskType`, `startTime` (ISO), `endTime` (ISO), `durationHours`, `roleRequirements[]`, `minRestAfter`, `isSpecial`, `specialDurationDays?` |
+| **Task** | `id`, `taskType`, `startTime` (ISO), `endTime` (ISO), `durationHours`, `roleRequirements[]`, `minRestAfter`, `isSpecial`, `specialDurationDays?`, `recurrence?` ('daily'/'pillbox'), `recurrenceEndDate?` |
 | **LeaveRequest** | `id`, `soldierId`, `startDate`, `endDate`, `leaveType`, `priority`, `status` ('Pending'/'Approved'/'Denied') |
 | **Unit** | `id`, `name`, `spreadsheetId`, `tabPrefix`, `createdAt`, `createdBy` |
 
@@ -71,25 +71,30 @@ Old tasks with just times are silently skipped in the schedule calendar (see `av
 - Approve/deny leave requests with robust ID column lookup
 - Task scheduling requires full ISO datetimes
 - **Task schedule generation now working** - soldiers assigned to tasks via greedy algorithm
+- **Recurring daily tasks** - Tasks can recur every day throughout the 80-day schedule period
+  - Define once, automatically expands to all 80 days
+  - Pillbox tasks recur sequentially (one after another)
+  - UI selector for recurrence type in TasksPage
 - **Weekly Task Calendar view** - Time-based calendar showing tasks with soldier assignments
   - Toggle "Soldier/Task Mode" button on Schedule page
   - Click task to see assigned soldiers in side panel
   - Week navigation with Previous/Next buttons and date picker
+  - **24/7 display** with day boundary at 06:00 (next day start)
+- **Plain text IDs** for manual spreadsheet editing
+  - Task IDs: `task_YYYYMMDD_HHMM_RANDOM`
+  - Schedule IDs: `sched_YYYYMMDD_HHMM_RANDOM`
+  - Leave assignment IDs: `leave_YYYYMMDD_HHMM_RANDOM`
+- **24-hour time format** throughout (no AM/PM)
 - 80-day schedule period (until May 25)
 - GitHub Pages deployment with CI/CD
 - Responsive design for mobile/tablet
 - 536 passing tests
-- **Added debug logging** for task schedule generation troubleshooting
 
 ### Known Issues ⚠️
-1. **Tasks:** Old tasks in spreadsheet with just times (e.g., `"08:00"`) won't appear in calendar. Users must create NEW tasks from app.
-2. **Schedule display:** Tasks only show if:
-   - Task has full ISO datetime (date + time)
-   - Soldier's service period overlaps the task date
-   - At least one soldier is assigned to the task
-3. **Task mode calendar:** Time display is 6am-10pm; tasks outside this range may not be visible
-4. **Responsive design:** Mobile UI is improved but may still need refinement on very small screens
-5. **Test suite:** Tests are expensive; focus on integration tests for critical paths (task creation → scheduling → display)
+1. **Legacy tasks:** Old tasks in spreadsheet with just times (e.g., `"08:00"`) won't appear in calendar. Users must create NEW recurring tasks from app.
+2. **Recurring task expansion:** When tasks are set to recur, they expand at schedule generation time. Current UI shows only 3 base tasks, but calendar should show all 80+ expanded instances.
+3. **Responsive design:** Mobile UI is improved but may still need refinement on very small screens, especially the 24-hour task calendar
+4. **Debug logging:** Console logs remain for task scheduling diagnosis (can be removed after verification)
 
 ---
 
@@ -142,9 +147,9 @@ Add these as GitHub Secrets for CI/CD deployment.
 
 ## Next Steps for New Agent
 
-1. **Remove debug logging:** Clean up console.log statements in taskScheduler.ts, scheduleService.ts, and App.tsx once task scheduling is verified stable
-2. **Extend task time range:** Make the 6am-10pm range configurable or dynamic based on actual task times
-3. **Improve responsive design:** Test task calendar on mobile; may need redesign for small screens
-4. **Optimize tests:** Replace expensive component tests with focused integration tests for task scheduling
-5. **Add task mode state persistence:** Save user's preferred view mode (soldier/task) to localStorage
-6. **Soldier service dates validation:** Add validation to prevent scheduling soldiers outside their service period
+1. **Test recurring tasks:** Verify that daily tasks expand properly and schedule all 80 days worth of soldiers
+2. **Remove debug logging:** Clean up console.log statements in taskScheduler.ts, scheduleService.ts, and App.tsx once scheduling is verified stable
+3. **Optimize tests:** Update tests to account for recurring task expansion; add integration tests for task scheduling
+4. **Add task mode state persistence:** Save user's preferred view mode (soldier/task) to localStorage
+5. **Improve mobile responsive design:** Test task calendar on mobile; may need redesign for small screens
+6. **Validate soldier service periods:** Add validation to prevent scheduling soldiers outside their service dates
