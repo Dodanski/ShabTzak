@@ -38,16 +38,16 @@ export default function SchedulePage({
   })
   const [lastReloadProgress, setLastReloadProgress] = useState(0)
 
-  // Auto-reload data every 7 days worth of assignments (~7 soldiers × 3 tasks)
+  // Auto-reload data every 14 days worth of assignments to avoid frequent refreshes
   useEffect(() => {
     if (!progress || !onReload) return
 
-    const assignmentsPerWeek = 21 // Approximate: 7 soldiers × 3 tasks
-    const currentMilestone = Math.floor(progress.completed / assignmentsPerWeek)
-    const previousMilestone = Math.floor(lastReloadProgress / assignmentsPerWeek)
+    const assignmentsPerTwoWeeks = 42 // Reload every 2 weeks of assignments
+    const currentMilestone = Math.floor(progress.completed / assignmentsPerTwoWeeks)
+    const previousMilestone = Math.floor(lastReloadProgress / assignmentsPerTwoWeeks)
 
     if (currentMilestone > previousMilestone) {
-      // New 7-day milestone reached, reload data
+      // New 14-day milestone reached, reload data
       onReload()
       setLastReloadProgress(progress.completed)
     }

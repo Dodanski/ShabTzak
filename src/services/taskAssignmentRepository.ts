@@ -142,6 +142,7 @@ export class TaskAssignmentRepository {
     // Batch in groups of 20 with 1-second delay between batches to avoid rate limiting
     const BATCH_SIZE = 20
     const DELAY_MS = 1000
+    const PROGRESS_UPDATE_FREQUENCY = 3 // Update progress every 3 batches to reduce flashing
 
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {
       const batch = assignments.slice(i, i + BATCH_SIZE)
@@ -149,7 +150,12 @@ export class TaskAssignmentRepository {
       await this.sheets.appendValues(this.spreadsheetId, this.range, rows)
 
       const completed = Math.min(i + BATCH_SIZE, assignments.length)
-      onProgress?.(completed, assignments.length)
+      const batchNumber = Math.floor(i / BATCH_SIZE)
+
+      // Only call onProgress every N batches to reduce UI flashing
+      if (batchNumber % PROGRESS_UPDATE_FREQUENCY === 0 || completed === assignments.length) {
+        onProgress?.(completed, assignments.length)
+      }
 
       // Delay between batches except after the last one
       if (completed < assignments.length) {
