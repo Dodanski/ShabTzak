@@ -8,13 +8,15 @@ export interface RoleRequirement {
 export interface Task {
   id: string
   taskType: string
-  startTime: string // ISO datetime
+  startTime: string // ISO datetime (defines the time of day and start date)
   endTime: string // ISO datetime
   durationHours: number
   roleRequirements: RoleRequirement[]
   minRestAfter: number // hours
   isSpecial: boolean
   specialDurationDays?: number
+  recurrence?: 'daily' | 'pillbox' // 'daily' = repeat every day; 'pillbox' = multi-day special task
+  recurrenceEndDate?: string // ISO date (YYYY-MM-DD) - when the daily recurrence stops
 }
 
 export interface TaskAssignment {
@@ -36,6 +38,8 @@ export interface CreateTaskInput {
   minRestAfter?: number
   isSpecial?: boolean
   specialDurationDays?: number
+  recurrence?: 'daily' | 'pillbox'
+  recurrenceEndDate?: string
 }
 
 export interface UpdateTaskInput {
@@ -48,4 +52,6 @@ export interface UpdateTaskInput {
   minRestAfter?: number
   isSpecial?: boolean
   specialDurationDays?: number
+  recurrence?: 'daily' | 'pillbox'
+  recurrenceEndDate?: string
 }

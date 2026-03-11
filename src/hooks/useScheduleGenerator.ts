@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { expandRecurringTasks } from '../algorithms/taskExpander'
 import type { DataService } from '../services/dataService'
 import type { ScheduleConflict, Task, AppConfig } from '../models'
 
@@ -25,9 +26,13 @@ export function useScheduleGenerator(
     setLoading(true)
     setError(null)
     try {
+      // Expand recurring tasks to individual instances for the schedule period
+      const expandedTasks = expandRecurringTasks(tasks, startDate, endDate)
+      console.log('[useScheduleGenerator] Expanded recurring tasks:', { original: tasks.length, expanded: expandedTasks.length })
+
       const [leave, task] = await Promise.all([
         ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user'),
-        ds.scheduleService.generateTaskSchedule(tasks, 'user'),
+        ds.scheduleService.generateTaskSchedule(expandedTasks, 'user'),
       ])
       setConflicts([...leave.conflicts, ...task.conflicts])
     } catch (err) {
