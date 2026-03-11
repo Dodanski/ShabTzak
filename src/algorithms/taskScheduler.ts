@@ -5,16 +5,24 @@ import type { Soldier, Task, TaskAssignment, TaskSchedule } from '../models'
 /**
  * Greedy task scheduler: processes tasks by start time, assigns soldiers to each
  * role requirement sorted by fairness score (lowest first).
+ *
+ * @param tasks - Tasks to assign soldiers to
+ * @param soldiers - Available soldiers
+ * @param existingAssignments - Existing assignments (used for fairness and rest period checking)
+ * @param allTasksInSystem - All tasks in the system (needed for rest period validation against prior tasks)
  */
 export function scheduleTasks(
   tasks: Task[],
   soldiers: Soldier[],
   existingAssignments: TaskAssignment[],
+  allTasksInSystem?: Task[],
 ): TaskSchedule {
   const result: TaskAssignment[] = [...existingAssignments]
+  // Use all tasks in system for rest period checking, fallback to just scheduled tasks
+  const tasksForValidation = allTasksInSystem || tasks
 
-  console.log('[taskScheduler] Input:', { taskCount: tasks.length, soldierCount: soldiers.length, existingCount: existingAssignments.length })
-  console.log('[taskScheduler] Tasks:', tasks.map(t => ({ id: t.id, type: t.taskType, start: t.startTime, end: t.endTime, date: t.startTime.split('T')[0] })))
+  console.log('[taskScheduler] Input:', { taskCount: tasks.length, soldierCount: soldiers.length, existingCount: existingAssignments.length, allTasksInSystemCount: allTasksInSystem?.length ?? 'not provided' })
+  console.log('[taskScheduler] Tasks to schedule:', tasks.map(t => ({ id: t.id, type: t.taskType, start: t.startTime, end: t.endTime, date: t.startTime.split('T')[0] })))
 
   // Group tasks by date for visibility
   const tasksByDate: Record<string, number> = {}
@@ -22,7 +30,7 @@ export function scheduleTasks(
     const date = task.startTime.split('T')[0]
     tasksByDate[date] = (tasksByDate[date] ?? 0) + 1
   }
-  console.log('[taskScheduler] Tasks by date:', tasksByDate)
+  console.log('[taskScheduler] Tasks to schedule by date:', tasksByDate)
 
   // Process tasks in chronological order
   const sortedTasks = [...tasks].sort(
@@ -44,7 +52,7 @@ export function scheduleTasks(
       // Find eligible soldiers: role match + available (rest period, status)
       const eligible = soldiers.filter(s => {
         if (requirement.role !== 'Any' && s.role !== requirement.role) return false
-        return isTaskAvailable(s, task, tasks, result)
+        return isTaskAvailable(s, task, tasksForValidation, result)
       })
 
       // Sort by combined fairness ascending (lower = more deserving)

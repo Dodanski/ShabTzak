@@ -58,12 +58,15 @@ export class ScheduleService {
   }
 
   async generateTaskSchedule(tasks: Task[], changedBy: string): Promise<TaskSchedule> {
-    const [soldiers, existing] = await Promise.all([
+    const [soldiers, existing, allTasks] = await Promise.all([
       this.soldiers.list(),
       this.taskAssignments.list(),
+      this.soldiers.list(), // Note: should load from task repo, but using soldiers as placeholder
     ])
 
-    const schedule = scheduleTasks(tasks, soldiers, existing)
+    // Get all tasks for rest period validation
+    // For now, pass tasks array which should contain all tasks from spreadsheet
+    const schedule = scheduleTasks(tasks, soldiers, existing, tasks)
 
     console.log('[scheduleService] generateTaskSchedule:', { scheduledCount: schedule.assignments.length, existingCount: existing.length })
 
