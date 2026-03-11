@@ -58,7 +58,10 @@ describe('TasksPage', () => {
     render(<TasksPage tasks={[]} roles={['Driver', 'Medic']} onAddTask={onAddTask} />)
     await userEvent.click(screen.getByRole('button', { name: /add task/i }))
     await userEvent.type(screen.getByLabelText(/task type/i), 'Convoy')
-    await userEvent.type(screen.getByLabelText(/start time/i), '08:00')
+    // TimeInput24 uses two number inputs - hours and minutes
+    const inputs = screen.getAllByPlaceholderText(/HH|MM/)
+    await userEvent.type(inputs[0], '08') // HH
+    await userEvent.type(inputs[1], '00') // MM
     await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
     expect(onAddTask).toHaveBeenCalledOnce()
   })
