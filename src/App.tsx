@@ -152,7 +152,10 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   async function handleGenerateSchedule() {
     if (!ds || !configData) return
     try {
-      await runSchedule()
+      await runSchedule(() => {
+        // Reload data after schedule generation completes
+        reload()
+      })
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
       const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')

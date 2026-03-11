@@ -4,7 +4,7 @@ import type { DataService } from '../services/dataService'
 import type { ScheduleConflict, Task, AppConfig } from '../models'
 
 export interface UseScheduleGeneratorResult {
-  generate: () => Promise<void>
+  generate: (onComplete?: () => void) => Promise<void>
   loading: boolean
   conflicts: ScheduleConflict[]
   error: Error | null
@@ -23,7 +23,7 @@ export function useScheduleGenerator(
   const [error, setError] = useState<Error | null>(null)
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null)
 
-  const generate = useCallback(async () => {
+  const generate = useCallback(async (onComplete?: () => void) => {
     if (!ds || !config) return
     setLoading(true)
     setError(null)
@@ -39,6 +39,9 @@ export function useScheduleGenerator(
         }),
       ])
       setConflicts([...leave.conflicts, ...task.conflicts])
+
+      // Call onComplete callback when done (for data reload)
+      onComplete?.()
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)))
     } finally {

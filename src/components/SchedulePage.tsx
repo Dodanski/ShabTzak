@@ -171,6 +171,15 @@ export default function SchedulePage({
         >
           Generate
         </button>
+        {!progress && (
+          <button
+            onClick={onReload}
+            className="px-3 sm:px-4 py-1 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700"
+            title="Refresh schedule data"
+          >
+            Reload
+          </button>
+        )}
       </div>
 
       {progress && (
