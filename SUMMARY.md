@@ -1,155 +1,107 @@
-# ShabTzak — Project Summary
+# ShabTzak — IDF Shift Scheduling App
 
-> **For the next agent:** Read this first. App is deployed to GitHub Pages with 536 passing tests. **Critical:** Tasks must have full ISO datetimes (e.g., `2026-03-08T08:00:00`) to appear in the schedule calendar. Old tasks with just times (e.g., `"08:00"`) are ignored.
+Shabbat shift-scheduling web app for IDF units. Admins manage units/tasks, commanders schedule soldiers and leave. **536 passing tests. Deployed to GitHub Pages.**
+
+## Quick Start
+
+```bash
+npm run dev      # Dev server
+npm run deploy   # Build & deploy to GitHub Pages
+npm test         # Run tests
+```
+
+**Stack:** React 18, TypeScript, Vite, Tailwind, Google Sheets (database), Google OAuth
 
 ---
 
-## What This App Does
+## Key Features
 
-Shabbat shift-scheduling web app for IDF units. Admins manage units, commanders, and tasks. Commanders manage soldiers, leave requests, and generate duty schedules.
-
-**Stack:** React 18, TypeScript, Vite, Tailwind CSS, Vitest, Google Sheets (database)
-**Deploy:** GitHub Pages via CI/CD (`.github/workflows/ci.yml`)
-**Auth:** Google OAuth (access token in `AuthContext`)
+- **Daily Recurring Tasks** - Define once, automatically repeats all 80 days
+- **Soldier Scheduling** - Greedy algorithm assigns soldiers based on fairness & availability
+- **Dual-mode Calendar:**
+  - Soldier mode: 80-day grid showing who works when
+  - Task mode: Weekly calendar (00:00-23:59) showing tasks, click to see assigned soldiers
+- **Leave Management** - Request/approve leave with fairness scoring
+- **Plain text IDs** - Manually editable in spreadsheet (format: `task_YYYYMMDD_HHMM_RANDOM`)
 
 ---
 
 ## Architecture
 
-### Two-spreadsheet Model
+### Two-Spreadsheet Model
 
-**Admin spreadsheet** (`VITE_SPREADSHEET_ID` env var) — managed by `MasterDataService`:
-- `Admins`, `Units`, `Commanders`, `Tasks`, `Config`, `History`, `Roles` tabs
+**Admin Sheet** (`VITE_SPREADSHEET_ID`) — Managed by `MasterDataService`
+- Tabs: `Admins`, `Units`, `Commanders`, `Tasks`, `Config`, `History`, `Roles`
 
-**Per-unit spreadsheet** (ID in Units row) — managed by `DataService`:
-- `{tabPrefix}` — Soldier list (14 columns: ID, First Name, Last Name, Role, ServiceStart, ServiceEnd, InitialFairness, CurrentFairness, Status, HoursWorked, WeekendLeavesCount, MidweekLeavesCount, AfterLeavesCount, InactiveReason)
+**Per-Unit Sheet** (ID from Units) — Managed by `DataService`
+- `{tabPrefix}` — Soldiers (14 cols: ID, Name, Role, ServiceStart/End, Fairness, Status, Counts, Reason)
 - `{tabPrefix}_TaskSchedule` — Task assignments
 - `{tabPrefix}_LeaveRequests` — Leave requests
 - `{tabPrefix}_LeaveSchedule` — Leave assignments
 
-> **Key:** Soldiers live in a tab named exactly like the unit (e.g., `"א'"`) NOT `{prefix}_Soldiers`.
+**Critical:** Soldiers live in unit-named tab (e.g., `"א'"`) NOT `{prefix}_Soldiers`.
 
-### Key Services
+### Schedule Generation
 
-**`MasterDataService`** — Manages admin data, roles, units, commanders, tasks, config
-- `initialize(firstAdminEmail)` — Idempotent: creates missing tabs, seeds first admin
-- `resolveRole(email)` — Returns admin/commander/null
+**Workflow:**
+1. Tasks (base definitions) → Expanded to 80 daily instances
+2. `generateLeaveSchedule()` → Processes leave requests, updates fairness
+3. `generateTaskSchedule()` → Assigns soldiers via greedy algorithm (fairness + availability)
+4. Both must run together for proper fairness updates
 
-**`DataService`** — Manages unit-specific data (soldiers, leave, schedules)
-- `soldierService`, `leaveRequestService`, `scheduleService`, `fairnessUpdate`
+**Task Format:** MUST have full ISO datetime: `"2026-03-08T06:00:00"` (not just `"06:00"`)
 
-**`ScheduleService`** — Generates schedules
-- `generateLeaveSchedule()` — Processes pending leave requests with fairness scoring
-- `generateTaskSchedule()` — Assigns soldiers to tasks based on fairness and availability
-- **Both must be called together** for proper fairness updates
+### Data Models
 
-### Critical: Task Time Format
-
-**Tasks MUST have full ISO datetimes to be scheduled:**
-- ✅ Valid: `"2026-03-08T08:00:00"` and `"2026-03-08T14:00:00"`
-- ❌ Invalid: `"08:00"` and `"14:00"` (no date)
-
-Old tasks with just times are silently skipped in the schedule calendar (see `availabilityMatrix.ts`). Users must create NEW tasks from the app, which automatically adds proper datetimes via `buildInput()` in TasksPage.tsx.
+| Type | Key Fields |
+|------|-----------|
+| **Soldier** | `id`, `firstName`, `lastName`, `role`, `serviceStart/End`, `status`, fairness/hours/leave counts |
+| **Task** | `id`, `taskType`, `startTime/endTime` (ISO), `durationHours`, `roleRequirements[]`, `minRestAfter`, `isSpecial` (pillbox) |
+| **LeaveRequest** | `id`, `soldierId`, `startDate/endDate`, `leaveType`, `priority`, `status` |
+| **LeaveAssignment** | `id`, `soldierId`, dates, `leaveType`, `isWeekend`, `requestId` |
 
 ---
 
-## Models
+## Implementation Notes
 
-| Type | Fields |
-|------|--------|
-| **Soldier** | `id` (army number), `firstName`, `lastName`, `role`, `serviceStart`, `serviceEnd`, `status` ('Active'/'Inactive'), `inactiveReason?`, fairness/hours/leave counts |
-| **Task** | `id`, `taskType`, `startTime` (ISO), `endTime` (ISO), `durationHours`, `roleRequirements[]`, `minRestAfter`, `isSpecial`, `specialDurationDays?`, `recurrence?` ('daily'/'pillbox'), `recurrenceEndDate?` |
-| **LeaveRequest** | `id`, `soldierId`, `startDate`, `endDate`, `leaveType`, `priority`, `status` ('Pending'/'Approved'/'Denied') |
-| **Unit** | `id`, `name`, `spreadsheetId`, `tabPrefix`, `createdAt`, `createdBy` |
+### Task Expansion
+`expandRecurringTasks()` in `src/algorithms/taskExpander.ts`:
+- **Regular tasks:** Creates daily instance from startDate to scheduleEndDate
+- **Pillbox tasks** (isSpecial=true): Creates sequential instances, each after the previous
 
----
+### Scheduling Algorithm
+`scheduleTasks()` in `src/algorithms/taskScheduler.ts`:
+- Sorts tasks chronologically
+- For each task's role requirements:
+  - Filters eligible soldiers (active, right role, rest period met)
+  - Ranks by combined fairness score
+  - Assigns up to required count
 
-## Recent Status (2026-03-08 to 2026-03-11)
-
-### Implemented ✅
-- Soldier names split into `firstName`/`lastName` with case-insensitive header matching
-- Approve/deny leave requests with robust ID column lookup
-- Task scheduling requires full ISO datetimes
-- **Task schedule generation now working** - soldiers assigned to tasks via greedy algorithm
-- **Recurring daily tasks** - Tasks can recur every day throughout the 80-day schedule period
-  - Define once, automatically expands to all 80 days
-  - Pillbox tasks recur sequentially (one after another)
-  - UI selector for recurrence type in TasksPage
-- **Weekly Task Calendar view** - Time-based calendar showing tasks with soldier assignments
-  - Toggle "Soldier/Task Mode" button on Schedule page
-  - Click task to see assigned soldiers in side panel
-  - Week navigation with Previous/Next buttons and date picker
-  - **24/7 display** with day boundary at 06:00 (next day start)
-- **Plain text IDs** for manual spreadsheet editing
-  - Task IDs: `task_YYYYMMDD_HHMM_RANDOM`
-  - Schedule IDs: `sched_YYYYMMDD_HHMM_RANDOM`
-  - Leave assignment IDs: `leave_YYYYMMDD_HHMM_RANDOM`
-- **24-hour time format** throughout (no AM/PM)
-- 80-day schedule period (until May 25)
-- GitHub Pages deployment with CI/CD
-- Responsive design for mobile/tablet
-- 536 passing tests
-
-### Known Issues ⚠️
-1. **Legacy tasks:** Old tasks in spreadsheet with just times (e.g., `"08:00"`) won't appear in calendar. Users must create NEW recurring tasks from app.
-2. **Recurring task expansion:** When tasks are set to recur, they expand at schedule generation time. Current UI shows only 3 base tasks, but calendar should show all 80+ expanded instances.
-3. **Responsive design:** Mobile UI is improved but may still need refinement on very small screens, especially the 24-hour task calendar
-4. **Debug logging:** Console logs remain for task scheduling diagnosis (can be removed after verification)
+### Rest Period Validation
+`isTaskAvailable()` checks:
+- Soldier status = 'Active'
+- Soldier has required role
+- Rest period from previous task (minRestAfter hours) has passed
 
 ---
 
-## Component Tree
+## Known Issues & TODOs
 
-```
-App
-└─ AppContent
-   ├─ LoginPage (not authenticated)
-   ├─ AccessDeniedPage (no role)
-   ├─ AdminPanel (admin, no unit selected)
-   │   └─ TasksPage (edit + create tasks)
-   └─ UnitApp (commander or admin in unit)
-       └─ AppShell (header nav + main)
-           ├─ Dashboard
-           ├─ SoldiersPage (inline editing)
-           ├─ TasksPage (read-only for commanders)
-           ├─ LeaveRequestsPage (approve/deny)
-           ├─ SchedulePage (dual-mode calendar + generate)
-           │   ├─ ScheduleCalendar (soldier mode - daily grid)
-           │   └─ TaskModeCalendar (task mode - weekly calendar)
-           └─ HistoryPage (audit log)
-```
-
----
-
-## Dev Commands
-
-```bash
-npm run dev                    # Vite dev server
-npm test                       # Run 536 tests (skip on each change)
-npm run build                  # Build for production
-npm run deploy                 # Push to GitHub Pages
-```
+1. **Debug logging** - Remove console.logs from `taskScheduler.ts`, `scheduleService.ts`, `App.tsx`
+2. **Mobile responsive** - Task calendar (24hr view) needs mobile refinement
+3. **Test updates** - Tests don't account for task expansion (1 task → 80+ instances)
+4. **State persistence** - Save user's soldier/task mode preference to localStorage
+5. **Soldier validation** - Prevent scheduling outside service dates
 
 ---
 
 ## Environment Variables
 
 ```
-VITE_GOOGLE_CLIENT_ID=...                                        # OAuth client ID
-VITE_GOOGLE_API_KEY=...                                           # Google Sheets API key
-VITE_SPREADSHEET_ID=1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM # Admin spreadsheet
-VITE_ADMIN_EMAIL=guy.moshk@gmail.com                              # Initial admin
+VITE_GOOGLE_CLIENT_ID=...
+VITE_GOOGLE_API_KEY=...
+VITE_SPREADSHEET_ID=1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM
+VITE_ADMIN_EMAIL=guy.moshk@gmail.com
 ```
 
-Add these as GitHub Secrets for CI/CD deployment.
-
----
-
-## Next Steps for New Agent
-
-1. **Test recurring tasks:** Verify that daily tasks expand properly and schedule all 80 days worth of soldiers
-2. **Remove debug logging:** Clean up console.log statements in taskScheduler.ts, scheduleService.ts, and App.tsx once scheduling is verified stable
-3. **Optimize tests:** Update tests to account for recurring task expansion; add integration tests for task scheduling
-4. **Add task mode state persistence:** Save user's preferred view mode (soldier/task) to localStorage
-5. **Improve mobile responsive design:** Test task calendar on mobile; may need redesign for small screens
-6. **Validate soldier service periods:** Add validation to prevent scheduling soldiers outside their service dates
+Add as GitHub Secrets for CI/CD.
