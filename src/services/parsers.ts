@@ -90,9 +90,10 @@ export function parseTask(row: string[], headers: string[]): Task {
   const roleReqRaw = get(row, headers, 'RoleRequirements')
   const roleRequirements = roleReqRaw ? JSON.parse(roleReqRaw) : []
   const specialDaysRaw = get(row, headers, 'SpecialDurationDays')
-  const recurrenceRaw = get(row, headers, 'Recurrence')
+  // Use safeGet for optional new columns (gracefully handle missing headers in existing spreadsheets)
+  const recurrenceRaw = safeGet(row, headers, 'Recurrence')
   const recurrence = recurrenceRaw && (recurrenceRaw === 'daily' || recurrenceRaw === 'pillbox') ? recurrenceRaw : undefined
-  const recurrenceEndDate = get(row, headers, 'RecurrenceEndDate') || undefined
+  const recurrenceEndDate = safeGet(row, headers, 'RecurrenceEndDate') || undefined
   return {
     id: get(row, headers, 'ID'),
     taskType: get(row, headers, 'TaskType'),
