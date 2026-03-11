@@ -21,9 +21,25 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
     return d.toISOString().split('T')[0]
   })
 
-  // Filter tasks that overlap this week
+  // Expand recurring tasks to show in the week view
+  // Regular tasks repeat daily, pillbox tasks show as-is
+  const expandedTasks = tasks.flatMap(task => {
+    if (task.isSpecial) {
+      // Pillbox task - show only on its original date
+      return [task]
+    }
+    // Regular recurring task - create instances for each day of the week
+    return weekDates.map((date, idx) => ({
+      ...task,
+      id: `${task.id}_day${idx}`,
+      startTime: `${date}T${task.startTime.split('T')[1]}`,
+      endTime: `${date}T${task.endTime.split('T')[1]}`,
+    }))
+  })
+
+  // Filter tasks that are in this week
   const weekEnd = weekDates[6]
-  const tasksInWeek = tasks.filter(t => {
+  const tasksInWeek = expandedTasks.filter(t => {
     const taskDate = t.startTime.split('T')[0]
     return taskDate >= weekStart && taskDate <= weekEnd
   })
