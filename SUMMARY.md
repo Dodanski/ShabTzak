@@ -1,138 +1,92 @@
 # ShabTzak — Project Summary
 
-> **For the next agent.** Read this before touching any code. Current state is clean: 536 tests passing, build clean, deployed to GitHub Pages.
+> **For the next agent:** Read this first. App is deployed to GitHub Pages with 536 passing tests. **Critical:** Tasks must have full ISO datetimes (e.g., `2026-03-08T08:00:00`) to appear in the schedule calendar. Old tasks with just times (e.g., `"08:00"`) are ignored.
 
 ---
 
 ## What This App Does
 
-Shabbat shift-scheduling web app for IDF units. Admins manage units, commanders, and task definitions. Commanders manage soldiers, leave requests, and generate duty schedules.
+Shabbat shift-scheduling web app for IDF units. Admins manage units, commanders, and tasks. Commanders manage soldiers, leave requests, and generate duty schedules.
 
-**Stack:** React 18, TypeScript, Vite, Tailwind CSS, Vitest, Google Sheets as the database.
-**Deploy:** `npm run deploy` → GitHub Pages (the user runs this).
-**Auth:** Google OAuth (access token in `AuthContext`).
+**Stack:** React 18, TypeScript, Vite, Tailwind CSS, Vitest, Google Sheets (database)
+**Deploy:** GitHub Pages via CI/CD (`.github/workflows/ci.yml`)
+**Auth:** Google OAuth (access token in `AuthContext`)
 
 ---
 
 ## Architecture
 
-### Two-spreadsheet model
+### Two-spreadsheet Model
 
-**Admin spreadsheet** (ID from `VITE_SPREADSHEET_ID` env var) — managed by `MasterDataService`:
+**Admin spreadsheet** (`VITE_SPREADSHEET_ID` env var) — managed by `MasterDataService`:
+- `Admins`, `Units`, `Commanders`, `Tasks`, `Config`, `History`, `Roles` tabs
 
-| Tab | Purpose |
-|-----|---------|
-| `Admins` | Admin email list |
-| `Units` | Unit registry (name, spreadsheetId, tabPrefix) |
-| `Commanders` | Commander → unit mapping |
-| `Tasks` | Task definitions (shared across all units) |
-| `Config` | Global config (leaveRatio, minBasePresence, etc.) |
-| `History` | Audit log |
-| `Roles` | Role definitions |
+**Per-unit spreadsheet** (ID in Units row) — managed by `DataService`:
+- `{tabPrefix}` — Soldier list (14 columns: ID, First Name, Last Name, Role, ServiceStart, ServiceEnd, InitialFairness, CurrentFairness, Status, HoursWorked, WeekendLeavesCount, MidweekLeavesCount, AfterLeavesCount, InactiveReason)
+- `{tabPrefix}_TaskSchedule` — Task assignments
+- `{tabPrefix}_LeaveRequests` — Leave requests
+- `{tabPrefix}_LeaveSchedule` — Leave assignments
 
-**Per-unit spreadsheet** (ID stored in Units row, same spreadsheet can be shared) — managed by `DataService`:
+> **Key:** Soldiers live in a tab named exactly like the unit (e.g., `"א'"`) NOT `{prefix}_Soldiers`.
 
-| Tab | Purpose |
-|-----|---------|
-| `{tabPrefix}` | **Soldier list** (tab name = unit name / tabPrefix, NOT `{prefix}_Soldiers`) |
-| `{tabPrefix}_TaskSchedule` | Task assignments |
-| `{tabPrefix}_LeaveRequests` | Leave requests |
-| `{tabPrefix}_LeaveSchedule` | Leave assignments |
+### Key Services
 
-> **Key design decision (recent):** Soldiers live in a tab named exactly like the unit (e.g. `"א'"`) not in a separate `_Soldiers` tab. `SetupService` only auto-creates the 3 scheduling tabs.
+**`MasterDataService`** — Manages admin data, roles, units, commanders, tasks, config
+- `initialize(firstAdminEmail)` — Idempotent: creates missing tabs, seeds first admin
+- `resolveRole(email)` — Returns admin/commander/null
 
-### Data flow on login
+**`DataService`** — Manages unit-specific data (soldiers, leave, schedules)
+- `soldierService`, `leaveRequestService`, `scheduleService`, `fairnessUpdate`
 
-```
-AuthContext (OAuth token)
-  → MasterDataService.initialize() — creates missing admin tabs, seeds first admin
-  → MasterDataService.resolveRole(email) — returns 'admin' | 'commander' | null
-    → if admin: show AdminPanel
-    → if commander: show UnitApp with their unit
-  → loads tasks + config from MasterDataService (Tasks/Config tabs)
-  → passes tasks/configData down to UnitApp as props
-```
+**`ScheduleService`** — Generates schedules
+- `generateLeaveSchedule()` — Processes pending leave requests with fairness scoring
+- `generateTaskSchedule()` — Assigns soldiers to tasks based on fairness and availability
+- **Both must be called together** for proper fairness updates
 
-### Key service classes
+### Critical: Task Time Format
 
-**`MasterDataService`** (`src/services/masterDataService.ts`)
-- Fields: `admins`, `units`, `commanders`, `tasks`, `config`, `history`, `taskService`, `sheets`
-- `initialize(firstAdminEmail)` — idempotent, creates missing tabs + seeds admin
-- `resolveRole(email)` — returns `{ role: 'admin' }` | `{ role: 'commander'; unitId; unit }` | `null`
+**Tasks MUST have full ISO datetimes to be scheduled:**
+- ✅ Valid: `"2026-03-08T08:00:00"` and `"2026-03-08T14:00:00"`
+- ❌ Invalid: `"08:00"` and `"14:00"` (no date)
 
-**`DataService`** (`src/services/dataService.ts`)
-- Constructor: `(accessToken, spreadsheetId, tabPrefix, historyService)`
-- Fields: `soldiers`, `leaveRequests`, `leaveAssignments`, `taskAssignments`, `soldierService`, `leaveRequestService`, `scheduleService`, `fairnessUpdate`
-- `HistoryService` injected from `MasterDataService` (all history goes to the admin spreadsheet)
-
-**`SoldierRepository`** (`src/services/soldierRepository.ts`)
-- `tabName = tabPrefix || 'Soldiers'` — reads from `"א'"` tab (not `"א'_Soldiers"`)
-- Sheet range is `A:N` (14 columns); `HEADER_ROW` is `['ID', 'First Name', 'Last Name', 'Role', ...]`
-- `create(input)` uses `input.id` directly (army ID supplied by user — no auto-generation)
-- Auto-migrates old `Name` column to `First Name`/`Last Name` on first soldier creation
-
-**`SoldierService`** (`src/services/soldierService.ts`)
-- `create(input, changedBy)` — army ID must be in `input.id`
-- `updateStatus(id, status, changedBy, inactiveReason?)` — sets Active or Inactive; no `discharge()` method
-- `updateFields(id, input, changedBy)` — updates name, role, serviceStart, serviceEnd, hoursWorked, or newId; `input` is `Omit<UpdateSoldierInput, 'id'>`
-
-**`ScheduleService`** (`src/services/scheduleService.ts`)
-- `generateLeaveSchedule(config, startDate, endDate, changedBy)` — config passed as param
-- `generateTaskSchedule(tasks, changedBy)` — tasks passed as param (no internal repo reads for these)
-
-### Key hooks
-
-**`useDataService(spreadsheetId, tabPrefix, masterDs)`** → `{ ds, soldiers, leaveRequests, taskAssignments, leaveAssignments, loading, error, reload }`
-**`useScheduleGenerator(ds, tasks, config, startDate, endDate)`** → `{ generate, conflicts }`
-**`useMissingTabs(spreadsheetId, tabPrefix)`** → `{ loading, error }` — auto-creates the 3 scheduling tabs if missing
-
-### Constants (`src/constants/index.ts`)
-
-```typescript
-SHEET_TABS = { TASK_SCHEDULE, LEAVE_REQUESTS, LEAVE_SCHEDULE }  // 3 tabs only
-MASTER_SHEET_TABS = { ADMINS, UNITS, COMMANDERS, TASKS, CONFIG, HISTORY, ROLES }
-```
-
-### tabPrefix logic
-
-`deriveTabPrefix(unitName)` converts unit name to prefix: `"א'"` → `"א'"`, `"Alpha Co"` → `"Alpha_Co"`.
-Scheduling tabs: `prefixTab(prefix, 'TaskSchedule')` → `"א'_TaskSchedule"`.
-Soldiers tab: `tabPrefix || 'Soldiers'` (bare prefix, no suffix).
-
-`App.tsx` passes `tabPrefix={activeUnit?.tabPrefix || activeUnit?.name || ''}` — if `tabPrefix` is empty in the Units row, falls back to the unit name to avoid writing soldiers to a generic `Soldiers` tab.
+Old tasks with just times are silently skipped in the schedule calendar (see `availabilityMatrix.ts`). Users must create NEW tasks from the app, which automatically adds proper datetimes via `buildInput()` in TasksPage.tsx.
 
 ---
 
-## Real spreadsheet setup
+## Models
 
-- **Admin spreadsheet ID:** `1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM`
-- Contains Admins/Units/Commanders/Tasks/Config/History tabs (admin data)
-- Also contains soldier tabs named `"א'"`, `"ב'"`, `"ג'"`, `"רפואה"` (67 soldiers from `soldier_list.xlsx`)
-- Units registered in the Units tab point to this same spreadsheet with tabPrefix = company name
-
-### Importing soldiers
-
-`scripts/import-soldiers.py` reads `soldier_list.xlsx` and writes English-format soldier data to the correct tabs:
-```bash
-python3 scripts/import-soldiers.py \
-  --token OAUTH_TOKEN \
-  --spreadsheet-id 1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM \
-  --xlsx soldier_list.xlsx
-```
-Get the OAuth token from DevTools → Network → any `sheets.googleapis.com` request → Authorization header (strip `"Bearer "`).
-
-Soldier tab format (English headers, 14 columns):
-`ID | First Name | Last Name | Role | ServiceStart | ServiceEnd | InitialFairness | CurrentFairness | Status | HoursWorked | WeekendLeavesCount | MidweekLeavesCount | AfterLeavesCount | InactiveReason`
-
-> **Note:** Parser supports legacy formats:
-> - Old 12-column format with `Name` column (migrates to new format on first soldier creation)
-> - 13-column format with `FirstName`/`LastName` (no spaces)
-> - Current 14-column format with `First Name`/`Last Name` (with spaces)
-> - Header matching is case-insensitive and whitespace-tolerant
+| Type | Fields |
+|------|--------|
+| **Soldier** | `id` (army number), `firstName`, `lastName`, `role`, `serviceStart`, `serviceEnd`, `status` ('Active'/'Inactive'), `inactiveReason?`, fairness/hours/leave counts |
+| **Task** | `id`, `taskType`, `startTime` (ISO), `endTime` (ISO), `durationHours`, `roleRequirements[]`, `minRestAfter`, `isSpecial`, `specialDurationDays?` |
+| **LeaveRequest** | `id`, `soldierId`, `startDate`, `endDate`, `leaveType`, `priority`, `status` ('Pending'/'Approved'/'Denied') |
+| **Unit** | `id`, `name`, `spreadsheetId`, `tabPrefix`, `createdAt`, `createdBy` |
 
 ---
 
-## Component hierarchy
+## Recent Status (2026-03-08 to 2026-03-11)
+
+### Implemented ✅
+- Soldier names split into `firstName`/`lastName` with case-insensitive header matching
+- Approve/deny leave requests with robust ID column lookup
+- Task scheduling requires full ISO datetimes
+- 80-day schedule period (until May 25)
+- GitHub Pages deployment with CI/CD
+- Responsive design for mobile/tablet
+- 536 passing tests
+
+### Known Issues ⚠️
+1. **Tasks:** Old tasks in spreadsheet with just times (e.g., `"08:00"`) won't appear in calendar. Users must create NEW tasks from app.
+2. **Schedule display:** Tasks only show if:
+   - Task has full ISO datetime (date + time)
+   - Soldier's service period overlaps the task date
+   - At least one soldier is assigned to the task
+3. **Responsive design:** Mobile UI is improved but may still need refinement on very small screens
+4. **Test suite:** Tests are expensive; focus on integration tests for critical paths (task creation → scheduling → display)
+
+---
+
+## Component Tree
 
 ```
 App
@@ -140,110 +94,47 @@ App
    ├─ LoginPage (not authenticated)
    ├─ AccessDeniedPage (no role)
    ├─ AdminPanel (admin, no unit selected)
-   │   └─ TasksPage (tasks tab — with edit support)
-   └─ UnitApp (commander, or admin who entered a unit)
-       └─ AppShell (nav, back-to-admin button)
+   │   └─ TasksPage (edit + create tasks)
+   └─ UnitApp (commander or admin in unit)
+       └─ AppShell (header nav + main)
            ├─ Dashboard
-           ├─ SoldiersPage
-           ├─ TasksPage (read-only for commanders — no onUpdateTask)
-           ├─ LeaveRequestsPage / LeaveRequestForm
-           ├─ SchedulePage
-           └─ HistoryPage
+           ├─ SoldiersPage (inline editing)
+           ├─ TasksPage (read-only for commanders)
+           ├─ LeaveRequestsPage (approve/deny)
+           ├─ SchedulePage (calendar + generate)
+           └─ HistoryPage (audit log)
 ```
 
-**AdminPanel tabs:** Admins | Units | Commanders | Roles | Tasks | Config
-**UnitApp sections:** dashboard | soldiers | tasks | leave | schedule | history
-
 ---
 
-## Models
-
-**`Task`** — `id, taskType, startTime, endTime, durationHours, roleRequirements: RoleRequirement[], minRestAfter, isSpecial, specialDurationDays?`
-**`CreateTaskInput`** — same minus `id` (all optional except `taskType, startTime, endTime, roleRequirements`)
-**`UpdateTaskInput`** — `id` (required) + all Task fields optional
-**`Unit`** — `id, name, spreadsheetId, tabPrefix, createdAt, createdBy`
-**`Soldier`** — `id` (army ID, user-supplied), `firstName, lastName, role, serviceStart, serviceEnd, initialFairness, currentFairness, status: 'Active'|'Inactive', inactiveReason?, hoursWorked, weekendLeavesCount, midweekLeavesCount, afterLeavesCount`
-**`CreateSoldierInput`** — `id` (required, army number), `firstName, lastName, role, serviceStart, serviceEnd`
-
----
-
-## Recent changes (2026-03-07)
-
-1. **GitHub Pages deployment** — Added CI/GitHub Actions workflow to automatically build, test, and deploy to GitHub Pages
-   - Workflow: `.github/workflows/ci.yml` now includes `upload-pages-artifact` and `deploy-pages` steps
-   - Requires GitHub Secrets: `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, `VITE_SPREADSHEET_ID`, `VITE_ADMIN_EMAIL`
-   - App now live at: `https://dodanski.github.io/ShabTzak/`
-
-2. **Soldier name column format fix** — Updated spreadsheet to use "First Name" and "Last Name" columns (with spaces)
-   - `parseSoldier()` now looks for columns with spaces first: `"First Name"` and `"Last Name"`
-   - Falls back to no-space format: `"FirstName"` and `"LastName"` for backward compatibility
-   - Falls back to old `"Name"` column for very old data
-   - Header matching now case-insensitive and whitespace-tolerant to handle Google Sheets quirks
-   - `HEADER_ROW` in `SoldierRepository` updated to use spaced format
-   - Debug logging in dev mode shows what headers are detected
-
-3. **Schedule generation fix** — Fixed type annotation for `useScheduleGenerator` hook
-   - `generate` function now correctly typed as `() => Promise<void>` (was `() => void`)
-   - This fixed the issue where "Generate Schedule" button didn't wait for completion
-   - Success toast now appears after schedule is generated
-
-## Recent changes (2026-03-06)
-
-1. **Soldier name split** — `name: string` → `firstName: string + lastName: string`
-2. **SoldierRepository** — 14-column header (A:N) with `FirstName` and `LastName`; auto-migrates old `Name` column
-3. **Backward compatibility** — `parseSoldier()` handles both old `Name` and new `FirstName`/`LastName` columns
-4. **Helper function** — `fullName(soldier)` utility for displaying names
-5. **SoldiersPage** — table shows two name columns; add/edit forms have separate firstName/lastName inputs
-6. **Validation** — `validateSoldier()` now requires both firstName and lastName
-7. **Components updated** — ScheduleCalendar, LeaveRequestsPage, LeaveRequestForm, exportUtils all use `fullName()`
-8. **SoldierService** — create message uses full name from input
-9. **All tests passing** — 536 tests (up from 532)
-
-## Recent changes (2026-03-05)
-
-1. **Full soldier edit** — inline edit panel per row; editable fields: ID, name, role, service start/end (dd/mm/yy input), hours worked; `SoldierService.updateFields()` added
-2. **`changedBy`** — all handlers in `App.tsx` now use `auth.email ?? 'user'`
-3. **`HistoryPage`** — lazy-loads from `masterDs.history.listAll()` when the history section is opened
-4. **`SetupPage` deleted** — orphaned component removed
-5. **`ROLES` constant removed** from `src/constants/index.ts`; `SoldierRole` is now `string`
-6. **New `Roles` tab** in admin spreadsheet (`RoleName` column); auto-created empty on first run
-7. **`RolesService` added**: `src/services/rolesService.ts` — `list()`, `create(name)`, `delete(name)`
-8. **`MasterDataService.roles: RolesService`** field added
-9. **Admin panel** has new **Roles** tab to add/delete roles
-10. **`SoldiersPage`, `TasksPage`, `SchedulePage`** now accept `roles: string[]` prop
-
-## Recent changes (2026-03-03/04)
-
-1. **Date display** — `formatDisplayDate(iso)` now returns `DD/MM/YY` (was `DD/MM`)
-2. **Army ID** — `CreateSoldierInput.id` is now required (user-entered army number); `SoldierRepository.create()` uses it directly
-3. **Status** — `SOLDIER_STATUS` is `['Active', 'Inactive']` (removed Injured/Discharged); `Soldier` has `inactiveReason?: string`; sheet is 13 columns (`A:M`)
-4. **SoldiersPage** — `onDischarge` prop replaced by `onUpdateStatus(id, status, reason?)`; checkbox per row; Army ID form field; end-date validation
-5. **tabPrefix fix** — `App.tsx` falls back to `activeUnit.name` when `tabPrefix` is empty, fixing soldiers being written to a generic `Soldiers` tab
-
----
-
-## Known / potential issues
-
-- Task editing is admin-only (commanders see tasks read-only in UnitApp's Tasks section)
-- `soldier_list.xlsx` is gitignored; keep it locally for re-runs of the import script
-- Soldier import script (`scripts/import-soldiers.py`) uses old 12-column format — needs `InactiveReason` column added if re-run
-
----
-
-## Dev commands
+## Dev Commands
 
 ```bash
-npm run dev          # Vite dev server
-npm test             # Vitest (536 tests)
-npm run build        # TypeScript + Vite build
-npm run deploy       # build + gh-pages publish
+npm run dev                    # Vite dev server
+npm test                       # Run 536 tests (skip on each change)
+npm run build                  # Build for production
+npm run deploy                 # Push to GitHub Pages
 ```
 
-## Env vars (`.env`)
+---
+
+## Environment Variables
 
 ```
-VITE_GOOGLE_CLIENT_ID=...
-VITE_GOOGLE_API_KEY=...
-VITE_SPREADSHEET_ID=1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM
-VITE_ADMIN_EMAIL=...
+VITE_GOOGLE_CLIENT_ID=...                                        # OAuth client ID
+VITE_GOOGLE_API_KEY=...                                           # Google Sheets API key
+VITE_SPREADSHEET_ID=1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM # Admin spreadsheet
+VITE_ADMIN_EMAIL=guy.moshk@gmail.com                              # Initial admin
 ```
+
+Add these as GitHub Secrets for CI/CD deployment.
+
+---
+
+## Next Steps for New Agent
+
+1. **Verify schedule generator works:** Create test task with full ISO datetime, generate schedule, check calendar
+2. **Debug responsive design:** Test on multiple screen sizes; may need further refinement
+3. **Optimize tests:** Replace expensive component tests with focused integration tests
+4. **Improve soldier service dates:** Add validation to prevent scheduling soldiers outside their service period
+5. **Fix: Date input for tasks should default to today's date** to prevent user confusion
