@@ -83,8 +83,15 @@ export class ScheduleService {
       this.taskAssignments.list(),
     ])
 
-    // Use allSoldiers if provided (multi-unit scheduling), otherwise use unit soldiers
-    const schedulingSoldiers = (allSoldiers && allSoldiers.length > 0) ? allSoldiers : soldiers
+    // Use allSoldiers if provided and valid (multi-unit scheduling), otherwise use unit soldiers
+    const schedulingSoldiers = (allSoldiers && allSoldiers.length > soldiers.length)
+      ? allSoldiers
+      : soldiers
+
+    if (import.meta.env.DEV) {
+      console.log('[scheduleService] Scheduling with', schedulingSoldiers.length, 'soldiers',
+        schedulingSoldiers === allSoldiers ? '(multi-unit)' : '(unit-only)')
+    }
 
     // Pass tasks array as allTasksInSystem for rest period validation
     // (tasks array should contain all tasks from spreadsheet, expanded if recurring)

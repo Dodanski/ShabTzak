@@ -89,12 +89,15 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
 
   // Calculate schedule period based on soldier availability
   const getSchedulePeriod = () => {
-    if (soldiers.length === 0) {
+    // Use allSoldiers if available (multi-unit), otherwise use unit soldiers
+    const soldiersForPeriod = (allSoldiers && allSoldiers.length > 0) ? allSoldiers : soldiers
+
+    if (soldiersForPeriod.length === 0) {
       // No soldiers: use default 80 days from today
       return { start: today, end: scheduleDates[scheduleDates.length - 1] ?? today }
     }
     // Find earliest serviceStart and latest serviceEnd from soldiers
-    const serviceDates = soldiers
+    const serviceDates = soldiersForPeriod
       .filter(s => s.serviceStart && s.serviceEnd)
       .map(s => ({ start: new Date(s.serviceStart), end: new Date(s.serviceEnd) }))
 
@@ -204,12 +207,19 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       // Process fairness updates with delays to avoid API rate limiting
       for (let i = 0; i < newAssignments.length; i++) {
         const assignment = newAssignments[i]
-        await ds.fairnessUpdate.applyLeaveAssignment(
-          assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
-        )
-        // Add delay between updates (every 5 updates, add a longer delay)
-        if ((i + 1) % 5 === 0 && i < newAssignments.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+        try {
+          await ds.fairnessUpdate.applyLeaveAssignment(
+            assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
+          )
+        } catch (e) {
+          console.warn('[App] Failed to update fairness for soldier', assignment.soldierId, ':', e)
+          // Continue with next soldier even if one fails
+        }
+        // Add delay between updates - increase delay for better rate limiting
+        if ((i + 1) % 2 === 0 && i < newAssignments.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        } else if (i < newAssignments.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
       }
       reload()
