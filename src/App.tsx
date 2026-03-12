@@ -64,7 +64,6 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   const [historyLoading, setHistoryLoading] = useState(false)
   const scheduleDates = generateNextDays(80)
   const today = new Date().toISOString().split('T')[0]
-  const scheduleEnd = scheduleDates[scheduleDates.length - 1] ?? today
 
   useEffect(() => {
     const onHashChange = () => setSection(getHashSection())
@@ -88,7 +87,48 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
 
-  const { generate: runSchedule, conflicts, progress } = useScheduleGenerator(ds, tasks, configData, today, scheduleEnd)
+  // Calculate schedule period based on soldier availability
+  const getSchedulePeriod = () => {
+    if (soldiers.length === 0) {
+      // No soldiers: use default 80 days from today
+      return { start: today, end: scheduleDates[scheduleDates.length - 1] ?? today }
+    }
+    // Find earliest serviceStart and latest serviceEnd from soldiers
+    const serviceDates = soldiers
+      .filter(s => s.serviceStart && s.serviceEnd)
+      .map(s => ({ start: new Date(s.serviceStart), end: new Date(s.serviceEnd) }))
+
+    if (serviceDates.length === 0) {
+      return { start: today, end: scheduleDates[scheduleDates.length - 1] ?? today }
+    }
+
+    const minStart = serviceDates.reduce((min, d) => d.start < min ? d.start : min, serviceDates[0].start)
+    const maxEnd = serviceDates.reduce((max, d) => d.end > max ? d.end : max, serviceDates[0].end)
+
+    return {
+      start: minStart.toISOString().split('T')[0],
+      end: maxEnd.toISOString().split('T')[0]
+    }
+  }
+
+  const { start: scheduleStart, end: scheduleEnd } = getSchedulePeriod()
+
+  // Generate dates for the actual schedule period
+  const getScheduleDatesForPeriod = () => {
+    const dates = []
+    const currentDate = new Date(scheduleStart)
+    const endDate = new Date(scheduleEnd)
+
+    while (currentDate <= endDate) {
+      dates.push(currentDate.toISOString().split('T')[0])
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    return dates
+  }
+
+  const actualScheduleDates = getScheduleDatesForPeriod()
+
+  const { generate: runSchedule, conflicts, progress } = useScheduleGenerator(ds, tasks, configData, scheduleStart, scheduleEnd)
 
   async function handleUpdateStatus(soldierId: string, status: SoldierStatus, reason?: string) {
     try {
@@ -273,7 +313,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       {section === 'schedule' && (
         <SchedulePage
           soldiers={soldiers}
-          dates={scheduleDates}
+          dates={actualScheduleDates}
           tasks={tasks}
           taskAssignments={taskAssignments}
           leaveAssignments={leaveAssignments}
@@ -283,6 +323,8 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           onReload={reload}
           roles={roles}
           progress={progress}
+          scheduleStart={scheduleStart}
+          scheduleEnd={scheduleEnd}
         />
       )}
 

@@ -17,10 +17,12 @@ interface SchedulePageProps {
   onManualAssign: (soldierId: string, taskId: string, role: string) => void
   onReload?: () => void
   progress?: { completed: number; total: number } | null
+  scheduleStart?: string
+  scheduleEnd?: string
 }
 
 export default function SchedulePage({
-  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign, onReload, progress,
+  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign, onReload, progress, scheduleStart, scheduleEnd,
 }: SchedulePageProps) {
   const assignmentRoles: string[] = [...roles, 'Any']
   const [copied, setCopied] = useState(false)
@@ -105,6 +107,13 @@ export default function SchedulePage({
 
   return (
     <div className="space-y-3 sm:space-y-6 h-full flex flex-col">
+      {scheduleStart && scheduleEnd && (
+        <div className="bg-olive-50 border border-olive-200 rounded-lg p-3 sm:p-4">
+          <p className="text-sm text-olive-700">
+            <span className="font-semibold">Schedule Period:</span> {scheduleStart} to {scheduleEnd}
+          </p>
+        </div>
+      )}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <h2 className="text-lg sm:text-xl font-semibold text-olive-800 mr-auto">Schedule</h2>
 
