@@ -2,12 +2,41 @@
 
 Shabbat shift-scheduling web app for IDF units. Admins manage units/tasks, commanders schedule soldiers and leave. **Deployed to GitHub Pages.**
 
+---
+
+## 🚀 AGENT HANDOFF: Next Implementation Phase
+
+**⚠️ FOR THE NEXT AGENT:**
+
+1. **DO NOT use superpowers plugins** - Go directly to implementation
+2. **Follow the implementation plan:** `docs/plans/2026-03-12-multi-unit-alt-roles.md`
+3. **Execute tasks 1-12 sequentially** with build/test/commit between each
+4. **Overview of what you'll implement:**
+   - **Alternative Role Requirements:** Tasks can accept ANY of multiple roles (e.g., "Gate Guard" = Driver OR Squad leader OR Fighter)
+   - **Multi-Unit Scheduling:** Scheduler uses ALL soldiers from ALL units to fill tasks (fair distribution across organization)
+   - **Global Fairness:** Prioritizes fairness across all soldiers, unit affinity is secondary
+   - **12 Implementation Tasks:** Data models → Scheduler logic → UI → Testing → Documentation
+
+5. **Key files you'll modify:**
+   - Data Models: `src/models/Task.ts`
+   - Scheduler: `src/algorithms/taskScheduler.ts`
+   - Services: `src/services/scheduleService.ts`, `src/hooks/useDataService.ts`
+   - Admin UI: `src/components/TasksPage.tsx`
+   - Parsers: `src/services/parsers.ts`, `src/services/serializers.ts`
+
+6. **Build & Deploy after completing all 12 tasks:**
+   ```bash
+   npm run build   # Verify compilation
+   npm run deploy  # Deploy to GitHub Pages
+   ```
+
+---
+
 ## Quick Start
 
 ```bash
 npm run dev      # Dev server
 npm run deploy   # Build & deploy to GitHub Pages
-npm test         # Run tests
 npm run build    # TypeScript + Vite
 ```
 
@@ -135,16 +164,6 @@ npm run build    # TypeScript + Vite
 
 ---
 
-## Known Issues & TODOs
-
-1. **Unit column in spreadsheet** — Currently parsed if exists, not serialized (backward compat)
-   - Add "Unit" column header to soldiers tab when ready to persist unit data
-2. **Service date validation** — Implemented in `isTaskAvailable()`, double-check soldiers don't schedule outside serviceStart/End
-3. **Cyclical leave debugging** — Verify all soldiers receiving fair leave distribution per role
-4. **Admin calendar integration** — AdminTaskCalendar created, needs UI integration in admin panel
-5. **Test coverage** — Tests don't fully account for multi-unit, cyclical leaves, capacity constraints
-
----
 
 ## Environment Variables
 
@@ -188,53 +207,43 @@ src/
 
 ---
 
-## Recent Changes (Latest Session)
+## Current Features (Completed Sessions)
 
-### Scheduler Fixes - Cyclical Leaves Distribution
-- ✅ **FIXED Issue 5:** Implemented per-soldier phase offset cycling (was: all soldiers leaving together)
-  - Each soldier gets randomized cycle position (0 to cycleLength-1)
-  - Position calculated as: `(dayNumber + phaseOffset) % cycleLength`
-  - Soldiers now staggered fairly across leave schedule
-  - Respects capacity constraints: minimum soldiers remain on base per role
-- ✅ Changed from global cycle counter to per-soldier independent phases
-- ✅ Fair distribution: available capacity distributed to soldiers in leave phase
+### ✅ Scheduler & Fairness
+- Per-soldier cyclical leaves with randomized phase offsets (soldiers staggered across leave dates)
+- Global fairness scoring across all soldiers
+- Transition day detection (day before/after leave marked as partial availability)
+- Service date validation (soldiers only scheduled during active service period)
+- Config-driven exit/return hours for travel days
 
-### Calendar Display Enhancements
-- ✅ **FIXED Issue 4:** Added transition day display in Gantt chart
-  - New statuses: `'on-way-home'` (← Out) and `'on-way-to-base'` (In →)
-  - Day before leave marked orange-200, day after marked orange-300
-  - Automatically detects transition days from leave assignment dates
-- ✅ **FIXED Issue 3:** Filter calendar by soldier service dates
-  - Out-of-service dates show gray '-' marker
-  - Prevents display of tasks outside service period
-  - Checks: `serviceStart <= currentDate <= serviceEnd`
-- ✅ **FIXED Issue 1:** Day-of-week calculation (was: Thursday shown as Friday)
-  - Fixed bug: `new Date(today.setDate(diff))` returned milliseconds timestamp
-  - Correct: Create new Date object, then set date with `setDate()`
-  - Week now correctly starts on Monday
+### ✅ Calendar Displays
+- Soldier mode: 80+ day Gantt grid with task assignments
+- Task mode: Weekly calendar view with leave overlay
+- Admin dashboard: Soldier status pie chart and weekly task calendar across all units
+- Transition day indicators: "← Out" (exit day), "In →" (return day)
 
-### Admin Dashboard
-- ✅ **FIXED Issue 2:** Restored static soldier status pie chart
-  - Shows counts: On Base, On Leave, On Way Home, On Way to Base, Inactive
-  - Color-coded legend with percentage bars
-  - Static data from last schedule generation
-  - Can be enhanced later with live schedule data
-- ✅ Implemented weekly task calendar with week navigation
-- ✅ Date format: dd/mm/yy; current day is highlighted
+### ✅ Admin Management
+- Editable config with immediate spreadsheet persistence
+- Task creation/editing in admin panel
+- Unit and commander management
+- Role management system
 
-### Config Management
-- ✅ Made all config fields editable from Admin Panel Config tab
-- ✅ Editable fields: leave days (in base/home), constraints, exit/return hours
-- ✅ Time fields (exit/return) now configurable with HH:MM format
-- ✅ Save/Reset buttons for config changes
-- ✅ All changes persist to spreadsheet immediately
-- ✅ **FIXED:** Numeric fields now serialized as actual numbers (not strings)
-  - Prevents "0" being stored as string "0"
-  - Makes manual spreadsheet editing easier for users
-  - Numeric fields: leaveRatioDaysInBase, leaveRatioDaysHome, longLeaveMaxDays, minBasePresence, maxDrivingHours, defaultRestPeriod
+### ✅ Performance Optimizations
+- O(n) → O(1) leave availability lookup using pre-indexed soldierLeaveMap
+- Batch processing for Google Sheets API (avoid 429 rate limiting)
+- Efficient fairness calculations
 
-### Bug Fixes
-- ✅ Fixed Advanced Command Post 400 error (missing InactiveReason column in soldiers tab)
-- ✅ Fixed cyclical leave scheduler bug (synchronized cycles → randomized phase offsets)
-- ✅ Fixed admin dashboard date calculation (Thursday displayed as Friday)
-- ✅ Fixed config number serialization (strings → actual numbers)
+---
+
+## Next Phase: Multi-Unit & Alternative Roles (Planned)
+
+See implementation plan: `docs/plans/2026-03-12-multi-unit-alt-roles.md`
+
+**To be implemented (12 tasks):**
+1. Alternative role requirements (tasks can accept ANY of multiple roles)
+2. Multi-unit scheduling (scheduler uses all soldiers from all units)
+3. Admin Panel UI for multi-role task editing
+4. Global fairness tracking across units
+5. Full end-to-end testing
+
+**Example use case:** Gate Guard position can be filled by Driver OR Squad leader OR Fighter OR Radio operator OR Operation room staff
