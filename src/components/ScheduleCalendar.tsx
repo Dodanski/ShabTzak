@@ -1,7 +1,7 @@
 import { buildAvailabilityMatrix } from '../algorithms/availabilityMatrix'
 import type { AvailabilityStatus } from '../algorithms/availabilityMatrix'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
-import { formatDisplayDate } from '../utils/dateUtils'
+import { formatDisplayDate, parseDate } from '../utils/dateUtils'
 import { fullName } from '../utils/helpers'
 
 interface ScheduleCalendarProps {
@@ -66,11 +66,18 @@ export default function ScheduleCalendar({
                     {fullName(soldier)}
                   </td>
                   {dates.map(d => {
-                    const cellData = matrix.get(d)?.get(soldier.id) ?? { status: 'available' }
-                    const status = cellData.status
+                    const currentDate = parseDate(d)
+                    const serviceStart = parseDate(soldier.serviceStart)
+                    const serviceEnd = parseDate(soldier.serviceEnd)
+                    const isInServicePeriod = serviceStart <= currentDate && currentDate <= serviceEnd
+
+                    const cellData = matrix.get(d)?.get(soldier.id) ?? { status: 'available' as const }
+                    const status: AvailabilityStatus = isInServicePeriod ? cellData.status : 'available'
 
                     let displayText = ''
-                    if (cellData.taskName) {
+                    if (!isInServicePeriod) {
+                      displayText = '-'
+                    } else if (cellData.taskName) {
                       displayText = cellData.taskName
                     } else if (cellData.transitionType === 'exit') {
                       displayText = '← Out'
@@ -79,12 +86,13 @@ export default function ScheduleCalendar({
                     }
 
                     const title = displayText ? `${status}: ${displayText}` : status
+                    const bgColor = !isInServicePeriod ? 'bg-gray-300' : STATUS_CLASSES[status]
 
                     return (
                       <td
                         key={d}
                         title={title}
-                        className={`px-0.5 sm:px-2 py-1 sm:py-2 border border-gray-200 text-center min-w-[28px] sm:min-w-[40px] ${STATUS_CLASSES[status]} text-xs font-medium`}
+                        className={`px-0.5 sm:px-2 py-1 sm:py-2 border border-gray-200 text-center min-w-[28px] sm:min-w-[40px] ${bgColor} text-xs font-medium`}
                       >
                         {displayText}
                       </td>
