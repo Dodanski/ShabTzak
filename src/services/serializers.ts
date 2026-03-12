@@ -6,6 +6,7 @@ export function serializeSoldier(s: Soldier): string[] {
     s.firstName,
     s.lastName,
     s.role,
+    s.unit ?? '',
     s.serviceStart,
     s.serviceEnd,
     String(s.initialFairness),

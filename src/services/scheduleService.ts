@@ -1,6 +1,6 @@
 import { scheduleLeave } from '../algorithms/leaveScheduler'
 import { scheduleTasks } from '../algorithms/taskScheduler'
-// import { generateCyclicalLeaves } from '../algorithms/cyclicalLeaveScheduler' // TODO: re-enable after fixing cycle logic and rate limiting
+import { generateCyclicalLeaves } from '../algorithms/cyclicalLeaveScheduler'
 import type { SoldierRepository } from './soldierRepository'
 import type { LeaveRequestRepository } from './leaveRequestRepository'
 import type { LeaveAssignmentRepository } from './leaveAssignmentRepository'
@@ -27,18 +27,18 @@ export class ScheduleService {
     scheduleEnd: string,
     changedBy: string,
   ): Promise<LeaveSchedule> {
-    const [soldiers, requests, existing] = await Promise.all([
+    const [soldiers, requests, existing, taskAssignments] = await Promise.all([
       this.soldiers.list(),
       this.leaveRequests.list(),
       this.leaveAssignments.list(),
+      this.taskAssignments.list(),
     ])
 
-    // Generate automatic cyclical leaves based on the rotation pattern
-    // TEMPORARILY DISABLED due to API rate limiting - will re-enable after optimization
-    // const withCyclicalLeaves = generateCyclicalLeaves(soldiers, existing, config, scheduleStart, scheduleEnd)
+    // Generate automatic cyclical leaves based on the rotation pattern, respecting role capacity
+    const withCyclicalLeaves = generateCyclicalLeaves(soldiers, existing, taskAssignments, config, scheduleStart, scheduleEnd)
 
-    // Process manual leave requests
-    const schedule = scheduleLeave(requests, soldiers, existing, config, scheduleStart, scheduleEnd)
+    // Process manual leave requests (which override cyclical leaves)
+    const schedule = scheduleLeave(requests, soldiers, withCyclicalLeaves, config, scheduleStart, scheduleEnd)
 
     // Persist only assignments that aren't already stored
     const existingIds = new Set(existing.map(a => a.id))

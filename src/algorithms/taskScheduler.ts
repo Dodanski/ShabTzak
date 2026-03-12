@@ -52,10 +52,32 @@ export function scheduleTasks(
         return isTaskAvailable(s, task, tasksForValidation, result)
       })
 
-      // Sort by combined fairness ascending (lower = more deserving)
-      const ranked = [...eligible].sort(
-        (a, b) => combinedFairnessScore(a) - combinedFairnessScore(b)
-      )
+      // Determine task's unit based on majority of already-assigned soldiers
+      const getTaskUnit = () => {
+        const assignedUnits = result
+          .filter(a => a.taskId === task.id)
+          .map(a => soldiers.find(s => s.id === a.soldierId)?.unit)
+          .filter(Boolean)
+
+        if (assignedUnits.length === 0) return null
+        const unitCounts = new Map<string, number>()
+        for (const unit of assignedUnits) {
+          unitCounts.set(unit!, (unitCounts.get(unit!) ?? 0) + 1)
+        }
+        return Array.from(unitCounts.entries()).sort((a, b) => b[1] - a[1])[0][0]
+      }
+
+      const taskUnit = getTaskUnit()
+
+      // Sort by unit affinity (prefer same unit), then fairness
+      const ranked = [...eligible].sort((a, b) => {
+        if (taskUnit) {
+          const aUnit = a.unit === taskUnit ? 0 : 1
+          const bUnit = b.unit === taskUnit ? 0 : 1
+          if (aUnit !== bUnit) return aUnit - bUnit
+        }
+        return combinedFairnessScore(a) - combinedFairnessScore(b)
+      })
 
       // Assign up to `remaining` soldiers
       for (let i = 0; i < Math.min(remaining, ranked.length); i++) {
