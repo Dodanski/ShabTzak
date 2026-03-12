@@ -190,20 +190,37 @@ src/
 
 ## Recent Changes (Latest Session)
 
-### Admin Dashboard
-- ✅ Added Admin Dashboard tab (default view) with soldier status pie chart
-- ✅ Created pie chart showing distribution across: On Base, On Leave, On Way Home, On Way to Base, Inactive
-- ✅ Pie chart segments are clickable with expandable soldier lists per status
-- ✅ Implemented weekly task calendar with week navigation, expandable task assignments
-- ✅ Date format: dd/mm/yy; current day is highlighted
+### Scheduler Fixes - Cyclical Leaves Distribution
+- ✅ **FIXED Issue 5:** Implemented per-soldier phase offset cycling (was: all soldiers leaving together)
+  - Each soldier gets randomized cycle position (0 to cycleLength-1)
+  - Position calculated as: `(dayNumber + phaseOffset) % cycleLength`
+  - Soldiers now staggered fairly across leave schedule
+  - Respects capacity constraints: minimum soldiers remain on base per role
+- ✅ Changed from global cycle counter to per-soldier independent phases
+- ✅ Fair distribution: available capacity distributed to soldiers in leave phase
 
-### Transition Day Leave Handling
-- ✅ Implemented automatic transition day detection (day before/after leave)
-- ✅ Updated `isTaskAvailable()` to check for transition days
-- ✅ Day before leave: soldier cannot START tasks before `leaveBaseExitHour` (default 06:00)
-- ✅ Day after leave: soldier cannot END tasks after `leaveBaseReturnHour` (default 22:00)
-- ✅ Modified scheduler to pass leave assignments to task scheduler for availability checking
-- ✅ Reordered schedule generation: leave first, then tasks with leave data
+### Calendar Display Enhancements
+- ✅ **FIXED Issue 4:** Added transition day display in Gantt chart
+  - New statuses: `'on-way-home'` (← Out) and `'on-way-to-base'` (In →)
+  - Day before leave marked orange-200, day after marked orange-300
+  - Automatically detects transition days from leave assignment dates
+- ✅ **FIXED Issue 3:** Filter calendar by soldier service dates
+  - Out-of-service dates show gray '-' marker
+  - Prevents display of tasks outside service period
+  - Checks: `serviceStart <= currentDate <= serviceEnd`
+- ✅ **FIXED Issue 1:** Day-of-week calculation (was: Thursday shown as Friday)
+  - Fixed bug: `new Date(today.setDate(diff))` returned milliseconds timestamp
+  - Correct: Create new Date object, then set date with `setDate()`
+  - Week now correctly starts on Monday
+
+### Admin Dashboard
+- ✅ **FIXED Issue 2:** Restored static soldier status pie chart
+  - Shows counts: On Base, On Leave, On Way Home, On Way to Base, Inactive
+  - Color-coded legend with percentage bars
+  - Static data from last schedule generation
+  - Can be enhanced later with live schedule data
+- ✅ Implemented weekly task calendar with week navigation
+- ✅ Date format: dd/mm/yy; current day is highlighted
 
 ### Config Management
 - ✅ Made all config fields editable from Admin Panel Config tab
@@ -211,7 +228,13 @@ src/
 - ✅ Time fields (exit/return) now configurable with HH:MM format
 - ✅ Save/Reset buttons for config changes
 - ✅ All changes persist to spreadsheet immediately
-- ✅ Extended ConfigRepository with `writeConfig()` method for all field types
+- ✅ **FIXED:** Numeric fields now serialized as actual numbers (not strings)
+  - Prevents "0" being stored as string "0"
+  - Makes manual spreadsheet editing easier for users
+  - Numeric fields: leaveRatioDaysInBase, leaveRatioDaysHome, longLeaveMaxDays, minBasePresence, maxDrivingHours, defaultRestPeriod
 
 ### Bug Fixes
 - ✅ Fixed Advanced Command Post 400 error (missing InactiveReason column in soldiers tab)
+- ✅ Fixed cyclical leave scheduler bug (synchronized cycles → randomized phase offsets)
+- ✅ Fixed admin dashboard date calculation (Thursday displayed as Friday)
+- ✅ Fixed config number serialization (strings → actual numbers)
