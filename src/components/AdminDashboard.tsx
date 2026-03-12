@@ -10,8 +10,12 @@ export default function AdminDashboard({ tasks }: AdminDashboardProps) {
   const [weekStart, setWeekStart] = useState(() => {
     const today = new Date()
     const day = today.getDay()
-    const diff = today.getDate() - (day === 0 ? 6 : day - 1) // Get Monday
-    const monday = new Date(today.setDate(diff))
+    // Calculate days to subtract to get to Monday (0 = Sunday)
+    const daysToMonday = day === 0 ? 6 : day - 1
+
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - daysToMonday)
+
     return monday.toISOString().split('T')[0]
   })
 
