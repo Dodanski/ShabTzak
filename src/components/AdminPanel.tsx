@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { MasterDataService } from '../services/masterDataService'
-import type { Admin, Unit, Commander, Task, AppConfig, CreateTaskInput, UpdateTaskInput } from '../models'
+import type { Admin, Unit, Commander, Task, Soldier, AppConfig, CreateTaskInput, UpdateTaskInput } from '../models'
 import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
 import AdminDashboard from './AdminDashboard'
@@ -21,6 +21,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [units, setUnits] = useState<Unit[]>([])
   const [commanders, setCommanders] = useState<Commander[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [soldiers, setSoldiers] = useState<Soldier[]>([])
   const [roles, setRoles] = useState<string[]>([])
   const [newRoleName, setNewRoleName] = useState('')
   const [configData, setConfigData] = useState<AppConfig | null>(null)
@@ -38,15 +39,16 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
   async function reload() {
     setLoading(true)
-    const [a, u, c, r, t, cfg] = await Promise.all([
+    const [a, u, c, r, t, cfg, s] = await Promise.all([
       masterDs.admins.list(),
       masterDs.units.list(),
       masterDs.commanders.list(),
       masterDs.roles.list(),
       masterDs.tasks.list(),
       masterDs.config.read(),
+      masterDs.soldiers.list(),
     ])
-    setAdmins(a); setUnits(u); setCommanders(c); setRoles(r); setTasks(t); setConfigData(cfg)
+    setAdmins(a); setUnits(u); setCommanders(c); setRoles(r); setTasks(t); setConfigData(cfg); setSoldiers(s)
     setLoading(false)
   }
 
@@ -224,7 +226,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         {loading && <p className="text-olive-500">Loading…</p>}
 
         {!loading && activeTab === 'dashboard' && (
-          <AdminDashboard tasks={tasks} soldiers={[]} />
+          <AdminDashboard tasks={tasks} soldiers={soldiers} />
         )}
 
         {!loading && activeTab === 'admins' && (
