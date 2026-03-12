@@ -31,6 +31,11 @@ export class ConfigRepository {
       return val !== undefined ? parseFloat(val) : fallback
     }
 
+    const getString = (key: string, fallback: string): string => {
+      const val = map.get(key)
+      return val !== undefined ? String(val) : fallback
+    }
+
     const adminEmailsRaw = map.get('adminEmails') ?? ''
     const adminEmails = adminEmailsRaw
       ? adminEmailsRaw.split(',').map((e: string) => e.trim()).filter(Boolean)
@@ -47,6 +52,8 @@ export class ConfigRepository {
       defaultRestPeriod: getNum('defaultRestPeriod', DEFAULT_CONFIG.defaultRestPeriod),
       taskTypeRestPeriods: {},
       adminEmails,
+      leaveBaseExitHour: getString('leaveBaseExitHour', DEFAULT_CONFIG.leaveBaseExitHour),
+      leaveBaseReturnHour: getString('leaveBaseReturnHour', DEFAULT_CONFIG.leaveBaseReturnHour),
     }
   }
 

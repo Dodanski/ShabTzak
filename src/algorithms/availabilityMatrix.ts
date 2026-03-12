@@ -3,6 +3,11 @@ import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
 
 export type AvailabilityStatus = 'available' | 'on-leave' | 'on-task'
 
+export interface CellData {
+  status: AvailabilityStatus
+  taskName?: string
+}
+
 function isOnLeaveOnDate(assignment: LeaveAssignment, dateStr: string): boolean {
   const date = parseDate(dateStr)
   return parseDate(assignment.startDate) <= date && date <= parseDate(assignment.endDate)
@@ -32,12 +37,12 @@ export function buildAvailabilityMatrix(
   taskAssignments: TaskAssignment[],
   leaveAssignments: LeaveAssignment[],
   dates: string[],
-): Map<string, Map<string, AvailabilityStatus>> {
+): Map<string, Map<string, CellData>> {
   const taskMap = new Map(tasks.map(t => [t.id, t]))
-  const matrix = new Map<string, Map<string, AvailabilityStatus>>()
+  const matrix = new Map<string, Map<string, CellData>>()
 
   for (const dateStr of dates) {
-    const dayMap = new Map<string, AvailabilityStatus>()
+    const dayMap = new Map<string, CellData>()
 
     for (const soldier of soldiers) {
       // on-leave takes highest priority
@@ -45,18 +50,23 @@ export function buildAvailabilityMatrix(
         a => a.soldierId === soldier.id && isOnLeaveOnDate(a, dateStr)
       )
       if (onLeave) {
-        dayMap.set(soldier.id, 'on-leave')
+        dayMap.set(soldier.id, { status: 'on-leave' })
         continue
       }
 
       // on-task
+      let taskName: string | undefined
       const onTask = taskAssignments.some(a => {
         if (a.soldierId !== soldier.id) return false
         const task = taskMap.get(a.taskId)
-        return task ? taskCoversDate(task, dateStr) : false
+        if (task && taskCoversDate(task, dateStr)) {
+          taskName = task.taskType
+          return true
+        }
+        return false
       })
 
-      dayMap.set(soldier.id, onTask ? 'on-task' : 'available')
+      dayMap.set(soldier.id, onTask ? { status: 'on-task', taskName } : { status: 'available' })
     }
 
     matrix.set(dateStr, dayMap)

@@ -64,13 +64,17 @@ export default function ScheduleCalendar({
                     {fullName(soldier)}
                   </td>
                   {dates.map(d => {
-                    const status = matrix.get(d)?.get(soldier.id) ?? 'available'
+                    const cellData = matrix.get(d)?.get(soldier.id) ?? { status: 'available' }
+                    const status = cellData.status
+                    const title = cellData.taskName ? `${status}: ${cellData.taskName}` : status
                     return (
                       <td
                         key={d}
-                        title={status}
-                        className={`px-0.5 sm:px-2 py-1 sm:py-2 border border-gray-200 text-center min-w-[28px] sm:min-w-[40px] ${STATUS_CLASSES[status]}`}
-                      />
+                        title={title}
+                        className={`px-0.5 sm:px-2 py-1 sm:py-2 border border-gray-200 text-center min-w-[28px] sm:min-w-[40px] ${STATUS_CLASSES[status]} text-xs font-medium`}
+                      >
+                        {cellData.taskName ? cellData.taskName : ''}
+                      </td>
                     )
                   })}
                 </tr>

@@ -37,6 +37,8 @@ export const DEFAULT_CONFIG = {
   minBasePresence: 20,
   maxDrivingHours: 8,
   defaultRestPeriod: 6,
+  leaveBaseExitHour: '06:00',
+  leaveBaseReturnHour: '22:00',
 } as const
 
 // Google Sheets tabs (per-unit scheduling tabs only; soldier list lives in admin spreadsheet under unit-name tabs)

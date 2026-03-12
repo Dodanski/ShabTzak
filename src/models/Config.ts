@@ -11,6 +11,8 @@ export interface AppConfig {
   defaultRestPeriod: number
   taskTypeRestPeriods: Record<string, number>
   adminEmails: string[]
+  leaveBaseExitHour: string // HH:MM format, time soldier leaves base
+  leaveBaseReturnHour: string // HH:MM format, time soldier returns to base
 }
 
 export interface VersionInfo {
