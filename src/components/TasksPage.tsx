@@ -226,6 +226,26 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         </div>
         {f.roleRequirements.length > 0 && (
           <div className="space-y-1 mt-3 pt-3 border-t">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-olive-600">Added requirements:</span>
+              {f.roleRequirements.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const lastReq = f.roleRequirements[f.roleRequirements.length - 1]
+                    if (lastReq) {
+                      setF(prev => ({
+                        ...prev,
+                        roleRequirements: [...prev.roleRequirements, { ...lastReq, count: 1 }],
+                      }))
+                    }
+                  }}
+                  className="text-xs text-olive-700 hover:text-olive-900 underline"
+                >
+                  Copy roles from previous
+                </button>
+              )}
+            </div>
             {f.roleRequirements.map((r, i) => (
               <span key={i} className="flex items-center gap-2 px-2 py-1 bg-olive-50 text-olive-700 text-sm rounded">
                 <strong>{r.count}×</strong> {r.roles.join(' / ')}

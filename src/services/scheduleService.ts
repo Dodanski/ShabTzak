@@ -34,6 +34,11 @@ export class ScheduleService {
       this.taskAssignments.list(),
     ])
 
+    // NOTE: Multi-unit leave assignments are loaded from current unit only.
+    // In multi-unit scheduling, soldiers from other units won't have their leaves pre-loaded.
+    // This is acceptable for MVP - their leave data would need to be fetched from their unit's spreadsheet.
+    // TODO: Load leaves from all unit spreadsheets for full multi-unit support
+
     // Generate automatic cyclical leaves based on the rotation pattern, respecting role capacity
     const withCyclicalLeaves = generateCyclicalLeaves(soldiers, existing, taskAssignments, config, scheduleStart, scheduleEnd)
 
