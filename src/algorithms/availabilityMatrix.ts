@@ -9,9 +9,9 @@ export interface CellData {
   transitionType?: 'exit' | 'return'
 }
 
-function isOnLeaveOnDate(assignment: LeaveAssignment, dateStr: string): boolean {
+function isDateInLeaveRange(leaveStartDate: Date, leaveEndDate: Date, dateStr: string): boolean {
   const date = parseDate(dateStr)
-  return parseDate(assignment.startDate) <= date && date <= parseDate(assignment.endDate)
+  return leaveStartDate <= date && date <= leaveEndDate
 }
 
 function taskCoversDate(task: Task, dateStr: string): boolean {
@@ -63,17 +63,15 @@ export function buildAvailabilityMatrix(
     const currentDate = parseDate(dateStr)
 
     for (const soldier of soldiers) {
-      // Check for on-leave (takes highest priority)
-      const onLeave = leaveAssignments.some(
-        a => a.soldierId === soldier.id && isOnLeaveOnDate(a, dateStr)
-      )
+      // Check for on-leave (takes highest priority) using pre-indexed map
+      const soldiersLeaves = soldierLeaveMap.get(soldier.id) ?? []
+      const onLeave = soldiersLeaves.some(leave => isDateInLeaveRange(leave.startDate, leave.endDate, dateStr))
       if (onLeave) {
         dayMap.set(soldier.id, { status: 'on-leave' })
         continue
       }
 
       // Check for transition days (day before/after leave)
-      const soldiersLeaves = soldierLeaveMap.get(soldier.id) ?? []
       let transitionStatus: CellData | null = null
 
       for (const leave of soldiersLeaves) {
