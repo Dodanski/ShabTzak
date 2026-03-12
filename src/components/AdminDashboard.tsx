@@ -1,15 +1,12 @@
 import { useState } from 'react'
-import type { MasterDataService } from '../services/masterDataService'
-import type { Task, AppConfig } from '../models'
+import type { Task } from '../models'
 import AdminWeeklyTaskCalendar from './AdminWeeklyTaskCalendar'
 
 interface AdminDashboardProps {
-  masterDs: MasterDataService
   tasks: Task[]
-  configData: AppConfig | null
 }
 
-export default function AdminDashboard({ masterDs, tasks, configData }: AdminDashboardProps) {
+export default function AdminDashboard({ tasks }: AdminDashboardProps) {
   const [weekStart, setWeekStart] = useState(() => {
     const today = new Date()
     const day = today.getDay()
@@ -28,12 +25,9 @@ export default function AdminDashboard({ masterDs, tasks, configData }: AdminDas
 
       {/* Weekly Task Calendar */}
       <AdminWeeklyTaskCalendar
-        masterDs={masterDs}
         tasks={tasks}
         weekStart={weekStart}
         onWeekChange={setWeekStart}
-        accessToken={''}
-        configData={configData}
       />
     </div>
   )
