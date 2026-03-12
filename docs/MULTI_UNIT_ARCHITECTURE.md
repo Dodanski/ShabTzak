@@ -52,39 +52,84 @@ Your admin spreadsheet (VITE_SPREADSHEET_ID) must have:
 ## Current Workflow
 
 1. **Commander in Unit1 clicks "Generate Schedule"**
-   - System loads all soldiers from admin Soldiers tab
-   - Scheduler uses ALL soldiers to fill tasks
+   - System loads all soldiers from admin Soldiers tab (NOW WORKING with Unit column)
+   - Scheduler logs which units are being scheduled
    - Assignments are saved to Unit1's TaskSchedule tab
 
-2. **Problem:** Unit2/Unit3 commanders can't see assignments for their soldiers
-   - Their soldiers' assignments are in Unit1's sheet, not their own
+2. **Assignment Distribution:**
+   - All assignments currently saved to Unit1's sheet
+   - System logs unit distribution (e.g., "Unit1: 5, Unit2: 3, Unit3: 2")
+   - Check browser console for assignment details
+
+3. **For Unit2/Unit3 to see assignments:**
+   - Option A: Manually copy assignments from Unit1's TaskSchedule to their own sheets
+   - Option B: Implement programmatic sync (see next section)
 
 ## Solutions
 
-### Short-term (For testing)
-1. All commanders work from Unit1 spreadsheet
-2. Or, manually copy assignments to other units' TaskSchedule tabs
+## Rate Limiting
 
-### Medium-term (MVP Enhancement)
-Modify `scheduleService.generateTaskSchedule()` to:
+**Current Configuration:**
+- 1 update per second (1000ms delay between fairness updates)
+- Applies after schedule generation completes
+- Total time for 30 new soldiers: ~30 seconds
+
+**If still seeing 429 errors:**
+1. Increase delay further in `App.tsx` line ~219
+2. Or, batch-process fairness updates differently
+
+## Working Solutions
+
+### Short-term (For testing - Current state)
+1. Generate schedule from Unit1
+2. Check console logs for unit distribution
+3. View all assignments in Unit1's TaskSchedule tab
+4. Manually copy to other units if needed
+
+### Medium-term (MVP Enhancement - Proposed)
+
+**Goal:** Automatically save assignments to each unit's spreadsheet
+
+**Implementation Steps:**
+
+1. **Modify App.tsx to create DataServices for all units:**
 ```typescript
-// After creating assignments, route them to appropriate unit sheets
-const assignmentsByUnit = new Map<string, TaskAssignment[]>()
-newAssignments.forEach(a => {
-  const soldier = schedulingSoldiers.find(s => s.id === a.soldierId)
-  const unit = soldier?.unit || 'Unit1'
-  if (!assignmentsByUnit.has(unit)) {
-    assignmentsByUnit.set(unit, [])
-  }
-  assignmentsByUnit.get(unit)!.push(a)
-})
-
-// Save to each unit's spreadsheet
-for (const [unit, assignments] of assignmentsByUnit) {
-  const unitDs = getDataServiceForUnit(unit)
-  await unitDs.taskAssignments.createBatch(assignments)
+// In AppContent, create DataServices for all known units
+const unitDataServices = new Map<string, DataService>()
+for (const unit of units) {
+  const ds = new DataService(
+    auth.accessToken,
+    unit.spreadsheetId,
+    unit.tabPrefix || unit.name,
+    masterDs.history
+  )
+  unitDataServices.set(unit.name, ds)
 }
 ```
+
+2. **Pass to UnitApp:**
+```typescript
+<UnitApp
+  // ... existing props ...
+  allUnitDataServices={unitDataServices}
+/>
+```
+
+3. **In scheduleService, distribute assignments by unit:**
+```typescript
+// After creating main assignments
+const assignmentsByUnit = groupByUnit(newAssignments, schedulingSoldiers)
+
+// Save to each unit's sheet
+for (const [unitName, assignments] of assignmentsByUnit) {
+  const unitDs = allUnitDataServices.get(unitName)
+  if (unitDs) {
+    await unitDs.taskAssignments.createBatch(assignments)
+  }
+}
+```
+
+**Current Status:** Logging implemented, showing which units are scheduled. Manual copy-to-units needed for MVP.
 
 ### Long-term (Full Multi-Unit)
 1. Create shared TaskSchedule tab in admin sheet

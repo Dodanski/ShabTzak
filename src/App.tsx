@@ -205,6 +205,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       const newAssignments = leaveSchedule.assignments.filter(a => !existingIds.has(a.id))
 
       // Process fairness updates with delays to avoid API rate limiting
+      // Rate: 1 update per second on average (more conservative for safety)
       for (let i = 0; i < newAssignments.length; i++) {
         const assignment = newAssignments[i]
         try {
@@ -215,11 +216,9 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           console.warn('[App] Failed to update fairness for soldier', assignment.soldierId, ':', e)
           // Continue with next soldier even if one fails
         }
-        // Add delay between updates - increase delay for better rate limiting
-        if ((i + 1) % 2 === 0 && i < newAssignments.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000))
-        } else if (i < newAssignments.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500))
+        // Consistent 1-second delay between updates for stable rate limiting
+        if (i < newAssignments.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
         }
       }
       reload()
