@@ -224,7 +224,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         {loading && <p className="text-olive-500">Loading…</p>}
 
         {!loading && activeTab === 'dashboard' && (
-          <AdminDashboard tasks={tasks} />
+          <AdminDashboard tasks={tasks} soldiers={[]} />
         )}
 
         {!loading && activeTab === 'admins' && (
