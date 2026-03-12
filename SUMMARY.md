@@ -94,11 +94,22 @@ npm run build    # TypeScript + Vite
   - Day before: soldier cannot start tasks before exitHour (partial availability)
   - Day after: soldier cannot end tasks after returnHour (partial availability)
 
+### Alternative Role Requirements
+- Tasks can accept ANY of multiple acceptable roles for a single slot
+- Example: Gate Guard can be filled by Driver, Squad leader, Fighter, Radio operator, or Operation room staff
+- Defined as: `{ roles: ["Driver", "Squad leader", "Fighter", ...], count: 1 }`
+- Scheduler picks best available soldier from acceptable roles
+- Backward compatible: old single-role format converted to new roles array format
+- Makes staffing more flexible, reduces scheduling conflicts
+
 ### Multi-Unit Scheduling
-- All soldiers from all units available for task assignment
-- Task scheduler algorithm prefers unit affinity but ensures task completion
-- Commanders see only their unit soldiers (gaps acceptable if no coverage)
-- Admin sees all soldiers across all units
+- **Soldier Pool:** All soldiers from all units available for task assignment (loaded from admin spreadsheet)
+- **Fairness Priority:** Fairness calculated globally across ALL soldiers, not per-unit
+- **Unit Affinity:** Scheduler prefers same-unit soldiers when fairness scores are equal
+- **Task Completion:** Algorithm ensures task completion even if requiring cross-unit assignments
+- **Unit Tracking:** Task assignments include `assignedUnitId` to track which unit each soldier belongs to
+- **Commanders:** See only their unit soldiers (gaps acceptable if no coverage)
+- **Admin:** Sees all soldiers across all units
 
 ### Task/Soldier Management
 - Tasks: Define once, auto-expand to daily instances for schedule period
@@ -130,10 +141,13 @@ npm run build    # TypeScript + Vite
 **`calculateLeaveCapacityPerRole()`** — For each role: `total - minBasePresence = available_slots`
 
 **`scheduleTasks()`** — For each task:
-1. Filter eligible soldiers (active, right role, rest met, within service dates)
+1. For each role requirement:
+   - Get list of acceptable roles (roles array from requirement, or role field for backward compat)
+   - Filter eligible soldiers: active, matches ANY acceptable role, rest met, within service dates, available
 2. Determine task's unit (majority unit of already-assigned soldiers)
-3. Sort by: unit affinity (prefer same), then fairness (ascending)
+3. Sort by: unit affinity (prefer same unit), then fairness (ascending, global across all soldiers)
 4. Assign up to required count
+5. Track assignedUnitId for each soldier assignment
 
 **`generateCyclicalLeaves()`** — For each role independently:
 1. Track cycle position per soldier (0 to cycleLength-1)
@@ -151,6 +165,52 @@ npm run build    # TypeScript + Vite
 - **Task assignments:** Batch 20 per call, 1s delay between batches
 - **Fairness updates:** 1s delay every 5 updates (in App.tsx after schedule generation)
 - **Progress tracking:** Update every 60 assignments, auto-reload at 14-day milestones
+
+---
+
+## Example: Multi-Unit Gate Guard Task
+
+### Task Definition
+```json
+{
+  "id": "gate-guard-task",
+  "taskType": "Gate Guard",
+  "startTime": "06:00:00",
+  "endTime": "18:00:00",
+  "durationHours": 12,
+  "roleRequirements": [
+    {
+      "roles": ["Driver", "Squad leader", "Fighter", "Radio operator", "Operation room"],
+      "count": 5
+    }
+  ],
+  "minRestAfter": 8,
+  "isSpecial": false
+}
+```
+
+### Scheduling Flow
+1. **Requirement analysis:** Task needs 5 soldiers from EITHER Driver, Squad leader, Fighter, Radio op, or Ops room role
+2. **Soldier pool:** System loads all soldiers from all units (e.g., Unit 1, 2, 3)
+3. **Filtering:** Check each soldier:
+   - Is soldier active? ✓
+   - Is soldier's role in acceptable list? ✓
+   - Does soldier meet rest period from previous task? ✓
+   - Is soldier within service dates? ✓
+   - Is soldier not on leave? ✓
+4. **Sorting & Assignment:**
+   - Sort eligible soldiers by: unit affinity (prefer same unit as majority), then fairness (lowest first)
+   - Pick 5 soldiers
+5. **Result:** 5 soldiers from potentially 3 different units, each assigned their actual role, with assignedUnitId tracked
+
+### Result Example
+```
+Assignment 1: Soldier A (Driver, Unit 1) → Gate Guard task
+Assignment 2: Soldier B (Squad leader, Unit 2) → Gate Guard task
+Assignment 3: Soldier C (Fighter, Unit 1) → Gate Guard task
+Assignment 4: Soldier D (Radio op, Unit 3) → Gate Guard task
+Assignment 5: Soldier E (Operation room, Unit 2) → Gate Guard task
+```
 
 ---
 
@@ -233,17 +293,10 @@ src/
 - Batch processing for Google Sheets API (avoid 429 rate limiting)
 - Efficient fairness calculations
 
----
-
-## Next Phase: Multi-Unit & Alternative Roles (Planned)
-
-See implementation plan: `docs/plans/2026-03-12-multi-unit-alt-roles.md`
-
-**To be implemented (12 tasks):**
-1. Alternative role requirements (tasks can accept ANY of multiple roles)
-2. Multi-unit scheduling (scheduler uses all soldiers from all units)
-3. Admin Panel UI for multi-role task editing
-4. Global fairness tracking across units
-5. Full end-to-end testing
-
-**Example use case:** Gate Guard position can be filled by Driver OR Squad leader OR Fighter OR Radio operator OR Operation room staff
+### ✅ Multi-Unit Scheduling & Alternative Roles (Recently Completed)
+- Alternative role requirements: Tasks accept ANY of multiple acceptable roles
+- Multi-unit scheduling: Scheduler uses ALL soldiers from all units
+- Admin Panel UI: Multi-select checkboxes for role requirements
+- Global fairness: Tracked across all soldiers, not per-unit
+- Unit tracking: Task assignments include assignedUnitId field
+- Example: Gate Guard can be filled by Driver OR Squad leader OR Fighter OR Radio operator OR Operation room staff
