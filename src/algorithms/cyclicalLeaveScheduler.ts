@@ -7,6 +7,7 @@ import type { Soldier, LeaveAssignment, TaskAssignment, AppConfig } from '../mod
  * Respects minBasePresenceByRole: soldiers can only take leave if there's capacity.
  *
  * Pattern per role: soldiers take turns in N-day cycles (e.g., 10:4 ratio)
+ * Each soldier has a randomized phase offset to stagger leave times.
  */
 export function generateCyclicalLeaves(
   soldiers: Soldier[],
@@ -35,51 +36,65 @@ export function generateCyclicalLeaves(
     }
   }
 
-  // Group soldiers by role for cycling
+  // Group soldiers by role and initialize phase offsets (randomized)
   const soldiersByRole = new Map<string, Soldier[]>()
+  const soldiersPhaseOffset = new Map<string, number>()
+
   for (const soldier of soldiers) {
     if (soldier.status !== 'Active') continue
     if (!soldiersByRole.has(soldier.role)) {
       soldiersByRole.set(soldier.role, [])
     }
-    soldiersByRole.get(soldier.role)!.push(soldier)
+    const roleSoldiers = soldiersByRole.get(soldier.role)!
+    roleSoldiers.push(soldier)
+
+    // Randomize initial phase offset to stagger leaves
+    const phaseOffset = Math.floor(Math.random() * cycleLength)
+    soldiersPhaseOffset.set(soldier.id, phaseOffset)
   }
 
   // Generate leaves per role
   for (const [role, roleSoldiers] of soldiersByRole) {
-    // Sort soldiers by ID for deterministic cycling
+    // Sort soldiers by ID for deterministic processing
     roleSoldiers.sort((a, b) => a.id.localeCompare(b.id))
 
-    // Track position in cycle for each soldier
-    const soldierCyclePos = new Map<string, number>()
-    for (const soldier of roleSoldiers) {
-      soldierCyclePos.set(soldier.id, 0)
-    }
+    // Track which soldiers already have leave on each date (to not double-assign)
+    const assignedToday = new Map<string, Set<string>>()
 
     // Iterate through schedule period
     let currentDate = new Date(startDate)
+    let dayNumber = 0
+
     while (currentDate <= endDate) {
       const dateStr = formatDate(currentDate)
 
       // Check capacity for this role on this date
       const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr)
-      const availableSlots = capacity[role] ?? 0
+      let availableSlots = capacity[role] ?? 0
 
       if (availableSlots > 0) {
-        // Assign leave to soldiers in cycle order
-        let slotsUsed = 0
+        // Assign leave to soldiers based on their individual phase offset
         for (const soldier of roleSoldiers) {
-          if (slotsUsed >= availableSlots) break
+          if (availableSlots <= 0) break
 
+          // Skip if manually locked
           const isManualLocked =
             manualLockDates.has(soldier.id) && manualLockDates.get(soldier.id)!.has(dateStr)
           if (isManualLocked) continue
 
-          const cyclePos = soldierCyclePos.get(soldier.id) ?? 0
-          const isInLeavePhase = cyclePos >= config.leaveRatioDaysInBase
+          // Skip if already assigned on this date
+          if (!assignedToday.has(dateStr)) {
+            assignedToday.set(dateStr, new Set())
+          }
+          if (assignedToday.get(dateStr)!.has(soldier.id)) continue
+
+          // Calculate soldier's position in cycle based on their phase offset
+          const phaseOffset = soldiersPhaseOffset.get(soldier.id) ?? 0
+          const soldierPosition = (dayNumber + phaseOffset) % cycleLength
+          const isInLeavePhase = soldierPosition >= config.leaveRatioDaysInBase
 
           if (isInLeavePhase) {
-            const dayInLeave = cyclePos - config.leaveRatioDaysInBase
+            const dayInLeave = soldierPosition - config.leaveRatioDaysInBase
             const isExitDay = dayInLeave === 0
             const isReturnDay = dayInLeave === config.leaveRatioDaysHome - 1
 
@@ -121,19 +136,15 @@ export function generateCyclicalLeaves(
                   createdAt: new Date().toISOString(),
                 })
               }
-              slotsUsed++
+              availableSlots--
+              assignedToday.get(dateStr)!.add(soldier.id)
             }
           }
         }
       }
 
-      // Advance all soldiers' cycle position
-      for (const soldier of roleSoldiers) {
-        const currentPos = soldierCyclePos.get(soldier.id) ?? 0
-        soldierCyclePos.set(soldier.id, (currentPos + 1) % cycleLength)
-      }
-
       currentDate.setDate(currentDate.getDate() + 1)
+      dayNumber++
     }
   }
 
