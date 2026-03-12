@@ -16,6 +16,8 @@ const STATUS_CLASSES: Record<AvailabilityStatus, string> = {
   available: 'bg-green-100',
   'on-leave': 'bg-yellow-200',
   'on-task': 'bg-olive-200',
+  'on-way-home': 'bg-orange-200',
+  'on-way-to-base': 'bg-orange-300',
 }
 
 export default function ScheduleCalendar({
@@ -66,14 +68,25 @@ export default function ScheduleCalendar({
                   {dates.map(d => {
                     const cellData = matrix.get(d)?.get(soldier.id) ?? { status: 'available' }
                     const status = cellData.status
-                    const title = cellData.taskName ? `${status}: ${cellData.taskName}` : status
+
+                    let displayText = ''
+                    if (cellData.taskName) {
+                      displayText = cellData.taskName
+                    } else if (cellData.transitionType === 'exit') {
+                      displayText = '← Out'
+                    } else if (cellData.transitionType === 'return') {
+                      displayText = 'In →'
+                    }
+
+                    const title = displayText ? `${status}: ${displayText}` : status
+
                     return (
                       <td
                         key={d}
                         title={title}
                         className={`px-0.5 sm:px-2 py-1 sm:py-2 border border-gray-200 text-center min-w-[28px] sm:min-w-[40px] ${STATUS_CLASSES[status]} text-xs font-medium`}
                       >
-                        {cellData.taskName ? cellData.taskName : ''}
+                        {displayText}
                       </td>
                     )
                   })}
