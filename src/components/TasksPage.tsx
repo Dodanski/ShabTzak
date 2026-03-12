@@ -71,20 +71,20 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
     if (isEdit) {
       const count = editForm.pendingCount
       if (count < 1) return
-      const exists = editForm.roleRequirements.findIndex(r => r.role === editForm.pendingRole)
+      const exists = editForm.roleRequirements.findIndex(r => r.roles.includes(editForm.pendingRole))
       if (exists >= 0) {
         setEditForm(f => ({ ...f, roleRequirements: f.roleRequirements.map((r, i) => i === exists ? { ...r, count: r.count + count } : r) }))
       } else {
-        setEditForm(f => ({ ...f, roleRequirements: [...f.roleRequirements, { role: f.pendingRole, count }] }))
+        setEditForm(f => ({ ...f, roleRequirements: [...f.roleRequirements, { roles: [f.pendingRole], count }] }))
       }
     } else {
       const count = form.pendingCount
       if (count < 1) return
-      const exists = form.roleRequirements.findIndex(r => r.role === form.pendingRole)
+      const exists = form.roleRequirements.findIndex(r => r.roles.includes(form.pendingRole))
       if (exists >= 0) {
         setForm(f => ({ ...f, roleRequirements: f.roleRequirements.map((r, i) => i === exists ? { ...r, count: r.count + count } : r) }))
       } else {
-        setForm(f => ({ ...f, roleRequirements: [...f.roleRequirements, { role: f.pendingRole, count }] }))
+        setForm(f => ({ ...f, roleRequirements: [...f.roleRequirements, { roles: [f.pendingRole], count }] }))
       }
     }
   }
@@ -205,12 +205,12 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
           <div className="flex flex-wrap gap-1 mt-2">
             {f.roleRequirements.map((r, i) => (
               <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
-                {r.role} ×{r.count}
+                {r.roles.join('/')} ×{r.count}
                 <button
                   type="button"
                   onClick={() => handleRemoveRole(i, isEdit)}
                   className="ml-1 text-olive-600 hover:text-olive-700"
-                  aria-label={`Remove ${r.role}`}
+                  aria-label={`Remove ${r.roles.join('/')}`}
                 >
                   ×
                 </button>

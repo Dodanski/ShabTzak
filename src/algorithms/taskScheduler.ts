@@ -40,11 +40,14 @@ export function scheduleTasks(
 
   for (const task of sortedTasks) {
     for (const requirement of task.roleRequirements) {
+      // Get acceptable roles for this requirement (handle both old and new formats)
+      const rolesAccepted = requirement.roles ?? (requirement.role ? [requirement.role] : []) as (typeof requirement.roles)
+
       // Count already-assigned soldiers for this requirement on this task
       const alreadyAssigned = result.filter(a => {
         if (a.taskId !== task.id) return false
-        if (requirement.role === 'Any') return true
-        return a.assignedRole === requirement.role
+        if (rolesAccepted.includes('Any')) return true
+        return rolesAccepted.includes(a.assignedRole)
       }).length
 
       const remaining = requirement.count - alreadyAssigned
@@ -52,7 +55,9 @@ export function scheduleTasks(
 
       // Find eligible soldiers: role match + available (rest period, status, leave)
       const eligible = soldiers.filter(s => {
-        if (requirement.role !== 'Any' && s.role !== requirement.role) return false
+        // Check if soldier's role matches ANY of the acceptable roles
+        const matchesRole = rolesAccepted.includes('Any') || rolesAccepted.includes(s.role)
+        if (!matchesRole) return false
         return isTaskAvailable(s, task, tasksForValidation, result, leaveAssignments, config)
       })
 
@@ -90,7 +95,8 @@ export function scheduleTasks(
           scheduleId: `sched-${task.id}`,
           taskId: task.id,
           soldierId: soldier.id,
-          assignedRole: requirement.role === 'Any' ? soldier.role : requirement.role,
+          assignedRole: soldier.role,  // Always assign soldier's actual role
+          assignedUnitId: soldier.unit,  // NEW: capture soldier's unit
           isLocked: false,
           createdAt: new Date().toISOString(),
           createdBy: 'scheduler',

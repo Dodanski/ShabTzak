@@ -89,7 +89,31 @@ export function parseSoldier(row: string[], headers: string[]): Soldier {
 export function parseTask(row: string[], headers: string[]): Task {
   if (row.length === 0) throw new Error('Cannot parse empty row')
   const roleReqRaw = get(row, headers, 'RoleRequirements')
-  const roleRequirements = roleReqRaw ? JSON.parse(roleReqRaw) : []
+
+  // Parse role requirements: support both old and new formats
+  let roleRequirements: any[] = []
+  try {
+    const parsed = roleReqRaw ? JSON.parse(roleReqRaw) : []
+    if (Array.isArray(parsed)) {
+      roleRequirements = parsed.map((req: any) => {
+        // If has 'role' field (old format), convert to 'roles' array
+        if (req.role && !req.roles) {
+          return {
+            roles: [req.role],
+            count: req.count
+          }
+        }
+        // If has 'roles' array (new format), keep as-is
+        return {
+          roles: req.roles || [],
+          count: req.count || 1
+        }
+      })
+    }
+  } catch {
+    roleRequirements = []
+  }
+
   const specialDaysRaw = get(row, headers, 'SpecialDurationDays')
   const isSpecial = getBool(row, headers, 'IsSpecial')
 

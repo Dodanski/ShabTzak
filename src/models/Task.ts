@@ -1,8 +1,10 @@
 import { SoldierRole } from '../constants'
 
 export interface RoleRequirement {
-  role: SoldierRole | 'Any'
+  roles: (SoldierRole | 'Any')[]  // Array of acceptable roles
   count: number
+  // Backward compat field (deprecated):
+  role?: SoldierRole | 'Any'      // For reading old tasks
 }
 
 export interface Task {
@@ -22,6 +24,7 @@ export interface TaskAssignment {
   taskId: string
   soldierId: string
   assignedRole: SoldierRole
+  assignedUnitId?: string  // NEW: which unit the soldier belongs to
   isLocked: boolean
   createdAt: string
   createdBy: string
