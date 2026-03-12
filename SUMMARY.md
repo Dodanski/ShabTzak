@@ -47,7 +47,8 @@ npm run build    # TypeScript + Vite
 ### Calendar Displays
 - **Soldier Mode:** 80+ day grid, 06:00-05:59 day boundary, shows task names per soldier
 - **Task Mode:** Weekly calendar (06:00-23:59), click task to see assigned soldiers, shows leaves overlay
-- **Admin Task Calendar:** Full cross-unit visibility of all tasks/soldiers (read-only calendar view)
+- **Admin Dashboard:** Pie chart showing soldier status distribution (On Base, On Leave, On Way Home/Base, Inactive) with expandable lists
+- **Admin Weekly Calendar:** All tasks per day across units with expandable soldier assignments, week navigation
 
 ### Schedule Generation (Priority Hierarchy)
 1. **Tasks (100% fill)** — All task roles must be filled with available soldiers
@@ -60,6 +61,9 @@ npm run build    # TypeScript + Vite
 - **Exit/Return times:** `leaveBaseExitHour` / `leaveBaseReturnHour` for partial-day transitions
 - **Cycles independently** per role; all soldiers same role follow same cycle
 - **Manual leaves override** automatic pattern
+- **Transition day handling:** Automatically calculated for day before/after leave
+  - Day before: soldier cannot start tasks before exitHour (partial availability)
+  - Day after: soldier cannot end tasks after returnHour (partial availability)
 
 ### Multi-Unit Scheduling
 - All soldiers from all units available for task assignment
@@ -107,7 +111,7 @@ npm run build    # TypeScript + Vite
 2. For each date: if capacity > 0 for role, assign soldiers in cycle order to leave days
 3. Exit day (time-based), full days, return day (time-based)
 
-**`isTaskAvailable()`** — Check: active, role match, within service dates, rest period met, not already on this task
+**`isTaskAvailable()`** — Check: active, role match, within service dates, rest period met, not already on this task, not on leave, not on conflicting transition days
 
 ---
 
@@ -165,10 +169,13 @@ src/
     taskAvailability.ts       # Availability rules (status, role, rest, dates)
 
   components/
-    SchedulePage.tsx          # Displays calendar, controls generation
-    ScheduleCalendar.tsx      # Soldier mode (80+ day grid)
-    TaskModeCalendar.tsx      # Task mode (weekly 06:00-23:59)
-    AdminTaskCalendar.tsx     # Admin cross-unit view
+    SchedulePage.tsx              # Displays calendar, controls generation
+    ScheduleCalendar.tsx          # Soldier mode (80+ day grid)
+    TaskModeCalendar.tsx          # Task mode (weekly 06:00-23:59)
+    AdminDashboard.tsx            # Main admin dashboard orchestrator
+    AdminDashboardPieChart.tsx    # Soldier status pie chart with expandable lists
+    AdminWeeklyTaskCalendar.tsx   # Weekly task view across all units
+    AdminPanel.tsx                # Admin management tabs (now includes editable config)
 
   services/
     scheduleService.ts        # Orchestrates schedule generation
@@ -183,10 +190,28 @@ src/
 
 ## Recent Changes (Latest Session)
 
-- ✅ Added `unit?` field to Soldier model (parsed if exists, not serialized)
-- ✅ Implemented `leaveCapacityCalculator` for role-based leave capacity
-- ✅ Fixed cyclical leave scheduler to respect `minBasePresenceByRole`
-- ✅ Updated task scheduler for unit affinity (secondary to task fill)
-- ✅ Created AdminTaskCalendar component for cross-unit visibility
-- ✅ Fixed 400 errors by not serializing unit field (backward compat)
-- ✅ Increased batch delays to reduce 429 errors (2s for leaves, 1s for tasks)
+### Admin Dashboard
+- ✅ Added Admin Dashboard tab (default view) with soldier status pie chart
+- ✅ Created pie chart showing distribution across: On Base, On Leave, On Way Home, On Way to Base, Inactive
+- ✅ Pie chart segments are clickable with expandable soldier lists per status
+- ✅ Implemented weekly task calendar with week navigation, expandable task assignments
+- ✅ Date format: dd/mm/yy; current day is highlighted
+
+### Transition Day Leave Handling
+- ✅ Implemented automatic transition day detection (day before/after leave)
+- ✅ Updated `isTaskAvailable()` to check for transition days
+- ✅ Day before leave: soldier cannot START tasks before `leaveBaseExitHour` (default 06:00)
+- ✅ Day after leave: soldier cannot END tasks after `leaveBaseReturnHour` (default 22:00)
+- ✅ Modified scheduler to pass leave assignments to task scheduler for availability checking
+- ✅ Reordered schedule generation: leave first, then tasks with leave data
+
+### Config Management
+- ✅ Made all config fields editable from Admin Panel Config tab
+- ✅ Editable fields: leave days (in base/home), constraints, exit/return hours
+- ✅ Time fields (exit/return) now configurable with HH:MM format
+- ✅ Save/Reset buttons for config changes
+- ✅ All changes persist to spreadsheet immediately
+- ✅ Extended ConfigRepository with `writeConfig()` method for all field types
+
+### Bug Fixes
+- ✅ Fixed Advanced Command Post 400 error (missing InactiveReason column in soldiers tab)
