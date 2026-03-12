@@ -1,22 +1,40 @@
 import { useState } from 'react'
 import { fullName } from '../utils/helpers'
-import type { Soldier, Task, TaskAssignment } from '../models'
+import { parseDate } from '../utils/dateUtils'
+import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
 
 interface TaskModeCalendarProps {
   soldiers: Soldier[]
   tasks: Task[]
   taskAssignments: TaskAssignment[]
+  leaveAssignments: LeaveAssignment[]
   weekStart: string
 }
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, weekStart }: TaskModeCalendarProps) {
+function formatDateShort(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-')
+  return `${day}/${month}/${year.slice(2)}`
+}
+
+function isOnLeaveOnDate(assignment: LeaveAssignment, dateStr: string): boolean {
+  const date = parseDate(dateStr)
+  return parseDate(assignment.startDate) <= date && date <= parseDate(assignment.endDate)
+}
+
+export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, leaveAssignments, weekStart }: TaskModeCalendarProps) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
-  // Get dates for the week
+  // Convert weekStart (which is currently Monday) to Sunday of that week
+  const startDate = new Date(weekStart)
+  const dayOfWeek = startDate.getDay()
+  const diff = startDate.getDate() - dayOfWeek // Get Sunday
+  const sunday = new Date(startDate.setDate(diff))
+
+  // Get dates for the week (Sun-Sat)
   const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart)
+    const d = new Date(sunday)
     d.setDate(d.getDate() + i)
     return d.toISOString().split('T')[0]
   })
@@ -77,12 +95,13 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
         {/* Header with day names and dates */}
         <div className="flex border-b border-gray-200 bg-white sticky top-0 z-10">
           <div className="w-20 flex-shrink-0"></div>
-          {weekDates.map((date, idx) => {
+          {weekDates.map((date) => {
             const d = new Date(date)
+            const dayIndex = d.getDay()
             return (
               <div key={date} className="flex-1 min-w-[120px] border-l border-gray-200 p-2 text-center">
-                <div className="text-xs font-semibold text-olive-700">{DAYS[idx]}</div>
-                <div className="text-sm text-gray-600">{d.getDate()}</div>
+                <div className="text-xs font-semibold text-olive-700">{DAYS[dayIndex]}</div>
+                <div className="text-sm text-gray-600">{formatDateShort(date)}</div>
               </div>
             )
           })}
@@ -127,6 +146,11 @@ export default function TaskModeCalendar({ soldiers, tasks, taskAssignments, wee
                   )`,
                 }}
               >
+                {/* Show leaves as full-day overlay */}
+                {leaveAssignments.some(l => isOnLeaveOnDate(l, date)) && (
+                  <div className="absolute inset-0 bg-yellow-100 opacity-40 pointer-events-none border-l-4 border-yellow-500"></div>
+                )}
+
                 {tasksInWeek
                   .filter(t => t.startTime.split('T')[0] === date)
                   .map(task => {

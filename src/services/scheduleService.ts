@@ -41,17 +41,19 @@ export class ScheduleService {
 
     // Persist only assignments that aren't already stored
     const existingIds = new Set(existing.map(a => a.id))
-    for (const assignment of schedule.assignments) {
-      if (!existingIds.has(assignment.id)) {
-        await this.leaveAssignments.create({
-          soldierId: assignment.soldierId,
-          startDate: assignment.startDate,
-          endDate: assignment.endDate,
-          leaveType: assignment.leaveType,
-          isWeekend: assignment.isWeekend,
-          requestId: assignment.requestId,
-        })
-      }
+    const toCreate = schedule.assignments.filter(a => !existingIds.has(a.id))
+
+    if (toCreate.length > 0) {
+      await this.leaveAssignments.createBatch(
+        toCreate.map(a => ({
+          soldierId: a.soldierId,
+          startDate: a.startDate,
+          endDate: a.endDate,
+          leaveType: a.leaveType,
+          isWeekend: a.isWeekend,
+          requestId: a.requestId,
+        }))
+      )
     }
 
     await this.history.append(

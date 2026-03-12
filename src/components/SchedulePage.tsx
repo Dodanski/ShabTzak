@@ -221,6 +221,7 @@ export default function SchedulePage({
             soldiers={soldiers}
             tasks={tasks}
             taskAssignments={taskAssignments}
+            leaveAssignments={leaveAssignments}
             weekStart={weekStartDate}
           />
         </div>

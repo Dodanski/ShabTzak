@@ -96,6 +96,47 @@ export class LeaveAssignmentRepository {
     return assignment
   }
 
+  async createBatch(inputs: CreateLeaveAssignmentInput[]): Promise<LeaveAssignment[]> {
+    const BATCH_SIZE = 100
+    const DELAY_MS = 1000
+
+    const assignments = inputs.map(input => ({
+      id: generateId(),
+      soldierId: input.soldierId,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      leaveType: input.leaveType,
+      isWeekend: input.isWeekend,
+      isLocked: false,
+      requestId: input.requestId,
+      createdAt: new Date().toISOString(),
+    }))
+
+    // Ensure headers exist
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
+    if (allRows[0]?.[0] !== 'ID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:I1`, [HEADER_ROW])
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
+      }
+    }
+
+    // Write in batches with delays
+    for (let i = 0; i < assignments.length; i += BATCH_SIZE) {
+      const batch = assignments.slice(i, i + BATCH_SIZE)
+      const rows = batch.map(serializeLeaveAssignment)
+      await this.sheets.appendValues(this.spreadsheetId, this.range, rows)
+
+      if (i + BATCH_SIZE < assignments.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
+      }
+    }
+
+    this.cache.invalidate(CACHE_KEY)
+    return assignments
+  }
+
   async setLocked(id: string, locked: boolean): Promise<void> {
     const { headers, rows } = await this.fetchAll()
 
