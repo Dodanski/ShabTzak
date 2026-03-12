@@ -69,7 +69,22 @@ export class ConfigRepository {
   }
 
   async write(updates: PartialNumericConfig): Promise<void> {
-    const rows = Object.entries(updates).map(([key, value]) => [key, String(value)])
+    const numericFields = [
+      'leaveRatioDaysInBase',
+      'leaveRatioDaysHome',
+      'longLeaveMaxDays',
+      'minBasePresence',
+      'maxDrivingHours',
+      'defaultRestPeriod'
+    ]
+
+    const rows = Object.entries(updates).map(([key, value]) => {
+      const valueStr = numericFields.includes(key)
+        ? String(Number(value))
+        : String(value)
+      return [key, valueStr]
+    })
+
     await this.sheets.updateValues(
       this.spreadsheetId,
       `${this.tabName}!A2:B${rows.length + 1}`,
@@ -81,14 +96,31 @@ export class ConfigRepository {
     const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const dataRows = rows.slice(1) // skip header
 
+    const numericFields = [
+      'leaveRatioDaysInBase',
+      'leaveRatioDaysHome',
+      'longLeaveMaxDays',
+      'minBasePresence',
+      'maxDrivingHours',
+      'defaultRestPeriod'
+    ]
+
     for (const [key, value] of Object.entries(updates)) {
       if (value === undefined) continue
 
       const existingRowIndex = dataRows.findIndex(r => r[0] === key)
-      const valueStr = String(value)
+
+      // Convert to number if it's a numeric field
+      let valueStr: string
+      if (numericFields.includes(key)) {
+        // For numeric fields, ensure it's stored as a number (no quotes)
+        valueStr = String(Number(value))
+      } else {
+        // For string fields (like times), keep as string
+        valueStr = String(value)
+      }
 
       if (existingRowIndex >= 0) {
-        // Overwrite existing row (offset by 2: 1 for header, 1 for 1-based index)
         const rowNumber = existingRowIndex + 2
         await this.sheets.updateValues(
           this.spreadsheetId,
@@ -96,7 +128,6 @@ export class ConfigRepository {
           [[key, valueStr]]
         )
       } else {
-        // Append new row
         await this.sheets.appendValues(
           this.spreadsheetId,
           `${this.tabName}!A:B`,
