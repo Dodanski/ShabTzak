@@ -9,7 +9,7 @@ interface TaskFormState {
   startTime: string
   durationHours: number
   roleRequirements: RoleRequirement[]
-  pendingRole: string
+  pendingRoles: string[]  // Changed to array for multi-role support
   pendingCount: number
 }
 
@@ -20,7 +20,7 @@ const EMPTY_FORM: TaskFormState = {
   startTime: '',
   durationHours: 1,
   roleRequirements: [],
-  pendingRole: 'Any',
+  pendingRoles: ['Any'],
   pendingCount: 1,
 }
 
@@ -54,7 +54,7 @@ function taskToFormState(task: Task): TaskFormState {
     startTime,
     durationHours: task.durationHours,
     roleRequirements: task.roleRequirements,
-    pendingRole: 'Any',
+    pendingRoles: ['Any'],
     pendingCount: 1,
   }
 }
@@ -70,22 +70,22 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
   function handleAddRole(isEdit: boolean) {
     if (isEdit) {
       const count = editForm.pendingCount
-      if (count < 1) return
-      const exists = editForm.roleRequirements.findIndex(r => r.roles.includes(editForm.pendingRole))
-      if (exists >= 0) {
-        setEditForm(f => ({ ...f, roleRequirements: f.roleRequirements.map((r, i) => i === exists ? { ...r, count: r.count + count } : r) }))
-      } else {
-        setEditForm(f => ({ ...f, roleRequirements: [...f.roleRequirements, { roles: [f.pendingRole], count }] }))
-      }
+      if (count < 1 || editForm.pendingRoles.length === 0) return
+      setEditForm(f => ({
+        ...f,
+        roleRequirements: [...f.roleRequirements, { roles: [...f.pendingRoles], count }],
+        pendingRoles: ['Any'],
+        pendingCount: 1,
+      }))
     } else {
       const count = form.pendingCount
-      if (count < 1) return
-      const exists = form.roleRequirements.findIndex(r => r.roles.includes(form.pendingRole))
-      if (exists >= 0) {
-        setForm(f => ({ ...f, roleRequirements: f.roleRequirements.map((r, i) => i === exists ? { ...r, count: r.count + count } : r) }))
-      } else {
-        setForm(f => ({ ...f, roleRequirements: [...f.roleRequirements, { roles: [f.pendingRole], count }] }))
-      }
+      if (count < 1 || form.pendingRoles.length === 0) return
+      setForm(f => ({
+        ...f,
+        roleRequirements: [...f.roleRequirements, { roles: [...f.pendingRoles], count }],
+        pendingRoles: ['Any'],
+        pendingCount: 1,
+      }))
     }
   }
 
@@ -175,41 +175,64 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
   function renderRoleFields(f: TaskFormState, setF: React.Dispatch<React.SetStateAction<TaskFormState>>, isEdit: boolean) {
     return (
       <div>
-        <label className="block text-xs text-olive-600 mb-1">Role requirements</label>
-        <div className="flex gap-2 items-center flex-wrap">
-          <select
-            aria-label="Role"
-            value={f.pendingRole}
-            onChange={e => setF(prev => ({ ...prev, pendingRole: e.target.value }))}
-            className="border rounded px-2 py-1.5 text-sm"
-          >
-            {formRoles.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
+        <label className="block text-xs text-olive-600 mb-2">Role requirements</label>
+        <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
+          <p className="text-xs text-blue-800 mb-2">
+            <strong>Example:</strong> Gate Guard can be filled by Driver, Squad leader, Fighter, etc.
+          </p>
+          <p className="text-xs text-blue-700">Check any roles that can fill this requirement, then set the count.</p>
+        </div>
+        <div>
+          <p className="text-xs text-olive-600 mb-2">Acceptable roles (select any):</p>
+          <div className="grid grid-cols-2 gap-2 mb-3 border rounded p-2 bg-white">
+            {formRoles.map(role => (
+              <label key={role} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={f.pendingRoles.includes(role)}
+                  onChange={(e) => {
+                    const roles = f.pendingRoles
+                    if (e.target.checked) {
+                      setF(prev => ({ ...prev, pendingRoles: [...roles, role] }))
+                    } else {
+                      setF(prev => ({ ...prev, pendingRoles: roles.filter(r => r !== role) }))
+                    }
+                  }}
+                  className="rounded"
+                />
+                <span className="text-sm">{role}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-2 items-center mb-3">
           <input
             aria-label="Role count"
             type="number"
             min="1"
             value={f.pendingCount}
             onChange={e => setF(prev => ({ ...prev, pendingCount: Number(e.target.value) }))}
-            className="border rounded px-2 py-1.5 text-sm w-16"
+            className="border rounded px-2 py-1.5 text-sm w-20"
+            placeholder="Count"
           />
           <button
             type="button"
             onClick={() => handleAddRole(isEdit)}
-            className="px-3 py-1.5 text-sm bg-olive-100 hover:bg-gray-200 rounded"
+            disabled={f.pendingRoles.length === 0}
+            className="px-3 py-1.5 text-sm bg-olive-100 hover:bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add role
+            Add requirement
           </button>
         </div>
         {f.roleRequirements.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
+          <div className="space-y-1 mt-3 pt-3 border-t">
             {f.roleRequirements.map((r, i) => (
-              <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
-                {r.roles.join('/')} ×{r.count}
+              <span key={i} className="flex items-center gap-2 px-2 py-1 bg-olive-50 text-olive-700 text-sm rounded">
+                <strong>{r.count}×</strong> {r.roles.join(' / ')}
                 <button
                   type="button"
                   onClick={() => handleRemoveRole(i, isEdit)}
-                  className="ml-1 text-olive-600 hover:text-olive-700"
+                  className="ml-auto text-olive-600 hover:text-olive-700 font-bold"
                   aria-label={`Remove ${r.roles.join('/')}`}
                 >
                   ×
