@@ -199,11 +199,17 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       // Update fairness for newly created leave assignments
       const existingIds = new Set(leaveAssignments.map(a => a.id))
       const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')
-      for (const assignment of leaveSchedule.assignments) {
-        if (!existingIds.has(assignment.id)) {
-          await ds.fairnessUpdate.applyLeaveAssignment(
-            assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
-          )
+      const newAssignments = leaveSchedule.assignments.filter(a => !existingIds.has(a.id))
+
+      // Process fairness updates with delays to avoid API rate limiting
+      for (let i = 0; i < newAssignments.length; i++) {
+        const assignment = newAssignments[i]
+        await ds.fairnessUpdate.applyLeaveAssignment(
+          assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
+        )
+        // Add delay between updates (every 5 updates, add a longer delay)
+        if ((i + 1) % 5 === 0 && i < newAssignments.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
         }
       }
       reload()
