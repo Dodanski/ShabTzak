@@ -6,7 +6,7 @@ import type { LeaveRequestRepository } from './leaveRequestRepository'
 import type { LeaveAssignmentRepository } from './leaveAssignmentRepository'
 import type { TaskAssignmentRepository } from './taskAssignmentRepository'
 import type { HistoryService } from './historyService'
-import type { LeaveSchedule, TaskSchedule, Task, AppConfig, LeaveAssignment } from '../models'
+import type { LeaveSchedule, TaskSchedule, Task, AppConfig, LeaveAssignment, Soldier } from '../models'
 
 /**
  * Orchestrates leave and task schedule generation:
@@ -70,16 +70,20 @@ export class ScheduleService {
     changedBy: string,
     onProgress?: (completed: number, total: number) => void,
     leaveAssignments?: LeaveAssignment[],
-    config?: AppConfig
+    config?: AppConfig,
+    allSoldiers?: Soldier[]  // NEW: optional all soldiers from all units
   ): Promise<TaskSchedule> {
     const [soldiers, existing] = await Promise.all([
       this.soldiers.list(),
       this.taskAssignments.list(),
     ])
 
+    // Use allSoldiers if provided (multi-unit scheduling), otherwise use unit soldiers
+    const schedulingSoldiers = (allSoldiers && allSoldiers.length > 0) ? allSoldiers : soldiers
+
     // Pass tasks array as allTasksInSystem for rest period validation
     // (tasks array should contain all tasks from spreadsheet, expanded if recurring)
-    const schedule = scheduleTasks(tasks, soldiers, existing, tasks, leaveAssignments, config)
+    const schedule = scheduleTasks(tasks, schedulingSoldiers, existing, tasks, leaveAssignments, config)
 
     // Persist only assignments that aren't already stored
     const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}:${a.assignedRole}`))

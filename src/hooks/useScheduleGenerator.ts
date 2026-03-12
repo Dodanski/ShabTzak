@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { expandRecurringTasks } from '../algorithms/taskExpander'
 import type { DataService } from '../services/dataService'
-import type { ScheduleConflict, Task, AppConfig } from '../models'
+import type { ScheduleConflict, Task, AppConfig, Soldier } from '../models'
 
 export interface UseScheduleGeneratorResult {
   generate: (onComplete?: () => void) => Promise<void>
@@ -17,6 +17,7 @@ export function useScheduleGenerator(
   config: AppConfig | null,
   startDate: string,
   endDate: string,
+  allSoldiers?: Soldier[]  // NEW: optional all soldiers for multi-unit scheduling
 ): UseScheduleGeneratorResult {
   const [loading, setLoading] = useState(false)
   const [conflicts, setConflicts] = useState<ScheduleConflict[]>([])
@@ -38,7 +39,7 @@ export function useScheduleGenerator(
       // Then generate task schedule with leave assignments included
       const task = await ds.scheduleService.generateTaskSchedule(expandedTasks, 'user', (completed, total) => {
         setProgress({ completed, total })
-      }, leave.assignments)
+      }, leave.assignments, config, allSoldiers)
 
       setConflicts([...leave.conflicts, ...task.conflicts])
 
@@ -50,7 +51,7 @@ export function useScheduleGenerator(
       setLoading(false)
       setProgress(null)
     }
-  }, [ds, tasks, config, startDate, endDate])
+  }, [ds, tasks, config, startDate, endDate, allSoldiers])
 
   return { generate, loading, conflicts, error, progress }
 }

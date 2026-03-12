@@ -7,6 +7,7 @@ import type { Soldier, Task, TaskAssignment, LeaveAssignment, ScheduleConflict }
 
 interface SchedulePageProps {
   soldiers: Soldier[]
+  allSoldiers?: Soldier[]  // NEW: all soldiers from all units
   dates: string[]
   tasks: Task[]
   taskAssignments: TaskAssignment[]
@@ -22,7 +23,7 @@ interface SchedulePageProps {
 }
 
 export default function SchedulePage({
-  soldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign, onReload, progress, scheduleStart, scheduleEnd,
+  soldiers, allSoldiers: _allSoldiers, dates, tasks, taskAssignments, leaveAssignments, conflicts, roles, onGenerate, onManualAssign, onReload, progress, scheduleStart, scheduleEnd,
 }: SchedulePageProps) {
   const assignmentRoles: string[] = [...roles, 'Any']
   const [copied, setCopied] = useState(false)

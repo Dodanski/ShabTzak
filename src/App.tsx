@@ -82,8 +82,8 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
 
   const { loading: tabsLoading, error: tabsError } = useMissingTabs(spreadsheetId, tabPrefix)
 
-  const { ds, soldiers, leaveRequests, taskAssignments, leaveAssignments, loading, error, reload } =
-    useDataService(spreadsheetId, tabPrefix, masterDs)
+  const { ds, soldiers, allSoldiers, leaveRequests, taskAssignments, leaveAssignments, loading, error, reload } =
+    useDataService(spreadsheetId, tabPrefix, masterDs, true)  // true = load all soldiers
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
 
@@ -128,7 +128,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
 
   const actualScheduleDates = getScheduleDatesForPeriod()
 
-  const { generate: runSchedule, conflicts, progress } = useScheduleGenerator(ds, tasks, configData, scheduleStart, scheduleEnd)
+  const { generate: runSchedule, conflicts, progress } = useScheduleGenerator(ds, tasks, configData, scheduleStart, scheduleEnd, allSoldiers)
 
   async function handleUpdateStatus(soldierId: string, status: SoldierStatus, reason?: string) {
     try {
@@ -319,6 +319,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       {section === 'schedule' && (
         <SchedulePage
           soldiers={soldiers}
+          allSoldiers={allSoldiers}
           dates={actualScheduleDates}
           tasks={tasks}
           taskAssignments={taskAssignments}
