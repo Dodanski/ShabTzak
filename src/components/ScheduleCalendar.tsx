@@ -25,7 +25,22 @@ export default function ScheduleCalendar({
     return <p className="text-gray-400 text-sm">No soldiers to display.</p>
   }
 
-  const matrix = buildAvailabilityMatrix(soldiers, tasks, taskAssignments, leaveAssignments, dates)
+  // Expand recurring tasks to match the _dayN IDs created by the scheduler
+  const expandedTasks = tasks.flatMap(task => {
+    if (task.isSpecial) {
+      // Pillbox task - don't expand
+      return [task]
+    }
+    // Regular recurring task - create instances for each day in the schedule
+    return dates.map((date, idx) => ({
+      ...task,
+      id: `${task.id}_day${idx}`,
+      startTime: `${date}T${task.startTime.split('T')[1]}`,
+      endTime: `${date}T${task.endTime.split('T')[1]}`,
+    }))
+  })
+
+  const matrix = buildAvailabilityMatrix(soldiers, expandedTasks, taskAssignments, leaveAssignments, dates)
 
   return (
     <>
