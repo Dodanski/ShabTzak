@@ -31,6 +31,12 @@ export function isTaskAvailable(
   if (soldier.status !== 'Active') return false
   if (!hasRequiredRole(soldier, task)) return false
 
+  // Check if soldier is within their service dates
+  const taskDate = new Date(task.startTime.split('T')[0])
+  const serviceStart = new Date(soldier.serviceStart)
+  const serviceEnd = new Date(soldier.serviceEnd)
+  if (taskDate < serviceStart || taskDate > serviceEnd) return false
+
   // Check if this soldier is already assigned to this specific task
   const alreadyOnThisTask = existingAssignments.some(a =>
     a.soldierId === soldier.id && a.taskId === task.id
