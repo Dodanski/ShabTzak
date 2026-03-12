@@ -1,4 +1,4 @@
-import type { Soldier, Task, TaskAssignment, AppConfig } from '../models'
+import type { Soldier, Task, TaskAssignment, AppConfig, LeaveAssignment } from '../models'
 
 /**
  * Returns the ISO datetime after which the soldier can work again.
@@ -19,23 +19,71 @@ export function hasRequiredRole(soldier: Soldier, task: Task): boolean {
 }
 
 /**
+ * Check if soldier is on leave during the task date
+ */
+function isOnLeaveOnDate(soldier: Soldier, taskDate: string, leaveAssignments: LeaveAssignment[]): boolean {
+  return leaveAssignments.some(la =>
+    la.soldierId === soldier.id &&
+    la.startDate <= taskDate &&
+    taskDate <= la.endDate
+  )
+}
+
+/**
+ * Check if soldier is on transition day (on the way home or to base)
+ * Returns 'toBase', 'fromBase', or null
+ */
+function getTransitionDayType(
+  soldier: Soldier,
+  taskDate: string,
+  leaveAssignments: LeaveAssignment[]
+): 'toBase' | 'fromBase' | null {
+  for (const la of leaveAssignments) {
+    if (la.soldierId !== soldier.id) continue
+
+    const leaveStart = la.startDate
+    const leaveEnd = la.endDate
+
+    // Check if task date is day before leave (on the way home)
+    const dayBeforeLeave = new Date(leaveStart)
+    dayBeforeLeave.setDate(dayBeforeLeave.getDate() - 1)
+    if (taskDate === dayBeforeLeave.toISOString().split('T')[0]) {
+      return 'fromBase'
+    }
+
+    // Check if task date is day after leave (on the way to base)
+    const dayAfterLeave = new Date(leaveEnd)
+    dayAfterLeave.setDate(dayAfterLeave.getDate() + 1)
+    if (taskDate === dayAfterLeave.toISOString().split('T')[0]) {
+      return 'toBase'
+    }
+  }
+  return null
+}
+
+
+/**
  * Returns true if the soldier is available for the given task.
- * Checks: active status, role match, rest period from prior tasks.
+ * Checks: active status, role match, rest period from prior tasks, leave assignments, and transition days.
  */
 export function isTaskAvailable(
   soldier: Soldier,
   task: Task,
   allTasks: Task[],
-  existingAssignments: TaskAssignment[]
+  existingAssignments: TaskAssignment[],
+  leaveAssignments?: LeaveAssignment[],
+  config?: AppConfig
 ): boolean {
   if (soldier.status !== 'Active') return false
   if (!hasRequiredRole(soldier, task)) return false
 
+  const taskDate = task.startTime.split('T')[0]
+  const taskStart = new Date(task.startTime)
+
   // Check if soldier is within their service dates
-  const taskDate = new Date(task.startTime.split('T')[0])
   const serviceStart = new Date(soldier.serviceStart)
   const serviceEnd = new Date(soldier.serviceEnd)
-  if (taskDate < serviceStart || taskDate > serviceEnd) return false
+  if (taskStart < serviceStart || taskStart > serviceEnd) return false
 
   // Check if this soldier is already assigned to this specific task
   const alreadyOnThisTask = existingAssignments.some(a =>
@@ -43,9 +91,30 @@ export function isTaskAvailable(
   )
   if (alreadyOnThisTask) return false
 
-  const taskStart = new Date(task.startTime).getTime()
+  // Check leave assignments if provided
+  if (leaveAssignments && leaveAssignments.length > 0) {
+    // Check if on leave during task
+    if (isOnLeaveOnDate(soldier, taskDate, leaveAssignments)) return false
 
-  // Find assignments for this soldier
+    // Check transition days
+    if (config) {
+      const transitionType = getTransitionDayType(soldier, taskDate, leaveAssignments)
+      if (transitionType === 'fromBase') {
+        // On the way home: can't do tasks that start before exit hour
+        const exitHour = parseInt(config.leaveBaseExitHour.split(':')[0], 10)
+        const taskStartHour = parseInt(task.startTime.split('T')[1].split(':')[0], 10)
+        if (taskStartHour < exitHour) return false
+      } else if (transitionType === 'toBase') {
+        // On the way to base: can't do tasks that end after return hour
+        const returnHour = parseInt(config.leaveBaseReturnHour.split(':')[0], 10)
+        const taskEndHour = parseInt(task.endTime.split('T')[1].split(':')[0], 10)
+        if (taskEndHour > returnHour) return false
+      }
+    }
+  }
+
+  // Check rest period from prior tasks
+  const taskStartMs = taskStart.getTime()
   const myAssignments = existingAssignments.filter(a => a.soldierId === soldier.id)
 
   for (const assignment of myAssignments) {
@@ -53,7 +122,7 @@ export function isTaskAvailable(
     if (!prevTask) continue
 
     const restEnd = new Date(getRestPeriodEnd(prevTask.endTime, prevTask.minRestAfter)).getTime()
-    if (taskStart < restEnd) return false
+    if (taskStartMs < restEnd) return false
   }
 
   return true

@@ -1,6 +1,6 @@
 import { combinedFairnessScore } from './fairness'
 import { isTaskAvailable } from './taskAvailability'
-import type { Soldier, Task, TaskAssignment, TaskSchedule } from '../models'
+import type { Soldier, Task, TaskAssignment, TaskSchedule, LeaveAssignment, AppConfig } from '../models'
 
 /**
  * Greedy task scheduler: processes tasks by start time, assigns soldiers to each
@@ -10,12 +10,16 @@ import type { Soldier, Task, TaskAssignment, TaskSchedule } from '../models'
  * @param soldiers - Available soldiers
  * @param existingAssignments - Existing assignments (used for fairness and rest period checking)
  * @param allTasksInSystem - All tasks in the system (needed for rest period validation against prior tasks)
+ * @param leaveAssignments - Leave assignments to check for soldier availability
+ * @param config - App config with exit/return hours for transition days
  */
 export function scheduleTasks(
   tasks: Task[],
   soldiers: Soldier[],
   existingAssignments: TaskAssignment[],
   allTasksInSystem?: Task[],
+  leaveAssignments?: LeaveAssignment[],
+  config?: AppConfig,
 ): TaskSchedule {
   const result: TaskAssignment[] = [...existingAssignments]
   // Use all tasks in system for rest period checking, fallback to just scheduled tasks
@@ -46,10 +50,10 @@ export function scheduleTasks(
       const remaining = requirement.count - alreadyAssigned
       if (remaining <= 0) continue
 
-      // Find eligible soldiers: role match + available (rest period, status)
+      // Find eligible soldiers: role match + available (rest period, status, leave)
       const eligible = soldiers.filter(s => {
         if (requirement.role !== 'Any' && s.role !== requirement.role) return false
-        return isTaskAvailable(s, task, tasksForValidation, result)
+        return isTaskAvailable(s, task, tasksForValidation, result, leaveAssignments, config)
       })
 
       // Determine task's unit based on majority of already-assigned soldiers

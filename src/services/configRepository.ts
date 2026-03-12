@@ -8,6 +8,17 @@ type PartialNumericConfig = Partial<Pick<AppConfig,
   'minBasePresence' | 'maxDrivingHours' | 'defaultRestPeriod'
 >>
 
+type EditableConfig = {
+  leaveRatioDaysInBase?: number | string
+  leaveRatioDaysHome?: number | string
+  longLeaveMaxDays?: number | string
+  minBasePresence?: number | string
+  maxDrivingHours?: number | string
+  defaultRestPeriod?: number | string
+  leaveBaseExitHour?: string
+  leaveBaseReturnHour?: string
+}
+
 export class ConfigRepository {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
@@ -64,6 +75,35 @@ export class ConfigRepository {
       `${this.tabName}!A2:B${rows.length + 1}`,
       rows
     )
+  }
+
+  async writeConfig(updates: EditableConfig): Promise<void> {
+    const rows = await this.sheets.getValues(this.spreadsheetId, this.range)
+    const dataRows = rows.slice(1) // skip header
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) continue
+
+      const existingRowIndex = dataRows.findIndex(r => r[0] === key)
+      const valueStr = String(value)
+
+      if (existingRowIndex >= 0) {
+        // Overwrite existing row (offset by 2: 1 for header, 1 for 1-based index)
+        const rowNumber = existingRowIndex + 2
+        await this.sheets.updateValues(
+          this.spreadsheetId,
+          `${this.tabName}!A${rowNumber}:B${rowNumber}`,
+          [[key, valueStr]]
+        )
+      } else {
+        // Append new row
+        await this.sheets.appendValues(
+          this.spreadsheetId,
+          `${this.tabName}!A:B`,
+          [[key, valueStr]]
+        )
+      }
+    }
   }
 
   async writeAdminEmails(emails: string[]): Promise<void> {

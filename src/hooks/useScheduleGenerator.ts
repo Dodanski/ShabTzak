@@ -32,12 +32,14 @@ export function useScheduleGenerator(
       // Expand recurring tasks to individual instances for the schedule period
       const expandedTasks = expandRecurringTasks(tasks, endDate)
 
-      const [leave, task] = await Promise.all([
-        ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user'),
-        ds.scheduleService.generateTaskSchedule(expandedTasks, 'user', (completed, total) => {
-          setProgress({ completed, total })
-        }),
-      ])
+      // Generate leave schedule first
+      const leave = await ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user')
+
+      // Then generate task schedule with leave assignments included
+      const task = await ds.scheduleService.generateTaskSchedule(expandedTasks, 'user', (completed, total) => {
+        setProgress({ completed, total })
+      }, leave.assignments)
+
       setConflicts([...leave.conflicts, ...task.conflicts])
 
       // Call onComplete callback when done (for data reload)

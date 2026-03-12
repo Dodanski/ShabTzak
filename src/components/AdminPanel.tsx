@@ -4,8 +4,9 @@ import type { MasterDataService } from '../services/masterDataService'
 import type { Admin, Unit, Commander, Task, AppConfig, CreateTaskInput, UpdateTaskInput } from '../models'
 import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
+import AdminDashboard from './AdminDashboard'
 
-type AdminTab = 'admins' | 'units' | 'commanders' | 'roles' | 'tasks' | 'config'
+type AdminTab = 'dashboard' | 'admins' | 'units' | 'commanders' | 'roles' | 'tasks' | 'config'
 
 interface AdminPanelProps {
   masterDs: MasterDataService
@@ -15,7 +16,7 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }: AdminPanelProps) {
   const { signOut } = useAuth()
-  const [activeTab, setActiveTab] = useState<AdminTab>('admins')
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [admins, setAdmins] = useState<Admin[]>([])
   const [units, setUnits] = useState<Unit[]>([])
   const [commanders, setCommanders] = useState<Commander[]>([])
@@ -32,6 +33,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [newUnitSheetId, setNewUnitSheetId] = useState('')
   const [newCmdEmail, setNewCmdEmail] = useState('')
   const [newCmdUnitId, setNewCmdUnitId] = useState('')
+  const [editingConfig, setEditingConfig] = useState<Record<string, string | number>>({})
+  const [configLoading, setConfigLoading] = useState(false)
 
   async function reload() {
     setLoading(true)
@@ -48,6 +51,21 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   }
 
   useEffect(() => { reload() }, [])
+
+  useEffect(() => {
+    if (configData) {
+      setEditingConfig({
+        leaveRatioDaysInBase: configData.leaveRatioDaysInBase,
+        leaveRatioDaysHome: configData.leaveRatioDaysHome,
+        longLeaveMaxDays: configData.longLeaveMaxDays,
+        minBasePresence: configData.minBasePresence,
+        maxDrivingHours: configData.maxDrivingHours,
+        defaultRestPeriod: configData.defaultRestPeriod,
+        leaveBaseExitHour: configData.leaveBaseExitHour,
+        leaveBaseReturnHour: configData.leaveBaseReturnHour,
+      })
+    }
+  }, [configData])
 
   async function handleAddAdmin() {
     if (!newAdminEmail) return
@@ -147,6 +165,21 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     catch { /* ignore */ }
   }
 
+  async function handleSaveConfig() {
+    if (!configData) return
+    setError(null)
+    setConfigLoading(true)
+    try {
+      await masterDs.config.writeConfig(editingConfig)
+      await reload()
+      setError(null)
+    } catch (err) {
+      setError('Failed to save config')
+    } finally {
+      setConfigLoading(false)
+    }
+  }
+
   const derivedPrefix = deriveTabPrefix(newUnitName)
 
   const tabClass = (tab: AdminTab) =>
@@ -173,6 +206,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <div className="flex gap-2">
+          <button className={tabClass('dashboard')} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
           <button className={tabClass('admins')} onClick={() => setActiveTab('admins')}>Admins</button>
           <button className={tabClass('units')} onClick={() => setActiveTab('units')}>Units</button>
           <button className={tabClass('commanders')} onClick={() => setActiveTab('commanders')}>Commanders</button>
@@ -188,6 +222,10 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         )}
 
         {loading && <p className="text-olive-500">Loading…</p>}
+
+        {!loading && activeTab === 'dashboard' && (
+          <AdminDashboard masterDs={masterDs} tasks={tasks} configData={configData} />
+        )}
 
         {!loading && activeTab === 'admins' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
@@ -348,14 +386,124 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
         {!loading && activeTab === 'config' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
-            <h2 className="font-semibold text-olive-800">Config</h2>
-            <table className="w-full text-sm">
-              <tbody>
-                {configData && Object.entries(configData)
-                  .filter(([, v]) => typeof v !== 'object')
-                  .map(([k, v]) => <tr key={k}><td className="p-2 font-mono text-olive-700">{k}</td><td className="p-2">{String(v)}</td></tr>)}
-              </tbody>
-            </table>
+            <h2 className="font-semibold text-olive-800">Configuration</h2>
+            {configData && (
+              <div className="grid grid-cols-2 gap-4">
+                {/* Numeric fields */}
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Leave Days in Base</label>
+                  <input
+                    type="number"
+                    value={editingConfig.leaveRatioDaysInBase ?? 0}
+                    onChange={e => setEditingConfig({ ...editingConfig, leaveRatioDaysInBase: parseInt(e.target.value) })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Days soldier stays in base per cycle</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Leave Days at Home</label>
+                  <input
+                    type="number"
+                    value={editingConfig.leaveRatioDaysHome ?? 0}
+                    onChange={e => setEditingConfig({ ...editingConfig, leaveRatioDaysHome: parseInt(e.target.value) })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Days soldier stays at home per cycle</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Long Leave Max Days</label>
+                  <input
+                    type="number"
+                    value={editingConfig.longLeaveMaxDays ?? 0}
+                    onChange={e => setEditingConfig({ ...editingConfig, longLeaveMaxDays: parseInt(e.target.value) })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Min Base Presence</label>
+                  <input
+                    type="number"
+                    value={editingConfig.minBasePresence ?? 0}
+                    onChange={e => setEditingConfig({ ...editingConfig, minBasePresence: parseInt(e.target.value) })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Minimum soldiers required on base per role</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Max Driving Hours (per day)</label>
+                  <input
+                    type="number"
+                    value={editingConfig.maxDrivingHours ?? 0}
+                    onChange={e => setEditingConfig({ ...editingConfig, maxDrivingHours: parseInt(e.target.value) })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Default Rest Period (hours)</label>
+                  <input
+                    type="number"
+                    value={editingConfig.defaultRestPeriod ?? 0}
+                    onChange={e => setEditingConfig({ ...editingConfig, defaultRestPeriod: parseInt(e.target.value) })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+
+                {/* Time fields */}
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Leave Base Exit Hour (HH:MM)</label>
+                  <input
+                    type="text"
+                    placeholder="HH:MM"
+                    value={editingConfig.leaveBaseExitHour ?? ''}
+                    onChange={e => setEditingConfig({ ...editingConfig, leaveBaseExitHour: e.target.value })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Time soldier departs for leave (e.g., 06:00)</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-olive-600 block mb-1">Leave Base Return Hour (HH:MM)</label>
+                  <input
+                    type="text"
+                    placeholder="HH:MM"
+                    value={editingConfig.leaveBaseReturnHour ?? ''}
+                    onChange={e => setEditingConfig({ ...editingConfig, leaveBaseReturnHour: e.target.value })}
+                    className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Time soldier returns from leave (e.g., 22:00)</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-4">
+              <button
+                onClick={handleSaveConfig}
+                disabled={configLoading}
+                className="px-4 py-2 bg-olive-700 text-white text-sm rounded hover:bg-olive-800 disabled:opacity-50"
+              >
+                {configLoading ? 'Saving...' : 'Save Config'}
+              </button>
+              <button
+                onClick={() => setEditingConfig({
+                  leaveRatioDaysInBase: configData?.leaveRatioDaysInBase ?? 10,
+                  leaveRatioDaysHome: configData?.leaveRatioDaysHome ?? 4,
+                  longLeaveMaxDays: configData?.longLeaveMaxDays ?? 4,
+                  minBasePresence: configData?.minBasePresence ?? 20,
+                  maxDrivingHours: configData?.maxDrivingHours ?? 8,
+                  defaultRestPeriod: configData?.defaultRestPeriod ?? 6,
+                  leaveBaseExitHour: configData?.leaveBaseExitHour ?? '06:00',
+                  leaveBaseReturnHour: configData?.leaveBaseReturnHour ?? '22:00',
+                })}
+                className="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+              >
+                Reset
+              </button>
+            </div>
           </div>
         )}
       </main>
