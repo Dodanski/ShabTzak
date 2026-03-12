@@ -14,7 +14,9 @@ function get(row: string[], headers: string[], name: string): string {
 }
 
 function getNum(row: string[], headers: string[], name: string): number {
-  return parseFloat(get(row, headers, name)) || 0
+  // Use safeGet to handle missing columns gracefully (return 0 if not found)
+  const value = safeGet(row, headers, name)
+  return value ? parseFloat(value) || 0 : 0
 }
 
 function getBool(row: string[], headers: string[], name: string): boolean {
@@ -77,7 +79,58 @@ export function parseSoldier(row: string[], headers: string[]): Soldier {
     serviceEnd: get(row, headers, 'ServiceEnd'),
     initialFairness: getNum(row, headers, 'InitialFairness'),
     currentFairness: getNum(row, headers, 'CurrentFairness'),
-    status: get(row, headers, 'Status') as Soldier['status'],
+    status: (safeGet(row, headers, 'Status') || 'Active') as 'Active' | 'Inactive', // Default to Active if missing
+    hoursWorked: getNum(row, headers, 'HoursWorked'),
+    weekendLeavesCount: getNum(row, headers, 'WeekendLeavesCount'),
+    midweekLeavesCount: getNum(row, headers, 'MidweekLeavesCount'),
+    afterLeavesCount: getNum(row, headers, 'AfterLeavesCount'),
+    inactiveReason: safeGet(row, headers, 'InactiveReason') || undefined,
+  }
+}
+
+/**
+ * Parse soldier from admin spreadsheet with optional columns
+ * Admin sheet may not have all columns (e.g., leave counts), so use safe defaults
+ */
+export function parseSoldierFromAdmin(row: string[], headers: string[]): Soldier {
+  if (row.length === 0) throw new Error('Cannot parse empty row')
+
+  // Handle name columns
+  const hasFirstNameSpaced = hasHeader(headers, 'First Name')
+  const hasLastNameSpaced = hasHeader(headers, 'Last Name')
+  const hasFirstNameNoSpace = hasHeader(headers, 'FirstName')
+  const hasLastNameNoSpace = hasHeader(headers, 'LastName')
+  const hasNameColumn = hasHeader(headers, 'Name')
+
+  let firstName = ''
+  let lastName = ''
+
+  if (hasFirstNameSpaced && hasLastNameSpaced) {
+    firstName = get(row, headers, 'First Name')
+    lastName = get(row, headers, 'Last Name')
+  } else if (hasFirstNameNoSpace && hasLastNameNoSpace) {
+    firstName = get(row, headers, 'FirstName')
+    lastName = get(row, headers, 'LastName')
+  } else if (hasNameColumn) {
+    firstName = ''
+    lastName = get(row, headers, 'Name')
+  }
+
+  const statusStr = safeGet(row, headers, 'Status') || 'Active'
+  const status = statusStr === 'Inactive' ? 'Inactive' : 'Active' as const
+
+  return {
+    id: get(row, headers, 'ID'),
+    firstName,
+    lastName,
+    role: get(row, headers, 'Role') as Soldier['role'],
+    unit: safeGet(row, headers, 'Unit') || undefined,
+    serviceStart: get(row, headers, 'ServiceStart'),
+    serviceEnd: get(row, headers, 'ServiceEnd'),
+    // Admin sheet may not have these fields - use safe defaults
+    initialFairness: getNum(row, headers, 'InitialFairness'),
+    currentFairness: getNum(row, headers, 'CurrentFairness'),
+    status,
     hoursWorked: getNum(row, headers, 'HoursWorked'),
     weekendLeavesCount: getNum(row, headers, 'WeekendLeavesCount'),
     midweekLeavesCount: getNum(row, headers, 'MidweekLeavesCount'),
