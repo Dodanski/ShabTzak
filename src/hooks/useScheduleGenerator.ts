@@ -36,9 +36,6 @@ export function useScheduleGenerator(
       // Generate leave schedule first
       const leave = await ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user')
 
-      // Wait to allow API to recover between major operations
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
       // Then generate task schedule with leave assignments included
       const task = await ds.scheduleService.generateTaskSchedule(expandedTasks, 'user', (completed, total) => {
         setProgress({ completed, total })

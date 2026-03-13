@@ -139,9 +139,10 @@ export class TaskAssignmentRepository {
       }
     }
 
-    // Batch in groups of 20 with 2-second delay between batches to avoid rate limiting
+    // Batch in groups of 20 with minimal delay between batches
+    // Exponential backoff retry in googleSheets.ts handles any 429 rate limit errors
     const BATCH_SIZE = 20
-    const DELAY_MS = 2000  // Increased from 1000 to 2s to reduce rate limiting
+    const DELAY_MS = 300  // Minimal delay to avoid overwhelming API
     const PROGRESS_UPDATE_FREQUENCY = 3 // Update progress every 3 batches to reduce flashing
 
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {
