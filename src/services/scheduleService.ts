@@ -145,15 +145,19 @@ export class ScheduleService {
 
     // Batch create assignments with progress callback
     if (newAssignments.length > 0) {
-      // ALWAYS save to current unit's sheet
-      // In multi-unit mode, App.tsx will ALSO distribute to other units via UnitDataServiceManager
+      // Save to shared master schedule
       await this.taskAssignments.createBatch(
-        newAssignments.map(a => ({
-          taskId: a.taskId,
-          soldierId: a.soldierId,
-          assignedRole: a.assignedRole,
-          createdBy: changedBy,
-        })),
+        newAssignments.map(a => {
+          // Find soldier's unit for assignment tracking in master schedule
+          const soldier = allSoldiers?.find(s => s.id === a.soldierId)
+          return {
+            taskId: a.taskId,
+            soldierId: a.soldierId,
+            assignedRole: a.assignedRole,
+            assignedUnitId: soldier?.unit,
+            createdBy: changedBy,
+          }
+        }),
         onProgress
       )
 
