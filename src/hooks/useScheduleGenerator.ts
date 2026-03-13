@@ -33,15 +33,17 @@ export function useScheduleGenerator(
       // Expand recurring tasks to individual instances for the schedule period
       const expandedTasks = expandRecurringTasks(tasks, endDate)
 
-      // Generate leave schedule first
-      const leave = await ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user')
-
-      // Then generate task schedule with leave assignments included
+      // IMPORTANT: Generate TASK schedule FIRST (tasks have priority)
+      // Tasks should be assigned to soldiers based on available roles
       const task = await ds.scheduleService.generateTaskSchedule(expandedTasks, 'user', (completed, total) => {
         setProgress({ completed, total })
-      }, leave.assignments, config, allSoldiers)
+      }, undefined, config, allSoldiers)  // Don't pass leave assignments yet
 
-      setConflicts([...leave.conflicts, ...task.conflicts])
+      // THEN generate leave schedule, respecting task assignments
+      // Soldiers assigned to critical tasks should not be able to take leave
+      const leave = await ds.scheduleService.generateLeaveSchedule(config, startDate, endDate, 'user')
+
+      setConflicts([...task.conflicts, ...leave.conflicts])
 
       // Call onComplete callback when done (for data reload)
       onComplete?.()

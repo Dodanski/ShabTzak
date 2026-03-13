@@ -55,7 +55,25 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       endDate.setDate(endDate.getDate() + 80)
       const scheduleEnd = endDate.toISOString().split('T')[0]
 
-      // Generate leave schedule for all soldiers
+      // IMPORTANT: Generate TASK schedule FIRST (tasks have priority)
+      // Expand recurring tasks
+      const expandTasksModule = await import('../algorithms/taskExpander')
+      const expandedTasks = expandTasksModule.expandRecurringTasks(tasks, scheduleEnd)
+
+      // Generate task schedule for all soldiers FIRST
+      console.log('[AdminPanel] Generating task schedule for all', soldiers.length, 'soldiers...')
+      const taskSchedule = await masterDs.scheduleService.generateTaskSchedule(
+        expandedTasks,
+        currentAdminEmail,
+        undefined,
+        undefined,  // Don't pass leave assignments yet - tasks take priority
+        configData,
+        soldiers  // Pass all soldiers from admin sheet
+      )
+
+      console.log('[AdminPanel] Generated tasks:', taskSchedule.assignments.length)
+
+      // THEN generate leave schedule, respecting task assignments
       console.log('[AdminPanel] Generating leave schedule for all units...')
       const leaveSchedule = await masterDs.scheduleService.generateLeaveSchedule(
         configData,
@@ -65,21 +83,6 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       )
 
       console.log('[AdminPanel] Generated leaves:', leaveSchedule.assignments.length)
-
-      // Expand recurring tasks
-      const expandTasksModule = await import('../algorithms/taskExpander')
-      const expandedTasks = expandTasksModule.expandRecurringTasks(tasks, scheduleEnd)
-
-      // Generate task schedule for all soldiers
-      console.log('[AdminPanel] Generating task schedule for all', soldiers.length, 'soldiers...')
-      const taskSchedule = await masterDs.scheduleService.generateTaskSchedule(
-        expandedTasks,
-        currentAdminEmail,
-        undefined,
-        leaveSchedule.assignments,
-        configData,
-        soldiers  // Pass all soldiers from admin sheet
-      )
 
       console.log('[AdminPanel] Generated tasks:', taskSchedule.assignments.length)
       setScheduleSuccess(true)
