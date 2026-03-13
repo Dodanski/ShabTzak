@@ -54,6 +54,11 @@ export class DataService {
     this.leaveAssignments = masterLeaveAssignments || unitLeaveAssignments
     this.taskAssignments = masterTaskAssignments || unitTaskAssignments
 
+    if (import.meta.env.DEV) {
+      console.log('[DataService] Using', masterLeaveAssignments ? 'MASTER' : 'unit-specific', 'leave assignments')
+      console.log('[DataService] Using', masterTaskAssignments ? 'MASTER' : 'unit-specific', 'task assignments')
+    }
+
     this.soldierService = new SoldierService(this.soldiers, this.historyService)
     this.leaveRequestService = new LeaveRequestService(this.leaveRequests, this.historyService)
     this.fairnessUpdate = new FairnessUpdateService(this.soldiers, this.historyService)

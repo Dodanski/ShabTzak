@@ -58,6 +58,10 @@ export class MasterDataService {
     this.soldiers = new SoldierRepository(this.sheets, spreadsheetId, cache, 'Soldiers')
     this.taskAssignments = new MasterTaskAssignmentRepository(this.sheets, spreadsheetId, cache)
     this.leaveAssignments = new MasterLeaveAssignmentRepository(this.sheets, spreadsheetId, cache)
+
+    if (import.meta.env.DEV) {
+      console.log('[MasterDataService] Initialized master repositories (TaskSchedule, LeaveSchedule)')
+    }
   }
 
   /**
