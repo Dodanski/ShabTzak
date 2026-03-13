@@ -45,6 +45,21 @@ export class LeaveRequestRepository {
   }
 
   async list(): Promise<LeaveRequest[]> {
+    // Self-heal: ensure sheet has proper headers
+    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
+    if (allRows[0]?.[0] !== 'ID') {
+      const rescuedRows = allRows.filter(r => r.length > 0)
+      await this.sheets.updateValues(
+        this.spreadsheetId,
+        `${this.tabName}!A1:H1`,
+        [HEADER_ROW]
+      )
+      if (rescuedRows.length > 0) {
+        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
+      }
+      this.cache.invalidate(CACHE_KEY)
+    }
+
     const { headers, rows } = await this.fetchAll()
     return rows.map(row => parseLeaveRequest(row, headers))
   }
