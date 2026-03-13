@@ -81,9 +81,8 @@ export function isTaskAvailable(
   const taskStart = new Date(task.startTime)
 
   // Check if soldier is within their service dates
-  const serviceStart = new Date(soldier.serviceStart)
-  const serviceEnd = new Date(soldier.serviceEnd)
-  if (taskStart < serviceStart || taskStart > serviceEnd) return false
+  // Compare dates as strings to avoid timezone issues
+  if (taskDate < soldier.serviceStart || taskDate > soldier.serviceEnd) return false
 
   // Check if this soldier is already assigned to this specific task
   const alreadyOnThisTask = existingAssignments.some(a =>
