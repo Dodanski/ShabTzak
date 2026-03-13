@@ -21,6 +21,7 @@ const ADMIN_TAB_HEADERS: Record<string, string[][]> = {
   [MASTER_SHEET_TABS.CONFIG]: [['Key', 'Value']],
   [MASTER_SHEET_TABS.HISTORY]: [['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details']],
   [MASTER_SHEET_TABS.ROLES]: [['RoleName']],
+  'LeaveRequests': [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'ConstraintType', 'Priority', 'Status']],
   [MASTER_SHEET_TABS.TASK_SCHEDULE]: [['ScheduleID', 'TaskID', 'SoldierID', 'AssignedRole', 'AssignedUnitID', 'IsLocked', 'CreatedAt', 'CreatedBy']],
   [MASTER_SHEET_TABS.LEAVE_SCHEDULE]: [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'IsWeekend', 'IsLocked', 'RequestID', 'CreatedAt']],
 }
@@ -60,15 +61,9 @@ export class MasterDataService {
     this.taskService = new TaskService(this.tasks, this.history)
     this.roles = new RolesService(this.sheets, spreadsheetId)
     this.soldiers = new SoldierRepository(this.sheets, spreadsheetId, cache, 'Soldiers')
-    // Create a minimal LeaveRequestRepository that returns empty list
-    // (Leave requests are stored per-unit, not in master spreadsheet)
-    this.leaveRequests = {
-      list: async () => [],
-      listBySoldier: async () => [],
-      create: async () => { throw new Error('Cannot create leave requests from master spreadsheet') },
-      approve: async () => { throw new Error('Cannot approve leave requests from master spreadsheet') },
-      deny: async () => { throw new Error('Cannot deny leave requests from master spreadsheet') },
-    } as any
+    // LeaveRequests now stored in admin spreadsheet (not per-unit)
+    // Use empty tabPrefix so it looks for "LeaveRequests" sheet directly (not "X_LeaveRequests")
+    this.leaveRequests = new LeaveRequestRepository(this.sheets, spreadsheetId, cache, '')
     this.taskAssignments = new MasterTaskAssignmentRepository(this.sheets, spreadsheetId, cache)
     this.leaveAssignments = new MasterLeaveAssignmentRepository(this.sheets, spreadsheetId, cache)
     this.scheduleService = new ScheduleService(
