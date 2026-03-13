@@ -34,7 +34,14 @@ export function useDataService(
 
   const ds = useMemo(() => {
     if (!auth.accessToken || !spreadsheetId || !masterDs) return null
-    return new DataService(auth.accessToken, spreadsheetId, tabPrefix, masterDs.history)
+    return new DataService(
+      auth.accessToken,
+      spreadsheetId,
+      tabPrefix,
+      masterDs.history,
+      masterDs.leaveAssignments,  // Pass master leave assignments for shared schedule
+      masterDs.taskAssignments,   // Pass master task assignments for shared schedule
+    )
   }, [auth.accessToken, spreadsheetId, tabPrefix, masterDs])
 
   useEffect(() => {

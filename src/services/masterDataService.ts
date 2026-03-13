@@ -9,6 +9,8 @@ import { HistoryService } from './historyService'
 import { TaskService } from './taskService'
 import { RolesService } from './rolesService'
 import { SoldierRepository } from './soldierRepository'
+import { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
+import { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
 import { MASTER_SHEET_TABS } from '../constants'
 import type { Unit } from '../models'
 
@@ -34,6 +36,8 @@ export class MasterDataService {
   readonly taskService: TaskService
   readonly roles: RolesService
   readonly soldiers: SoldierRepository
+  readonly taskAssignments: MasterTaskAssignmentRepository
+  readonly leaveAssignments: MasterLeaveAssignmentRepository
   readonly sheets: GoogleSheetsService
   private spreadsheetId: string
 
@@ -50,6 +54,8 @@ export class MasterDataService {
     this.taskService = new TaskService(this.tasks, this.history)
     this.roles = new RolesService(this.sheets, spreadsheetId)
     this.soldiers = new SoldierRepository(this.sheets, spreadsheetId, cache, 'Soldiers')
+    this.taskAssignments = new MasterTaskAssignmentRepository(this.sheets, spreadsheetId, cache)
+    this.leaveAssignments = new MasterLeaveAssignmentRepository(this.sheets, spreadsheetId, cache)
   }
 
   /**

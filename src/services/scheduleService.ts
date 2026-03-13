@@ -3,21 +3,22 @@ import { scheduleTasks } from '../algorithms/taskScheduler'
 import { generateCyclicalLeaves } from '../algorithms/cyclicalLeaveScheduler'
 import type { SoldierRepository } from './soldierRepository'
 import type { LeaveRequestRepository } from './leaveRequestRepository'
-import type { LeaveAssignmentRepository } from './leaveAssignmentRepository'
-import type { TaskAssignmentRepository } from './taskAssignmentRepository'
+import type { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
+import type { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
 import type { HistoryService } from './historyService'
 import type { LeaveSchedule, TaskSchedule, Task, AppConfig, LeaveAssignment, Soldier } from '../models'
 
 /**
  * Orchestrates leave and task schedule generation:
- * runs the greedy scheduling algorithms, persists new assignments, logs history.
+ * runs the greedy scheduling algorithms, persists new assignments to shared master sheet, logs history.
+ * Uses master repositories to ensure all units share the same schedule.
  */
 export class ScheduleService {
   constructor(
     private soldiers: SoldierRepository,
     private leaveRequests: LeaveRequestRepository,
-    private leaveAssignments: LeaveAssignmentRepository,
-    private taskAssignments: TaskAssignmentRepository,
+    private leaveAssignments: MasterLeaveAssignmentRepository,
+    private taskAssignments: MasterTaskAssignmentRepository,
     private history: HistoryService,
   ) {}
 

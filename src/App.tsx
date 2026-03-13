@@ -18,7 +18,6 @@ import { useScheduleGenerator } from './hooks/useScheduleGenerator'
 import ErrorBanner from './components/ErrorBanner'
 import { config } from './config/env'
 import { MasterDataService } from './services/masterDataService'
-import { UnitDataServiceManager } from './services/unitDataServiceManager'
 import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
 import AdminPanel from './components/AdminPanel'
@@ -52,14 +51,13 @@ interface UnitAppProps {
   tabPrefix: string
   unitName: string
   masterDs: MasterDataService | null
-  unitDataServiceManager?: UnitDataServiceManager  // NEW: for multi-unit distribution
   tasks: Task[]
   configData: AppConfig | null
   roles: string[]
   onBackToAdmin?: () => void
 }
 
-function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, unitDataServiceManager, tasks, configData, roles, onBackToAdmin }: UnitAppProps) {
+function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configData, roles, onBackToAdmin }: UnitAppProps) {
   const [section, setSection] = useState<Section>(getHashSection)
   const [showLeaveForm, setShowLeaveForm] = useState(false)
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([])
@@ -197,45 +195,13 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, unitDataService
   async function handleGenerateSchedule() {
     if (!ds || !configData) return
     try {
-      // Capture existing task assignments before generation
-      const existingTaskAssignmentIds = new Set(taskAssignments.map(a => `${a.taskId}:${a.soldierId}`))
-
       await runSchedule(() => {
         // Reload data after schedule generation completes
         reload()
       })
 
-      // After generation, reload to get new task assignments
-      const updatedAssignments = await ds.taskAssignments.list()
-      const newTaskAssignments = updatedAssignments.filter(
-        a => !existingTaskAssignmentIds.has(`${a.taskId}:${a.soldierId}`)
-      )
-
-      // Distribute new task assignments to all units if multi-unit scheduling
-      if (newTaskAssignments.length > 0 && unitDataServiceManager && allSoldiers.length > soldiers.length) {
-        console.log('[App] Distributing', newTaskAssignments.length, 'task assignments to all units...')
-        try {
-          const results = await unitDataServiceManager.distributeAssignments(
-            newTaskAssignments,
-            allSoldiers,
-            auth.email ?? 'user'
-          )
-          console.log('[App] Assignment distribution results:', Object.fromEntries(results))
-
-          // Log summary
-          let totalSaved = 0
-          for (const [unit, count] of results) {
-            if (count > 0) {
-              console.log(`[App] ✓ ${unit}: ${count} assignments saved`)
-              totalSaved += count
-            }
-          }
-          addToast(`Distributed ${totalSaved} assignments to all units`, 'success')
-        } catch (e) {
-          console.error('[App] Failed to distribute assignments:', e)
-          addToast('Failed to distribute assignments to all units', 'error')
-        }
-      }
+      // All units now automatically see the shared master schedule.
+      // No need to distribute - scheduleService saves to master sheet which all units read from.
 
       // Update fairness for newly created leave assignments
       const existingLeaveIds = new Set(leaveAssignments.map(a => a.id))
@@ -396,7 +362,6 @@ function AppContent() {
   const { auth } = useAuth()
   const [appMode, setAppMode] = useState<AppMode>('loading')
   const [masterDs, setMasterDs] = useState<MasterDataService | null>(null)
-  const [unitDataServiceManager, setUnitDataServiceManager] = useState<UnitDataServiceManager | null>(null)
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [configData, setConfigData] = useState<AppConfig | null>(null)
@@ -430,19 +395,6 @@ function AppContent() {
       .catch(() => setAppMode('denied'))
   }, [auth.isAuthenticated, auth.email, auth.accessToken])
 
-  // Initialize UnitDataServiceManager for multi-unit scheduling
-  useEffect(() => {
-    if (!masterDs || !auth.accessToken) return
-
-    masterDs.units.list()
-      .then(units => {
-        const manager = new UnitDataServiceManager(auth.accessToken!, masterDs.history)
-        manager.initializeUnits(units)
-        setUnitDataServiceManager(manager)
-      })
-      .catch(e => console.error('[AppContent] Failed to initialize UnitDataServiceManager:', e))
-  }, [masterDs, auth.accessToken])
-
   if (!auth.isAuthenticated) return <LoginPage />
   if (appMode === 'loading') return (
     <div className="min-h-screen bg-olive-50 flex items-center justify-center">
@@ -469,7 +421,6 @@ function AppContent() {
       tabPrefix={activeUnit?.tabPrefix || activeUnit?.name || ''}
       unitName={activeUnit?.name ?? ''}
       masterDs={masterDs}
-      unitDataServiceManager={unitDataServiceManager ?? undefined}
       tasks={tasks}
       configData={configData}
       roles={roles}
