@@ -21,6 +21,13 @@ export function scheduleTasks(
   leaveAssignments?: LeaveAssignment[],
   config?: AppConfig,
 ): TaskSchedule {
+  console.log('[taskScheduler] START:', {
+    tasksCount: tasks.length,
+    soldiersCount: soldiers.length,
+    existingAssignmentsCount: existingAssignments.length,
+    leaveAssignmentsCount: leaveAssignments?.length ?? 0,
+  })
+
   const result: TaskAssignment[] = [...existingAssignments]
   // Use all tasks in system for rest period checking, fallback to just scheduled tasks
   const tasksForValidation = allTasksInSystem || tasks
@@ -59,6 +66,12 @@ export function scheduleTasks(
         const matchesRole = rolesAccepted.includes('Any') || rolesAccepted.includes(s.role)
         if (!matchesRole) return false
         return isTaskAvailable(s, task, tasksForValidation, result, leaveAssignments, config)
+      })
+
+      console.log(`[taskScheduler] Task ${task.id}, requirement roles=${rolesAccepted}:`, {
+        remaining,
+        eligible: eligible.length,
+        assigned: alreadyAssigned,
       })
 
       // Determine task's unit based on majority of already-assigned soldiers
@@ -122,6 +135,12 @@ export function scheduleTasks(
       assignmentsByDate[date] = (assignmentsByDate[date] ?? 0) + 1
     }
   }
+
+  const newAssignmentsCount = result.length - existingAssignments.length
+  console.log('[taskScheduler] END:', {
+    totalAssignments: result.length,
+    newAssignments: newAssignmentsCount,
+  })
 
   return {
     startDate,
