@@ -27,6 +27,9 @@ export function scheduleTasks(
     existingAssignmentsCount: existingAssignments.length,
     leaveAssignmentsCount: leaveAssignments?.length ?? 0,
   })
+  if (import.meta.env.DEV) {
+    console.log('[taskScheduler] Soldiers:', soldiers.map(s => ({ id: s.id, role: s.role, status: s.status })))
+  }
 
   const result: TaskAssignment[] = [...existingAssignments]
   // Use all tasks in system for rest period checking, fallback to just scheduled tasks
@@ -64,15 +67,27 @@ export function scheduleTasks(
       const eligible = soldiers.filter(s => {
         // Check if soldier's role matches ANY of the acceptable roles
         const matchesRole = rolesAccepted.includes('Any') || rolesAccepted.includes(s.role)
-        if (!matchesRole) return false
-        return isTaskAvailable(s, task, tasksForValidation, result, leaveAssignments, config)
+        if (!matchesRole) {
+          if (import.meta.env.DEV) console.log(`    - ${s.id}: role mismatch (${s.role} not in ${rolesAccepted})`)
+          return false
+        }
+        const available = isTaskAvailable(s, task, tasksForValidation, result, leaveAssignments, config)
+        if (!available && import.meta.env.DEV) {
+          console.log(`    - ${s.id}: not available`)
+        }
+        return available
       })
 
-      console.log(`[taskScheduler] Task ${task.id}, requirement roles=${rolesAccepted}:`, {
-        remaining,
-        eligible: eligible.length,
-        assigned: alreadyAssigned,
-      })
+      if (import.meta.env.DEV) {
+        console.log(`[taskScheduler] Task ${task.id}, requirement roles=${rolesAccepted}:`, {
+          remaining,
+          eligibleCount: eligible.length,
+          eligibleIds: eligible.map(s => s.id),
+          alreadyAssigned: alreadyAssigned,
+        })
+      } else {
+        console.log(`[taskScheduler] Task ${task.id}: ${eligible.length} eligible for roles ${rolesAccepted}`)
+      }
 
       // Determine task's unit based on majority of already-assigned soldiers
       const getTaskUnit = () => {
