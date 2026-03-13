@@ -144,36 +144,39 @@ export class ScheduleService {
 
     // Batch create assignments with progress callback
     if (newAssignments.length > 0) {
-      // Group assignments by soldier unit for multi-unit scheduling
-      const assignmentsByUnit = new Map<string, typeof newAssignments>()
+      // In multi-unit mode, let the caller (App.tsx via UnitDataServiceManager)
+      // distribute assignments to all unit sheets. Only save to current unit if single-unit.
+      const isMultiUnit = allSoldiers && allSoldiers.length > 0
 
-      newAssignments.forEach(a => {
-        const soldier = schedulingSoldiers.find(s => s.id === a.soldierId)
-        const unitId = soldier?.unit || 'Unknown'
-        if (!assignmentsByUnit.has(unitId)) {
-          assignmentsByUnit.set(unitId, [])
+      if (!isMultiUnit) {
+        // Single-unit mode: save assignments to current unit's sheet
+        await this.taskAssignments.createBatch(
+          newAssignments.map(a => ({
+            taskId: a.taskId,
+            soldierId: a.soldierId,
+            assignedRole: a.assignedRole,
+            createdBy: changedBy,
+          })),
+          onProgress
+        )
+      } else {
+        // Multi-unit mode: Log for debugging, let caller handle distribution
+        if (import.meta.env.DEV) {
+          const assignmentsByUnit = new Map<string, typeof newAssignments>()
+          newAssignments.forEach(a => {
+            const soldier = allSoldiers.find(s => s.id === a.soldierId)
+            const unitId = soldier?.unit || 'Unknown'
+            if (!assignmentsByUnit.has(unitId)) {
+              assignmentsByUnit.set(unitId, [])
+            }
+            assignmentsByUnit.get(unitId)!.push(a)
+          })
+          console.log('[scheduleService] Multi-unit assignment distribution (will be saved by caller):')
+          assignmentsByUnit.forEach((assignments, unit) => {
+            console.log(`  ${unit}: ${assignments.length} assignments`)
+          })
         }
-        assignmentsByUnit.get(unitId)!.push(a)
-      })
-
-      // Log unit distribution for debugging
-      if (import.meta.env.DEV) {
-        console.log('[scheduleService] Assignment distribution by unit:')
-        assignmentsByUnit.forEach((assignments, unit) => {
-          console.log(`  ${unit}: ${assignments.length} assignments`)
-        })
       }
-
-      // Save all assignments to current unit's sheet
-      await this.taskAssignments.createBatch(
-        newAssignments.map(a => ({
-          taskId: a.taskId,
-          soldierId: a.soldierId,
-          assignedRole: a.assignedRole,
-          createdBy: changedBy,
-        })),
-        onProgress
-      )
     }
 
     await this.history.append(
