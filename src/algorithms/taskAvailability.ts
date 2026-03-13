@@ -74,7 +74,7 @@ export function isTaskAvailable(
   leaveAssignments?: LeaveAssignment[],
   config?: AppConfig
 ): boolean {
-  const debug = import.meta.env.DEV && false // Set to true to enable detailed logging
+  const debug = import.meta.env.DEV && true // ENABLED for debugging
 
   if (soldier.status !== 'Active') {
     if (debug) console.log(`[taskAvailability] ${soldier.id} filtered: not active (status=${soldier.status})`)
