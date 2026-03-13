@@ -36,6 +36,62 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [newCmdUnitId, setNewCmdUnitId] = useState('')
   const [editingConfig, setEditingConfig] = useState<Record<string, string | number>>({})
   const [configLoading, setConfigLoading] = useState(false)
+  const [scheduleGenerating, setScheduleGenerating] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [scheduleSuccess, setScheduleSuccess] = useState(false)
+
+  async function handleGenerateScheduleForAllUnits() {
+    setScheduleError(null)
+    setScheduleSuccess(false)
+    setScheduleGenerating(true)
+
+    try {
+      if (!configData) {
+        throw new Error('Config not loaded')
+      }
+
+      const today = new Date().toISOString().split('T')[0]
+      const endDate = new Date(today)
+      endDate.setDate(endDate.getDate() + 80)
+      const scheduleEnd = endDate.toISOString().split('T')[0]
+
+      // Generate leave schedule for all soldiers
+      console.log('[AdminPanel] Generating leave schedule for all units...')
+      const leaveSchedule = await masterDs.scheduleService.generateLeaveSchedule(
+        configData,
+        today,
+        scheduleEnd,
+        currentAdminEmail
+      )
+
+      console.log('[AdminPanel] Generated leaves:', leaveSchedule.assignments.length)
+
+      // Expand recurring tasks
+      const expandTasksModule = await import('../algorithms/taskExpander')
+      const expandedTasks = expandTasksModule.expandRecurringTasks(tasks, scheduleEnd)
+
+      // Generate task schedule for all soldiers
+      console.log('[AdminPanel] Generating task schedule for all', soldiers.length, 'soldiers...')
+      const taskSchedule = await masterDs.scheduleService.generateTaskSchedule(
+        expandedTasks,
+        currentAdminEmail,
+        undefined,
+        leaveSchedule.assignments,
+        configData,
+        soldiers  // Pass all soldiers from admin sheet
+      )
+
+      console.log('[AdminPanel] Generated tasks:', taskSchedule.assignments.length)
+      setScheduleSuccess(true)
+      await reload()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate schedule'
+      console.error('[AdminPanel] Error generating schedule:', err)
+      setScheduleError(message)
+    } finally {
+      setScheduleGenerating(false)
+    }
+  }
 
   async function reload() {
     setLoading(true)
@@ -226,7 +282,15 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         {loading && <p className="text-olive-500">Loading…</p>}
 
         {!loading && activeTab === 'dashboard' && (
-          <AdminDashboard tasks={tasks} soldiers={soldiers} />
+          <AdminDashboard
+            tasks={tasks}
+            soldiers={soldiers}
+            taskAssignments={[]}  // TODO: load from master.taskAssignments.list()
+            onGenerateSchedule={handleGenerateScheduleForAllUnits}
+            isGeneratingSchedule={scheduleGenerating}
+            scheduleError={scheduleError}
+            scheduleSuccess={scheduleSuccess}
+          />
         )}
 
         {!loading && activeTab === 'admins' && (
