@@ -74,15 +74,26 @@ export function isTaskAvailable(
   leaveAssignments?: LeaveAssignment[],
   config?: AppConfig
 ): boolean {
-  if (soldier.status !== 'Active') return false
-  if (!hasRequiredRole(soldier, task)) return false
+  const debug = import.meta.env.DEV && false // Set to true to enable detailed logging
+
+  if (soldier.status !== 'Active') {
+    if (debug) console.log(`[taskAvailability] ${soldier.id} filtered: not active (status=${soldier.status})`)
+    return false
+  }
+  if (!hasRequiredRole(soldier, task)) {
+    if (debug) console.log(`[taskAvailability] ${soldier.id} filtered: no required role (soldier=${soldier.role}, task requires=${task.roleRequirements.map(r => r.role).join(',')})`)
+    return false
+  }
 
   const taskDate = task.startTime.split('T')[0]
   const taskStart = new Date(task.startTime)
 
   // Check if soldier is within their service dates
   // Compare dates as strings to avoid timezone issues
-  if (taskDate < soldier.serviceStart || taskDate > soldier.serviceEnd) return false
+  if (taskDate < soldier.serviceStart || taskDate > soldier.serviceEnd) {
+    if (debug) console.log(`[taskAvailability] ${soldier.id} filtered: outside service dates (taskDate=${taskDate}, serviceStart=${soldier.serviceStart}, serviceEnd=${soldier.serviceEnd})`)
+    return false
+  }
 
   // Check if this soldier is already assigned to this specific task
   const alreadyOnThisTask = existingAssignments.some(a =>

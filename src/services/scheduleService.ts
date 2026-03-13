@@ -131,11 +131,18 @@ export class ScheduleService {
     if (import.meta.env.DEV) {
       console.log('[scheduleService] Scheduling with', schedulingSoldiers.length, 'soldiers',
         schedulingSoldiers === allSoldiers ? '(multi-unit)' : '(unit-only)')
+      console.log('[scheduleService] Tasks to schedule:', tasks.length)
+      console.log('[scheduleService] Leave assignments available:', leaveAssignments?.length ?? 0)
+      console.log('[scheduleService] Existing task assignments:', existing.length)
     }
 
     // Pass tasks array as allTasksInSystem for rest period validation
     // (tasks array should contain all tasks from spreadsheet, expanded if recurring)
     const schedule = scheduleTasks(tasks, schedulingSoldiers, existing, tasks, leaveAssignments, config)
+
+    if (import.meta.env.DEV) {
+      console.log('[scheduleService] Task scheduling result:', schedule.assignments.length, 'assignments,', schedule.conflicts.length, 'conflicts')
+    }
 
     // Persist only assignments that aren't already stored
     const existingKeys = new Set(existing.map(a => `${a.taskId}:${a.soldierId}:${a.assignedRole}`))
