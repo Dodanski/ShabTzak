@@ -5,8 +5,9 @@ import type { Admin, Unit, Commander, Task, Soldier, AppConfig, CreateTaskInput,
 import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
 import AdminDashboard from './AdminDashboard'
+import DiagnosticPage from './DiagnosticPage'
 
-type AdminTab = 'dashboard' | 'admins' | 'units' | 'commanders' | 'roles' | 'tasks' | 'config'
+type AdminTab = 'dashboard' | 'admins' | 'units' | 'commanders' | 'roles' | 'tasks' | 'config' | 'diagnostic'
 
 interface AdminPanelProps {
   masterDs: MasterDataService
@@ -274,6 +275,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           <button className={tabClass('roles')} onClick={() => setActiveTab('roles')}>Roles</button>
           <button className={tabClass('tasks')} onClick={() => setActiveTab('tasks')}>Tasks</button>
           <button className={tabClass('config')} onClick={() => setActiveTab('config')}>Config</button>
+          <button className={tabClass('diagnostic')} onClick={() => setActiveTab('diagnostic')}>Diagnostic</button>
         </div>
 
         {error && (
@@ -574,6 +576,10 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
               </button>
             </div>
           </div>
+        )}
+
+        {!loading && activeTab === 'diagnostic' && (
+          <DiagnosticPage masterDs={masterDs} />
         )}
       </main>
     </div>
