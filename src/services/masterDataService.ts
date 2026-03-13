@@ -19,6 +19,8 @@ const ADMIN_TAB_HEADERS: Record<string, string[][]> = {
   [MASTER_SHEET_TABS.CONFIG]: [['Key', 'Value']],
   [MASTER_SHEET_TABS.HISTORY]: [['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details']],
   [MASTER_SHEET_TABS.ROLES]: [['RoleName']],
+  [MASTER_SHEET_TABS.TASK_SCHEDULE]: [['ScheduleID', 'TaskID', 'SoldierID', 'AssignedRole', 'AssignedUnitID', 'IsLocked', 'CreatedAt', 'CreatedBy']],
+  [MASTER_SHEET_TABS.LEAVE_SCHEDULE]: [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'IsWeekend', 'IsLocked', 'RequestID', 'CreatedAt']],
 }
 
 export type ResolvedRole =
