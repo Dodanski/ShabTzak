@@ -60,7 +60,15 @@ export class MasterDataService {
     this.taskService = new TaskService(this.tasks, this.history)
     this.roles = new RolesService(this.sheets, spreadsheetId)
     this.soldiers = new SoldierRepository(this.sheets, spreadsheetId, cache, 'Soldiers')
-    this.leaveRequests = new LeaveRequestRepository(this.sheets, spreadsheetId, cache, 'Soldiers')
+    // Create a minimal LeaveRequestRepository that returns empty list
+    // (Leave requests are stored per-unit, not in master spreadsheet)
+    this.leaveRequests = {
+      list: async () => [],
+      listBySoldier: async () => [],
+      create: async () => { throw new Error('Cannot create leave requests from master spreadsheet') },
+      approve: async () => { throw new Error('Cannot approve leave requests from master spreadsheet') },
+      deny: async () => { throw new Error('Cannot deny leave requests from master spreadsheet') },
+    } as any
     this.taskAssignments = new MasterTaskAssignmentRepository(this.sheets, spreadsheetId, cache)
     this.leaveAssignments = new MasterLeaveAssignmentRepository(this.sheets, spreadsheetId, cache)
     this.scheduleService = new ScheduleService(
