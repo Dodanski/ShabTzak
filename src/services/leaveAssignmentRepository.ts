@@ -98,7 +98,7 @@ export class LeaveAssignmentRepository {
 
   async createBatch(inputs: CreateLeaveAssignmentInput[]): Promise<LeaveAssignment[]> {
     const BATCH_SIZE = 50
-    const DELAY_MS = 2000
+    const DELAY_MS = 3000  // Increased from 2000 to 3s to reduce rate limiting
 
     const assignments = inputs.map(input => ({
       id: generateId(),

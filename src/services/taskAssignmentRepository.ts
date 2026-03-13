@@ -139,9 +139,9 @@ export class TaskAssignmentRepository {
       }
     }
 
-    // Batch in groups of 20 with 1-second delay between batches to avoid rate limiting
+    // Batch in groups of 20 with 2-second delay between batches to avoid rate limiting
     const BATCH_SIZE = 20
-    const DELAY_MS = 1000
+    const DELAY_MS = 2000  // Increased from 1000 to 2s to reduce rate limiting
     const PROGRESS_UPDATE_FREQUENCY = 3 // Update progress every 3 batches to reduce flashing
 
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {

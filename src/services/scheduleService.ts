@@ -21,18 +21,24 @@ export class ScheduleService {
     private history: HistoryService,
   ) {}
 
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
   async generateLeaveSchedule(
     config: AppConfig,
     scheduleStart: string,
     scheduleEnd: string,
     changedBy: string,
   ): Promise<LeaveSchedule> {
-    const [soldiers, requests, existing, taskAssignments] = await Promise.all([
-      this.soldiers.list(),
-      this.leaveRequests.list(),
-      this.leaveAssignments.list(),
-      this.taskAssignments.list(),
-    ])
+    // Load data sequentially to avoid rate limiting (429 errors)
+    const soldiers = await this.soldiers.list()
+    await this.delay(500)
+    const requests = await this.leaveRequests.list()
+    await this.delay(500)
+    const existing = await this.leaveAssignments.list()
+    await this.delay(500)
+    const taskAssignments = await this.taskAssignments.list()
 
     // NOTE: Multi-unit leave assignments are loaded from current unit only.
     // In multi-unit scheduling, soldiers from other units won't have their leaves pre-loaded.
@@ -78,10 +84,10 @@ export class ScheduleService {
     config?: AppConfig,
     allSoldiers?: Soldier[]  // NEW: optional all soldiers from all units
   ): Promise<TaskSchedule> {
-    const [soldiers, existing] = await Promise.all([
-      this.soldiers.list(),
-      this.taskAssignments.list(),
-    ])
+    // Load data sequentially to avoid rate limiting (429 errors)
+    const soldiers = await this.soldiers.list()
+    await this.delay(500)
+    const existing = await this.taskAssignments.list()
 
     // Use allSoldiers if provided and valid (multi-unit scheduling), otherwise use unit soldiers
     const schedulingSoldiers = (allSoldiers && allSoldiers.length > soldiers.length)
