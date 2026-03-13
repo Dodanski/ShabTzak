@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import type { Task, Soldier } from '../models'
+import type { Task, Soldier, TaskAssignment } from '../models'
 import AdminWeeklyTaskCalendar from './AdminWeeklyTaskCalendar'
 import AdminDashboardPieChart from './AdminDashboardPieChart'
 
 interface AdminDashboardProps {
   tasks: Task[]
   soldiers: Soldier[]
+  taskAssignments?: TaskAssignment[]
 }
 
-export default function AdminDashboard({ tasks, soldiers }: AdminDashboardProps) {
+export default function AdminDashboard({ tasks, soldiers, taskAssignments = [] }: AdminDashboardProps) {
   const [weekStart, setWeekStart] = useState(() => {
     const today = new Date()
     const day = today.getDay()
@@ -35,6 +36,8 @@ export default function AdminDashboard({ tasks, soldiers }: AdminDashboardProps)
       {/* Weekly Task Calendar */}
       <AdminWeeklyTaskCalendar
         tasks={tasks}
+        soldiers={soldiers}
+        taskAssignments={taskAssignments}
         weekStart={weekStart}
         onWeekChange={setWeekStart}
       />

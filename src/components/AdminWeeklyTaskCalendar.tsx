@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import type { Task } from '../models'
+import type { Task, TaskAssignment, Soldier } from '../models'
 
 interface AdminWeeklyTaskCalendarProps {
   tasks: Task[]
   weekStart: string
   onWeekChange: (weekStart: string) => void
+  taskAssignments?: TaskAssignment[]
+  soldiers?: Soldier[]
   masterDs?: any
   accessToken?: string
   configData?: any
@@ -30,8 +32,13 @@ export default function AdminWeeklyTaskCalendar({
   tasks,
   weekStart,
   onWeekChange,
+  taskAssignments = [],
+  soldiers = [],
 }: AdminWeeklyTaskCalendarProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
+
+  // Create soldier map for quick lookup
+  const soldierMap = new Map(soldiers.map(s => [s.id, s]))
 
   const weekDates = getWeekDates(weekStart)
   const today = new Date().toISOString().split('T')[0]
@@ -139,13 +146,38 @@ export default function AdminWeeklyTaskCalendar({
                       </button>
 
                       {isExpanded && (
-                        <div className="mt-2 pt-2 border-t border-olive-100 space-y-1">
+                        <div className="mt-2 pt-2 border-t border-olive-100 space-y-2">
                           <p className="text-xs text-gray-500">
-                            Roles: {task.roleRequirements.map(r => `${r.role}(${r.count})`).join(', ')}
+                            Roles: {task.roleRequirements.map(r => {
+                              const roleKey = 'roles' in r ? 'roles' : 'role'
+                              const roleList = roleKey === 'roles' ? r.roles : [r.role]
+                              return `${roleList?.join('/')}(${r.count})`
+                            }).join(', ')}
                           </p>
                           <p className="text-xs text-gray-500">
                             Duration: {task.durationHours}h | Rest: {task.minRestAfter}h
                           </p>
+
+                          {/* Show assigned soldiers */}
+                          {(() => {
+                            const assignedSoldiers = taskAssignments.filter(a => a.taskId === task.id)
+                            if (assignedSoldiers.length === 0) {
+                              return <p className="text-xs text-red-500 italic">No soldiers assigned</p>
+                            }
+                            return (
+                              <div className="text-xs space-y-0.5 bg-blue-50 p-1.5 rounded border border-blue-100">
+                                <p className="font-medium text-blue-700">Assigned ({assignedSoldiers.length}):</p>
+                                {assignedSoldiers.map(a => {
+                                  const soldier = soldierMap.get(a.soldierId)
+                                  return (
+                                    <p key={a.scheduleId} className="text-blue-600">
+                                      {soldier ? `${soldier.firstName} ${soldier.lastName}` : a.soldierId} ({a.assignedRole})
+                                    </p>
+                                  )
+                                })}
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>
