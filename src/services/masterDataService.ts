@@ -21,7 +21,7 @@ const ADMIN_TAB_HEADERS: Record<string, string[][]> = {
   [MASTER_SHEET_TABS.CONFIG]: [['Key', 'Value']],
   [MASTER_SHEET_TABS.HISTORY]: [['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details']],
   [MASTER_SHEET_TABS.ROLES]: [['RoleName']],
-  'LeaveRequests': [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'ConstraintType', 'Priority', 'Status']],
+  [MASTER_SHEET_TABS.LEAVE_REQUESTS]: [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'ConstraintType', 'Priority', 'Status']],
   [MASTER_SHEET_TABS.TASK_SCHEDULE]: [['ScheduleID', 'TaskID', 'SoldierID', 'AssignedRole', 'AssignedUnitID', 'IsLocked', 'CreatedAt', 'CreatedBy']],
   [MASTER_SHEET_TABS.LEAVE_SCHEDULE]: [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'IsWeekend', 'IsLocked', 'RequestID', 'CreatedAt']],
 }

@@ -70,6 +70,7 @@ export const MASTER_SHEET_TABS = {
   CONFIG: 'Config',
   HISTORY: 'History',
   ROLES: 'Roles',
+  LEAVE_REQUESTS: 'LeaveRequests',  // NEW: Centralized leave requests
   TASK_SCHEDULE: 'TaskSchedule',  // NEW: Shared across all units
   LEAVE_SCHEDULE: 'LeaveSchedule',  // NEW: Shared across all units
 } as const
