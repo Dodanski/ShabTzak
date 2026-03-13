@@ -28,12 +28,25 @@ export class ScheduleService {
     changedBy: string,
   ): Promise<LeaveSchedule> {
     // Load data - use Promise.all for parallelism, exponential backoff handles 429s
-    const [soldiers, requests, existing, taskAssignments] = await Promise.all([
+    let [soldiers, requests, existing, taskAssignments] = await Promise.all([
       this.soldiers.list(),
       this.leaveRequests.list(),
       this.leaveAssignments.list(),
       this.taskAssignments.list(),
     ])
+
+    // Clear future leave assignments (from today forward) to allow regeneration
+    // Keep historical leave assignments before today
+    const today = new Date().toISOString().split('T')[0]
+    const futureLeaves = existing.filter(a => a.endDate >= today)
+
+    if (futureLeaves.length > 0) {
+      if (import.meta.env.DEV) {
+        console.log(`[scheduleService] Clearing ${futureLeaves.length} future leave assignments (from ${today} onward)`)
+      }
+      // Filter out future leaves from existing, keep only historical ones
+      existing = existing.filter(a => a.endDate < today)
+    }
 
     // NOTE: Multi-unit leave assignments are loaded from current unit only.
     // In multi-unit scheduling, soldiers from other units won't have their leaves pre-loaded.
@@ -80,10 +93,34 @@ export class ScheduleService {
     allSoldiers?: Soldier[]  // NEW: optional all soldiers from all units
   ): Promise<TaskSchedule> {
     // Load data - use Promise.all for parallelism, exponential backoff handles 429s
-    const [soldiers, existing] = await Promise.all([
+    const [soldiers, allExisting] = await Promise.all([
       this.soldiers.list(),
       this.taskAssignments.list(),
     ])
+
+    // Clear future assignments (from today forward) to allow regeneration
+    // Keep historical assignments before today
+    const today = new Date().toISOString().split('T')[0]
+    let existing = allExisting
+    const futureAssignments = existing.filter(a => {
+      const task = tasks.find(t => t.id === a.taskId)
+      if (!task) return false
+      const taskDate = task.startTime.split('T')[0]
+      return taskDate >= today
+    })
+
+    if (futureAssignments.length > 0) {
+      if (import.meta.env.DEV) {
+        console.log(`[scheduleService] Clearing ${futureAssignments.length} future task assignments (from ${today} onward)`)
+      }
+      // Filter out future assignments from existing, keep only historical ones
+      existing = existing.filter(a => {
+        const task = tasks.find(t => t.id === a.taskId)
+        if (!task) return true
+        const taskDate = task.startTime.split('T')[0]
+        return taskDate < today
+      })
+    }
 
     // Use allSoldiers if provided and valid (multi-unit scheduling), otherwise use unit soldiers
     const schedulingSoldiers = (allSoldiers && allSoldiers.length > soldiers.length)
