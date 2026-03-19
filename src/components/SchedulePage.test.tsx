@@ -57,13 +57,13 @@ describe('SchedulePage', () => {
 
   it('renders Generate Schedule button', () => {
     render(<SchedulePage {...BASE_PROPS} />)
-    expect(screen.getByRole('button', { name: /generate schedule/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^generate$/i })).toBeInTheDocument()
   })
 
   it('calls onGenerate when Generate Schedule clicked', async () => {
     const onGenerate = vi.fn()
     render(<SchedulePage {...BASE_PROPS} onGenerate={onGenerate} />)
-    await userEvent.click(screen.getByRole('button', { name: /generate schedule/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^generate$/i }))
     expect(onGenerate).toHaveBeenCalledOnce()
   })
 
@@ -84,18 +84,18 @@ describe('SchedulePage', () => {
 
   it('renders Copy for WhatsApp button', () => {
     render(<SchedulePage {...BASE_PROPS} />)
-    expect(screen.getByRole('button', { name: /copy for whatsapp/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^copy$/i })).toBeInTheDocument()
   })
 
   it('calls clipboard.writeText when Copy for WhatsApp clicked', async () => {
     render(<SchedulePage {...BASE_PROPS} />)
-    await userEvent.click(screen.getByRole('button', { name: /copy for whatsapp/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^copy$/i }))
     expect(writeTextMock).toHaveBeenCalledOnce()
   })
 
   it('shows Copied! confirmation after WhatsApp copy', async () => {
     render(<SchedulePage {...BASE_PROPS} />)
-    await userEvent.click(screen.getByRole('button', { name: /copy for whatsapp/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^copy$/i }))
     expect(await screen.findByText(/copied/i)).toBeInTheDocument()
   })
 
@@ -112,7 +112,7 @@ describe('SchedulePage', () => {
 
   it('renders Export CSV button', () => {
     render(<SchedulePage {...BASE_PROPS} />)
-    expect(screen.getByRole('button', { name: /export csv/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^csv$/i })).toBeInTheDocument()
   })
 
   it('triggers CSV download when Export CSV clicked', async () => {
@@ -132,7 +132,7 @@ describe('SchedulePage', () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
 
-    await userEvent.click(screen.getByRole('button', { name: /export csv/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^csv$/i }))
     expect(clickSpy).toHaveBeenCalledOnce()
     createSpy.mockRestore()
   })

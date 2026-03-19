@@ -410,7 +410,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
                     <div className="flex flex-wrap gap-1">
                       {t.roleRequirements.map((r, i) => (
                         <span key={i} className="px-1.5 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
-                          {r.role} ×{r.count}
+                          {(r.roles ?? (r.role ? [r.role] : [])).join(' / ')} ×{r.count}
                         </span>
                       ))}
                     </div>

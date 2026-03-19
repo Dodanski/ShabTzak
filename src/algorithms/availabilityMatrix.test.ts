@@ -4,7 +4,7 @@ import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
 
 function makeSoldier(id: string): Soldier {
   return {
-    id, name: `Soldier ${id}`, role: 'Driver',
+    id, firstName: 'Soldier', lastName: id, role: 'Driver',
     serviceStart: '2026-01-01', serviceEnd: '2026-12-31',
     initialFairness: 0, currentFairness: 0, status: 'Active',
     hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
@@ -14,7 +14,7 @@ function makeSoldier(id: string): Soldier {
 function makeTask(id: string, startTime: string, endTime: string): Task {
   return {
     id, taskType: 'Guard', startTime, endTime,
-    durationHours: 8, roleRequirements: [{ role: 'Driver', count: 1 }],
+    durationHours: 8, roleRequirements: [{ roles: ['Driver'], count: 1 }],
     minRestAfter: 6, isSpecial: false,
   }
 }
@@ -43,18 +43,18 @@ describe('buildAvailabilityMatrix', () => {
   it('marks all soldiers as available when no assignments exist', () => {
     const matrix = buildAvailabilityMatrix(SOLDIERS, [], [], [], DATES)
 
-    expect(matrix.get('2026-03-20')?.get('s1')).toBe('available')
-    expect(matrix.get('2026-03-20')?.get('s2')).toBe('available')
-    expect(matrix.get('2026-03-21')?.get('s3')).toBe('available')
+    expect(matrix.get('2026-03-20')?.get('s1')?.status).toBe('available')
+    expect(matrix.get('2026-03-20')?.get('s2')?.status).toBe('available')
+    expect(matrix.get('2026-03-21')?.get('s3')?.status).toBe('available')
   })
 
   it('marks soldier on leave as on-leave', () => {
     const leave = makeLeaveAssignment('s1', '2026-03-20', '2026-03-21')
     const matrix = buildAvailabilityMatrix(SOLDIERS, [], [], [leave], DATES)
 
-    expect(matrix.get('2026-03-20')?.get('s1')).toBe('on-leave')
-    expect(matrix.get('2026-03-21')?.get('s1')).toBe('on-leave')
-    expect(matrix.get('2026-03-20')?.get('s2')).toBe('available')
+    expect(matrix.get('2026-03-20')?.get('s1')?.status).toBe('on-leave')
+    expect(matrix.get('2026-03-21')?.get('s1')?.status).toBe('on-leave')
+    expect(matrix.get('2026-03-20')?.get('s2')?.status).toBe('available')
   })
 
   it('marks soldier with task on that day as on-task', () => {
@@ -62,8 +62,8 @@ describe('buildAvailabilityMatrix', () => {
     const assignment = makeTaskAssignment('t1', 's2')
     const matrix = buildAvailabilityMatrix(SOLDIERS, [task], [assignment], [], DATES)
 
-    expect(matrix.get('2026-03-20')?.get('s2')).toBe('on-task')
-    expect(matrix.get('2026-03-21')?.get('s2')).toBe('available') // next day: available
+    expect(matrix.get('2026-03-20')?.get('s2')?.status).toBe('on-task')
+    expect(matrix.get('2026-03-21')?.get('s2')?.status).toBe('available') // next day: available
   })
 
   it('on-leave takes priority over on-task', () => {
@@ -72,7 +72,7 @@ describe('buildAvailabilityMatrix', () => {
     const leaveAssignment = makeLeaveAssignment('s1', '2026-03-20', '2026-03-20')
     const matrix = buildAvailabilityMatrix(SOLDIERS, [task], [taskAssignment], [leaveAssignment], DATES)
 
-    expect(matrix.get('2026-03-20')?.get('s1')).toBe('on-leave')
+    expect(matrix.get('2026-03-20')?.get('s1')?.status).toBe('on-leave')
   })
 
   it('handles multi-day tasks spanning multiple dates', () => {
@@ -81,8 +81,8 @@ describe('buildAvailabilityMatrix', () => {
     const assignment = makeTaskAssignment('t1', 's3')
     const matrix = buildAvailabilityMatrix(SOLDIERS, [task], [assignment], [], DATES)
 
-    expect(matrix.get('2026-03-20')?.get('s3')).toBe('on-task')
-    expect(matrix.get('2026-03-21')?.get('s3')).toBe('on-task')
+    expect(matrix.get('2026-03-20')?.get('s3')?.status).toBe('on-task')
+    expect(matrix.get('2026-03-21')?.get('s3')?.status).toBe('on-task')
   })
 
   it('returns an entry for every date and soldier', () => {

@@ -13,9 +13,10 @@ export function getRestPeriodEnd(taskEndTime: string, restHours: number): string
  * Returns true if the soldier has at least one matching role for the task.
  */
 export function hasRequiredRole(soldier: Soldier, task: Task): boolean {
-  return task.roleRequirements.some(
-    req => req.role === 'Any' || req.role === soldier.role
-  )
+  return task.roleRequirements.some(req => {
+    const roles = req.roles ?? (req.role ? [req.role] : [])
+    return roles.includes('Any') || roles.includes(soldier.role)
+  })
 }
 
 /**

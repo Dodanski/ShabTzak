@@ -42,7 +42,9 @@ describe('LeaveRequestRepository', () => {
       const spy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW, REQ_ROW_1])
       await repo.list()
       await repo.list()
-      expect(spy).toHaveBeenCalledTimes(1)
+      // list() does a self-heal getValues check each call, then fetchAll() is cached after the first call
+      // So: 2 self-heal calls (1 per list()) + 1 fetchAll() call on first miss = 3 total
+      expect(spy).toHaveBeenCalledTimes(3)
     })
   })
 

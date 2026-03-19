@@ -100,11 +100,18 @@ export class ScheduleService {
     ])
 
     // Clear future assignments (from today forward) to allow regeneration
-    // Keep historical assignments before today
+    // Keep historical assignments before today.
+    // NOTE: stored assignments use the original task ID (e.g. "Guard"), but
+    // the expanded tasks passed here have suffixed IDs (e.g. "Guard_day5").
+    // Strip the suffix before matching.
     const today = new Date().toISOString().split('T')[0]
     let existing = allExisting
+
+    const getBaseTaskId = (taskId: string) => taskId.replace(/_day\d+$/, '').replace(/_pill\d+$/, '')
+
     const futureAssignments = existing.filter(a => {
-      const task = tasks.find(t => t.id === a.taskId)
+      const baseId = getBaseTaskId(a.taskId)
+      const task = tasks.find(t => getBaseTaskId(t.id) === baseId)
       if (!task) return false
       const taskDate = task.startTime.split('T')[0]
       return taskDate >= today
@@ -114,9 +121,9 @@ export class ScheduleService {
       if (import.meta.env.DEV) {
         console.log(`[scheduleService] Clearing ${futureAssignments.length} future task assignments (from ${today} onward)`)
       }
-      // Filter out future assignments from existing, keep only historical ones
       existing = existing.filter(a => {
-        const task = tasks.find(t => t.id === a.taskId)
+        const baseId = getBaseTaskId(a.taskId)
+        const task = tasks.find(t => getBaseTaskId(t.id) === baseId)
         if (!task) return true
         const taskDate = task.startTime.split('T')[0]
         return taskDate < today

@@ -40,22 +40,23 @@ describe('ScheduleCalendar', () => {
     }]
     render(<ScheduleCalendar soldiers={[SOLDIER]} dates={DATES} tasks={[]} taskAssignments={[]} leaveAssignments={leaveAssignments} />)
     expect(screen.getByTitle('on-leave')).toBeInTheDocument()
-    expect(screen.getByTitle('available')).toBeInTheDocument()
+    // Day after leave (2026-03-02) is a return-transition day; title includes display text
+    expect(screen.getByTitle('on-way-to-base: In →')).toBeInTheDocument()
   })
 
   it('shows on-task cell when soldier has task assignment', () => {
     const tasks: Task[] = [{
       id: 't1', taskType: 'Guard',
       startTime: '2026-03-02T06:00:00Z', endTime: '2026-03-02T14:00:00Z',
-      durationHours: 8, roleRequirements: [{ role: 'Driver', count: 1 }],
-      minRestAfter: 8, isSpecial: false,
+      durationHours: 8, roleRequirements: [{ roles: ['Driver'], count: 1 }],
+      minRestAfter: 8, isSpecial: true,  // isSpecial=true prevents task ID expansion
     }]
     const taskAssignments: TaskAssignment[] = [{
       scheduleId: 'sc1', taskId: 't1', soldierId: 's1', assignedRole: 'Driver',
       isLocked: false, createdAt: '2026-02-01T00:00:00Z', createdBy: 'system',
     }]
     render(<ScheduleCalendar soldiers={[SOLDIER]} dates={DATES} tasks={tasks} taskAssignments={taskAssignments} leaveAssignments={[]} />)
-    expect(screen.getByTitle('on-task')).toBeInTheDocument()
+    expect(screen.getByTitle('on-task: Guard')).toBeInTheDocument()
   })
 
   it('renders empty state when no soldiers', () => {

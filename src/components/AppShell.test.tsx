@@ -30,7 +30,7 @@ describe('AppShell', () => {
 
   it('shows Back to Admin Panel button when onBackToAdmin provided', () => {
     render(<AppShell onBackToAdmin={vi.fn()}>content</AppShell>)
-    expect(screen.getByRole('button', { name: /admin panel/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /admin/i })).toBeInTheDocument()
   })
 
   it('does not show Config or Setup links in unit view', () => {

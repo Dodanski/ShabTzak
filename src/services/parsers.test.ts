@@ -90,7 +90,7 @@ describe('Data Parsers', () => {
       expect(task.id).toBe('task-1')
       expect(task.taskType).toBe('Guard')
       expect(task.durationHours).toBe(8)
-      expect(task.roleRequirements).toEqual([{ role: 'Driver', count: 1 }])
+      expect(task.roleRequirements).toEqual([{ roles: ['Driver'], count: 1 }])
       expect(task.minRestAfter).toBe(6)
       expect(task.isSpecial).toBe(false)
     })

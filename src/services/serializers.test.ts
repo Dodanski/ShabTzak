@@ -22,7 +22,7 @@ describe('Data Serializers', () => {
       }
       const row = serializeSoldier(soldier)
       expect(row).toEqual([
-        '1', 'David', 'Cohen', 'Driver', '2026-01-01', '2026-08-31',
+        '1', 'David', 'Cohen', 'Driver', '', '2026-01-01', '2026-08-31',
         '0', '2.5', 'Active', '16', '1', '2', '3', '',
       ])
     })
@@ -34,7 +34,7 @@ describe('Data Serializers', () => {
         initialFairness: 1, currentFairness: 1, status: 'Active',
         hoursWorked: 0, weekendLeavesCount: 0, midweekLeavesCount: 0, afterLeavesCount: 0,
       }
-      expect(serializeSoldier(soldier)).toHaveLength(14)
+      expect(serializeSoldier(soldier)).toHaveLength(15)
     })
 
     it('serializeSoldier writes firstName and lastName as separate columns', () => {
@@ -58,7 +58,7 @@ describe('Data Serializers', () => {
       expect(row[1]).toBe('John')
       expect(row[2]).toBe('Doe')
       expect(row[3]).toBe('Driver')
-      expect(row.length).toBe(14)
+      expect(row.length).toBe(15)
     })
   })
 
@@ -90,7 +90,7 @@ describe('Data Serializers', () => {
         startTime: '2026-03-20T08:00:00',
         endTime: '2026-03-20T16:00:00',
         durationHours: 8,
-        roleRequirements: [{ role: 'Driver', count: 1 }],
+        roleRequirements: [{ roles: ['Driver'], count: 1 }],
         minRestAfter: 6,
         isSpecial: false,
       }
@@ -98,7 +98,7 @@ describe('Data Serializers', () => {
       expect(row[0]).toBe('task-1')
       expect(row[1]).toBe('Guard')
       expect(row[4]).toBe('8')
-      expect(JSON.parse(row[5])).toEqual([{ role: 'Driver', count: 1 }])
+      expect(JSON.parse(row[5])).toEqual([{ roles: ['Driver'], count: 1 }])
       expect(row[7]).toBe('false')
     })
   })

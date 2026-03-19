@@ -71,7 +71,12 @@ describe('useDataService', () => {
     const masterDs = makeMockMasterDs()
     mockAuthenticated('my-token')
     renderHook(() => useDataService('sheet-xyz', '', masterDs))
-    expect(vi.mocked(DataService)).toHaveBeenCalledWith('my-token', 'sheet-xyz', '', masterDs.history)
+    const calls = vi.mocked(DataService).mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    expect(calls[0][0]).toBe('my-token')
+    expect(calls[0][1]).toBe('sheet-xyz')
+    expect(calls[0][2]).toBe('')
+    expect(calls[0][3]).toBe(masterDs.history)
   })
 
   it('sets ds when authenticated', () => {

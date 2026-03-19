@@ -7,7 +7,7 @@ import type { Soldier, CreateSoldierInput, UpdateSoldierInput } from '../models'
 const CACHE_KEY = 'soldiers'
 
 const HEADER_ROW = [
-  'ID', 'First Name', 'Last Name', 'Role', 'ServiceStart', 'ServiceEnd',
+  'ID', 'First Name', 'Last Name', 'Role', 'Unit', 'ServiceStart', 'ServiceEnd',
   'InitialFairness', 'CurrentFairness', 'Status',
   'HoursWorked', 'WeekendLeavesCount', 'MidweekLeavesCount', 'AfterLeavesCount',
   'InactiveReason',
@@ -26,7 +26,7 @@ export class SoldierRepository {
     this.cache = cache
     // Soldiers live in the unit-named tab (e.g. "א'") not a dedicated "Soldiers" tab
     this.tabName = tabPrefix || 'Soldiers'
-    this.range = `${this.tabName}!A:N`
+    this.range = `${this.tabName}!A:O`
   }
 
   private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
@@ -76,7 +76,7 @@ export class SoldierRepository {
       const rescuedRows = allRows.filter(r => r.length > 0)
       await this.sheets.updateValues(
         this.spreadsheetId,
-        `${this.tabName}!A1:N1`,
+        `${this.tabName}!A1:O1`,
         [HEADER_ROW]
       )
       if (rescuedRows.length > 0) {
@@ -91,7 +91,7 @@ export class SoldierRepository {
     if (hasOldNameColumn) {
       await this.sheets.updateValues(
         this.spreadsheetId,
-        `${this.tabName}!A1:N1`,
+        `${this.tabName}!A1:O1`,
         [HEADER_ROW]
       )
     }
@@ -140,7 +140,7 @@ export class SoldierRepository {
     const sheetRow = rowIndex + 2
     await this.sheets.updateValues(
       this.spreadsheetId,
-      `${this.tabName}!A${sheetRow}:N${sheetRow}`,
+      `${this.tabName}!A${sheetRow}:O${sheetRow}`,
       [updatedRow]
     )
     this.cache.invalidate(CACHE_KEY)

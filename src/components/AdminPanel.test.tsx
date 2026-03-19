@@ -39,6 +39,7 @@ const mockMasterDs = {
   ]) },
   config: { read: vi.fn().mockResolvedValue({ leaveRatioDaysInBase: 10, minRestBetweenShifts: 8, minDaysInBaseBeforeLeave: 30, maxConsecutiveShifts: 3, weekendLeaveWeight: 1.5, afterLeaveWeight: 0.5, longWeekendLeaveWeight: 2, midweekLeaveWeight: 0.8, specialDutyBaseChance: 0.3 }) },
   taskService: { create: vi.fn().mockResolvedValue({}) },
+  soldiers: { list: vi.fn().mockResolvedValue([]) },
 }
 
 const BASE_PROPS = {
@@ -59,8 +60,10 @@ describe('AdminPanel', () => {
     })
   })
 
-  it('shows admin list by default', async () => {
+  it('shows admin list when Admins tab clicked', async () => {
     render(<AdminPanel {...BASE_PROPS} />)
+    await waitFor(() => screen.getByRole('button', { name: /^admins$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^admins$/i }))
     await waitFor(() => {
       expect(screen.getByText('admin@example.com')).toBeInTheDocument()
     })
@@ -112,7 +115,7 @@ describe('AdminPanel', () => {
     render(<AdminPanel {...BASE_PROPS} />)
     await waitFor(() => screen.getByRole('button', { name: /^config$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^config$/i }))
-    await waitFor(() => expect(screen.getByText('leaveRatioDaysInBase')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Leave Days in Base')).toBeInTheDocument())
   })
 
   it('shows a Roles tab', () => {
