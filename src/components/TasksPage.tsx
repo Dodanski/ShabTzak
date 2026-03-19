@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import TimeInput24 from './TimeInput24'
 import type { Task, CreateTaskInput, UpdateTaskInput, RoleRequirement } from '../models'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 interface TaskFormState {
   taskType: string
@@ -60,6 +61,7 @@ function taskToFormState(task: Task): TaskFormState {
 }
 
 export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, loading }: TasksPageProps) {
+  const isMobile = useIsMobile()
   const formRoles: string[] = [...roles, 'Any']
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<TaskFormState>(EMPTY_FORM)
@@ -388,7 +390,54 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
         <p className="text-gray-400 text-sm">No tasks found.</p>
       )}
 
-      {tasks.length > 0 && (
+      {/* Mobile card view */}
+      {tasks.length > 0 && isMobile && (
+        <div className="space-y-3">
+          {filteredTasks.map(t => (
+            <div key={t.id} className="bg-white rounded-lg border border-olive-200 shadow-sm p-3">
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-medium text-olive-800">{t.taskType}</h3>
+                {t.isSpecial && (
+                  <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">Pillbox</span>
+                )}
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-olive-400">Start</span>
+                  <span className="text-olive-600">{getDisplayTime(t.startTime)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-olive-400">Duration</span>
+                  <span className="text-olive-600">{t.durationHours}h</span>
+                </div>
+                <div>
+                  <span className="text-olive-400 block text-xs mb-1">Roles</span>
+                  <div className="flex flex-wrap gap-1">
+                    {t.roleRequirements.map((r, i) => (
+                      <span key={i} className="px-1.5 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
+                        {r.role} x{r.count}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {onUpdateTask && (
+                <div className="mt-3 pt-2 border-t border-olive-100">
+                  <button
+                    onClick={() => handleStartEdit(t)}
+                    className="w-full py-2 text-sm text-olive-700 hover:bg-olive-50 rounded"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Desktop table view */}
+      {tasks.length > 0 && !isMobile && (
         <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-olive-700 text-white">
@@ -410,7 +459,7 @@ export default function TasksPage({ tasks, roles = [], onAddTask, onUpdateTask, 
                     <div className="flex flex-wrap gap-1">
                       {t.roleRequirements.map((r, i) => (
                         <span key={i} className="px-1.5 py-0.5 bg-olive-50 text-olive-700 text-xs rounded">
-                          {r.role} ×{r.count}
+                          {r.role} x{r.count}
                         </span>
                       ))}
                     </div>

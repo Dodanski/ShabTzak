@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import LoginPage from './LoginPage'
+import BottomNav from './BottomNav'
+import type { NavItem, MoreMenuItem } from './BottomNav'
 
 interface AppShellProps {
   children?: React.ReactNode
@@ -50,8 +52,8 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
             )}
           </div>
 
-          {/* Center: nav links */}
-          <nav className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+          {/* Center: nav links - hidden on mobile */}
+          <nav className="hidden sm:flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
             {navLinks.map(({ href, label }) => {
               const isActive = hash === href || (href === '#' && (hash === '' || hash === '#'))
               return (
@@ -90,9 +92,31 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
           </div>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-6">
+      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-6 pb-20 sm:pb-6">
         {children}
       </main>
+
+      {/* Bottom navigation for mobile */}
+      <BottomNav
+        items={[
+          { id: 'dashboard', label: 'Dashboard', icon: '📊', href: '#' },
+          { id: 'soldiers', label: 'Soldiers', icon: '👥', href: '#soldiers' },
+          { id: 'leave', label: 'Leave', icon: '🏠', href: '#leave' },
+          { id: 'schedule', label: 'Schedule', icon: '📅', href: '#schedule' },
+        ] as NavItem[]}
+        moreItems={[
+          { label: 'Tasks', href: '#tasks' },
+          { label: 'History', href: '#history' },
+        ] as MoreMenuItem[]}
+        activeId={
+          hash === '#soldiers' ? 'soldiers' :
+          hash === '#leave' ? 'leave' :
+          hash === '#schedule' ? 'schedule' :
+          hash === '#tasks' ? 'tasks' :
+          hash === '#history' ? 'history' :
+          'dashboard'
+        }
+      />
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import type { Soldier, CreateSoldierInput, UpdateSoldierInput, SoldierRole, SoldierStatus, AppConfig, LeaveAssignment } from '../models'
 import FairnessBar from './FairnessBar'
+import SoldierCard from './SoldierCard'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { calculateLeaveEntitlement, countUsedLeaveDays } from '../utils/leaveQuota'
 import { formatDisplayDate, parseDisplayDateInput } from '../utils/dateUtils'
 
@@ -26,6 +28,7 @@ const EMPTY_FORM: CreateSoldierInput = {
 }
 
 export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddSoldier, onUpdateSoldier, onAdjustFairness, configData, leaveAssignments = [], roles = [] }: SoldiersPageProps) {
+  const isMobile = useIsMobile()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<CreateSoldierInput>(EMPTY_FORM)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
@@ -284,7 +287,151 @@ export default function SoldiersPage({ soldiers, loading, onUpdateStatus, onAddS
         <p className="text-gray-400 text-sm">No soldiers found.</p>
       )}
 
-      {soldiers.length > 0 && (
+      {/* Mobile card view */}
+      {soldiers.length > 0 && isMobile && (
+        <div className="space-y-3">
+          {filteredSoldiers.map(s => (
+            <SoldierCard
+              key={s.id}
+              soldier={s}
+              avgFairness={avgFairness}
+              configData={configData}
+              leaveAssignments={leaveAssignments}
+              onCheckboxChange={() => handleCheckboxChange(s)}
+              onEditClick={onUpdateSoldier ? () => (editingFor === s.id ? setEditingFor(null) : handleEditOpen(s)) : undefined}
+              onAdjustClick={() => setAdjustingId(id => id === s.id ? null : s.id)}
+              isExpanded={editingFor === s.id || pendingInactiveId === s.id || adjustingId === s.id}
+              expandedContent={
+                <>
+                  {editingFor === s.id && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Army ID</label>
+                          <input
+                            type="text"
+                            value={editForm.newId}
+                            onChange={e => setEditForm(f => ({ ...f, newId: e.target.value }))}
+                            className="w-full border rounded px-2 py-2 text-sm font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Role</label>
+                          <select
+                            value={editForm.role}
+                            onChange={e => setEditForm(f => ({ ...f, role: e.target.value as SoldierRole }))}
+                            className="w-full border rounded px-2 py-2 text-sm"
+                          >
+                            {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">First Name</label>
+                          <input
+                            type="text"
+                            value={editForm.firstName}
+                            onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))}
+                            className="w-full border rounded px-2 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Last Name</label>
+                          <input
+                            type="text"
+                            value={editForm.lastName}
+                            onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))}
+                            className="w-full border rounded px-2 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Start (dd/mm/yy)</label>
+                          <input
+                            type="text"
+                            value={editForm.serviceStart}
+                            onChange={e => setEditForm(f => ({ ...f, serviceStart: e.target.value }))}
+                            className="w-full border rounded px-2 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">End (dd/mm/yy)</label>
+                          <input
+                            type="text"
+                            value={editForm.serviceEnd}
+                            onChange={e => setEditForm(f => ({ ...f, serviceEnd: e.target.value }))}
+                            className={`w-full border rounded px-2 py-2 text-sm ${editEndBeforeStart ? 'border-red-400' : ''}`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Hours worked</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editForm.hoursWorked}
+                            onChange={e => setEditForm(f => ({ ...f, hoursWorked: e.target.value }))}
+                            className="w-full border rounded px-2 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+                      {editEndBeforeStart && <p className="text-xs text-red-600">End must be after start</p>}
+                      <div className="flex gap-2 mt-2">
+                        <button onClick={() => handleEditSave(s.id)} disabled={!!editEndBeforeStart || editDatesInvalid} className="flex-1 py-2 text-sm bg-olive-700 text-white rounded disabled:opacity-50">Save</button>
+                        <button onClick={() => setEditingFor(null)} className="flex-1 py-2 text-sm text-gray-600 border rounded">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                  {pendingInactiveId === s.id && (
+                    <div className="space-y-2">
+                      <span className="text-xs text-red-700 block">Reason for deactivation:</span>
+                      <input
+                        type="text"
+                        value={pendingReason}
+                        onChange={e => setPendingReason(e.target.value)}
+                        placeholder="Reason (optional)"
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={() => handleConfirmInactive(s.id)} className="flex-1 py-2 text-sm bg-red-600 text-white rounded">Confirm</button>
+                        <button onClick={() => setPendingInactiveId(null)} className="flex-1 py-2 text-sm text-gray-600 border rounded">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                  {adjustingId === s.id && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Delta</label>
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={adjustDelta}
+                            onChange={e => setAdjustDelta(e.target.value)}
+                            className="w-full border rounded px-3 py-2 text-sm"
+                            placeholder="e.g. 2 or -1"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-olive-600 mb-1">Reason</label>
+                          <input
+                            type="text"
+                            value={adjustReason}
+                            onChange={e => setAdjustReason(e.target.value)}
+                            className="w-full border rounded px-3 py-2 text-sm"
+                            placeholder="Reason"
+                          />
+                        </div>
+                      </div>
+                      <button onClick={() => handleAdjustSubmit(s.id)} className="w-full py-2 text-sm bg-olive-700 text-white rounded">Apply</button>
+                    </div>
+                  )}
+                </>
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Desktop table view */}
+      {soldiers.length > 0 && !isMobile && (
         <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs sm:text-sm">

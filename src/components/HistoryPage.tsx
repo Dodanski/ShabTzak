@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { HistoryEntry } from '../services/historyService'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 interface HistoryPageProps {
   entries: HistoryEntry[]
@@ -7,6 +8,7 @@ interface HistoryPageProps {
 }
 
 export default function HistoryPage({ entries, loading }: HistoryPageProps) {
+  const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const [actionFilter, setActionFilter] = useState('')
 
@@ -54,7 +56,27 @@ export default function HistoryPage({ entries, loading }: HistoryPageProps) {
         <p className="text-gray-400 text-sm">No history entries found.</p>
       )}
 
-      {filtered.length > 0 && (
+      {/* Mobile card view */}
+      {filtered.length > 0 && isMobile && (
+        <div className="space-y-3">
+          {filtered.map((e, i) => (
+            <div key={i} className="bg-white rounded-lg border border-olive-200 shadow-sm p-3">
+              <div className="flex items-start justify-between mb-2">
+                <span className="px-2 py-0.5 bg-olive-100 text-olive-600 rounded text-xs font-mono">
+                  {e.entityType}
+                </span>
+                <span className="text-olive-400 text-xs">{e.timestamp}</span>
+              </div>
+              <p className="text-sm font-medium text-olive-800 mb-1">{e.action}</p>
+              <p className="text-sm text-olive-600 mb-2">{e.details}</p>
+              <p className="text-xs text-olive-400">By: {e.changedBy}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Desktop table view */}
+      {filtered.length > 0 && !isMobile && (
         <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-olive-700 text-white">
