@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { buildAvailabilityMatrix } from '../algorithms/availabilityMatrix'
 import type { AvailabilityStatus } from '../algorithms/availabilityMatrix'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
 import { formatDisplayDate, parseDate } from '../utils/dateUtils'
 import { fullName } from '../utils/helpers'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 interface ScheduleCalendarProps {
   soldiers: Soldier[]
@@ -23,6 +25,9 @@ const STATUS_CLASSES: Record<AvailabilityStatus, string> = {
 export default function ScheduleCalendar({
   soldiers, dates, tasks, taskAssignments, leaveAssignments,
 }: ScheduleCalendarProps) {
+  const isMobile = useIsMobile()
+  const [selectedSoldierId, setSelectedSoldierId] = useState<string | null>(null)
+
   if (soldiers.length === 0) {
     return <p className="text-gray-400 text-sm">No soldiers to display.</p>
   }
@@ -44,6 +49,81 @@ export default function ScheduleCalendar({
 
   const matrix = buildAvailabilityMatrix(soldiers, expandedTasks, taskAssignments, leaveAssignments, dates)
 
+  // Mobile view: soldier selector + horizontal scroll day view
+  if (isMobile) {
+    const selectedSoldier = soldiers.find(s => s.id === selectedSoldierId) ?? soldiers[0]
+
+    return (
+      <>
+        {/* Soldier selector */}
+        <div className="mb-3">
+          <select
+            value={selectedSoldier?.id ?? ''}
+            onChange={e => setSelectedSoldierId(e.target.value)}
+            className="w-full border border-olive-200 rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            {soldiers.map(s => (
+              <option key={s.id} value={s.id}>{fullName(s)}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Day-by-day schedule for selected soldier */}
+        {selectedSoldier && (
+          <div className="space-y-2">
+            {dates.map(d => {
+              const currentDate = parseDate(d)
+              const serviceStart = parseDate(selectedSoldier.serviceStart)
+              const serviceEnd = parseDate(selectedSoldier.serviceEnd)
+              const isInServicePeriod = serviceStart <= currentDate && currentDate <= serviceEnd
+
+              const cellData = matrix.get(d)?.get(selectedSoldier.id) ?? { status: 'available' as const }
+              const status: AvailabilityStatus = isInServicePeriod ? cellData.status : 'available'
+
+              let displayText = ''
+              if (!isInServicePeriod) {
+                displayText = 'Not in service'
+              } else if (cellData.taskName) {
+                displayText = cellData.taskName
+              } else if (cellData.transitionType === 'exit') {
+                displayText = 'Leaving base'
+              } else if (cellData.transitionType === 'return') {
+                displayText = 'Returning to base'
+              } else {
+                displayText = status === 'on-leave' ? 'On leave' : status === 'on-task' ? 'On task' : 'Available'
+              }
+
+              const bgColor = !isInServicePeriod ? 'bg-gray-200' : STATUS_CLASSES[status]
+
+              return (
+                <div key={d} className={`rounded-lg p-3 ${bgColor}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-sm">{formatDisplayDate(d)}</span>
+                    <span className="text-sm text-olive-600">{displayText}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-3 mt-4 text-xs text-olive-600">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 bg-green-100 border border-gray-300 rounded" /> Available
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 bg-yellow-200 border border-gray-300 rounded" /> On leave
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 bg-olive-200 border border-gray-300 rounded" /> On task
+          </span>
+        </div>
+      </>
+    )
+  }
+
+  // Desktop view: full matrix
   return (
     <>
       <div className="border rounded-lg overflow-hidden bg-white shadow-sm">

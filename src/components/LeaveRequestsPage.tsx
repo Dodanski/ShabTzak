@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { Soldier, LeaveRequest } from '../models'
 import { formatDisplayDate } from '../utils/dateUtils'
 import { fullName } from '../utils/helpers'
+import { useIsMobile } from '../hooks/useIsMobile'
+import LeaveRequestCard from './LeaveRequestCard'
 
 interface LeaveRequestsPageProps {
   leaveRequests: LeaveRequest[]
@@ -19,6 +21,7 @@ const STATUS_CLASSES: Record<string, string> = {
 type StatusFilter = 'All' | 'Pending' | 'Approved' | 'Denied'
 
 export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, onDeny }: LeaveRequestsPageProps) {
+  const isMobile = useIsMobile()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
   const soldierMap = new Map(soldiers.map(s => [s.id, s]))
   const filtered = statusFilter === 'All' ? leaveRequests : leaveRequests.filter(r => r.status === statusFilter)
@@ -44,7 +47,23 @@ export default function LeaveRequestsPage({ leaveRequests, soldiers, onApprove, 
         <p className="text-gray-400 text-sm">No leave requests found.</p>
       )}
 
-      {filtered.length > 0 && (
+      {/* Mobile card view */}
+      {filtered.length > 0 && isMobile && (
+        <div className="space-y-3">
+          {filtered.map(req => (
+            <LeaveRequestCard
+              key={req.id}
+              request={req}
+              soldier={soldierMap.get(req.soldierId)}
+              onApprove={() => onApprove(req.id)}
+              onDeny={() => onDeny(req.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Desktop table view */}
+      {filtered.length > 0 && !isMobile && (
         <div className="bg-white rounded-lg border border-olive-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-olive-700 text-white">

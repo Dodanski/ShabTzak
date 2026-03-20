@@ -6,6 +6,9 @@ import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
 import AdminDashboard from './AdminDashboard'
 import DiagnosticPage from './DiagnosticPage'
+import BottomNav from './BottomNav'
+import type { NavItem, MoreMenuItem } from './BottomNav'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 type AdminTab = 'dashboard' | 'admins' | 'units' | 'commanders' | 'roles' | 'tasks' | 'config' | 'diagnostic'
 
@@ -17,6 +20,7 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }: AdminPanelProps) {
   const { signOut } = useAuth()
+  const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
   const [admins, setAdmins] = useState<Admin[]>([])
   const [units, setUnits] = useState<Unit[]>([])
@@ -266,8 +270,9 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex gap-2">
+      <main className="max-w-5xl mx-auto px-4 py-6 pb-20 sm:pb-6 space-y-6">
+        {/* Desktop tabs - hidden on mobile */}
+        <div className="hidden sm:flex gap-2 flex-wrap">
           <button className={tabClass('dashboard')} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
           <button className={tabClass('admins')} onClick={() => setActiveTab('admins')}>Admins</button>
           <button className={tabClass('units')} onClick={() => setActiveTab('units')}>Units</button>
@@ -301,28 +306,51 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         {!loading && activeTab === 'admins' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
             <h2 className="font-semibold text-olive-800">Admins</h2>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-olive-700 text-white"><th className="text-left p-2 rounded-tl">Email</th><th className="text-left p-2">Added At</th><th className="text-left p-2 rounded-tr">Action</th></tr></thead>
-              <tbody>
+            {/* Mobile card view */}
+            {isMobile && (
+              <div className="space-y-3">
                 {admins.map(a => (
-                  <tr key={a.id} className="border-b border-olive-100">
-                    <td className="p-2">{a.email}</td>
-                    <td className="p-2 text-olive-500">{a.addedAt ? new Date(a.addedAt).toLocaleDateString() : ''}</td>
-                    <td className="p-2">
+                  <div key={a.id} className="border border-olive-100 rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-olive-800 text-sm break-all">{a.email}</p>
+                        <p className="text-xs text-olive-500">{a.addedAt ? new Date(a.addedAt).toLocaleDateString() : ''}</p>
+                      </div>
                       <button
                         onClick={() => handleRemoveAdmin(a.id)}
                         disabled={a.email === currentAdminEmail}
-                        className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-40"
                       >Remove</button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-            <div className="flex gap-2">
+              </div>
+            )}
+            {/* Desktop table view */}
+            {!isMobile && (
+              <table className="w-full text-sm">
+                <thead><tr className="bg-olive-700 text-white"><th className="text-left p-2 rounded-tl">Email</th><th className="text-left p-2">Added At</th><th className="text-left p-2 rounded-tr">Action</th></tr></thead>
+                <tbody>
+                  {admins.map(a => (
+                    <tr key={a.id} className="border-b border-olive-100">
+                      <td className="p-2">{a.email}</td>
+                      <td className="p-2 text-olive-500">{a.addedAt ? new Date(a.addedAt).toLocaleDateString() : ''}</td>
+                      <td className="p-2">
+                        <button
+                          onClick={() => handleRemoveAdmin(a.id)}
+                          disabled={a.email === currentAdminEmail}
+                          className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >Remove</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2">
               <input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)}
-                placeholder="admin@example.com" className="flex-1 border border-olive-200 rounded px-2 py-1 text-sm" />
-              <button onClick={handleAddAdmin} className="px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Admin</button>
+                placeholder="admin@example.com" className="flex-1 border border-olive-200 rounded px-3 py-2 text-sm" />
+              <button onClick={handleAddAdmin} className="px-3 py-2 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Admin</button>
             </div>
           </div>
         )}
@@ -330,46 +358,67 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         {!loading && activeTab === 'units' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
             <h2 className="font-semibold text-olive-800">Units</h2>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-olive-700 text-white"><th className="text-left p-2 rounded-tl">Name</th><th className="text-left p-2">Spreadsheet</th><th className="text-left p-2 rounded-tr">Actions</th></tr></thead>
-              <tbody>
+            {/* Mobile card view */}
+            {isMobile && (
+              <div className="space-y-3">
                 {units.map(u => (
-                  <tr key={u.id} className="border-b border-olive-100">
-                    <td className="p-2 font-medium">{u.name}</td>
-                    <td className="p-2">
+                  <div key={u.id} className="border border-olive-100 rounded-lg p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-olive-800">{u.name}</h3>
                       <a href={`https://docs.google.com/spreadsheets/d/${u.spreadsheetId}`} target="_blank" rel="noopener noreferrer"
                         className="text-olive-600 hover:underline text-xs">Open ↗</a>
-                    </td>
-                    <td className="p-2 flex gap-2">
-                      <button onClick={() => onEnterUnit(u)} className="text-xs px-2 py-1 bg-olive-700 text-white rounded hover:bg-olive-800">Enter Unit</button>
-                      <button onClick={() => handleRemoveUnit(u.id)} className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">Remove</button>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => onEnterUnit(u)} className="flex-1 py-2 text-sm bg-olive-700 text-white rounded hover:bg-olive-800">Enter Unit</button>
+                      <button onClick={() => handleRemoveUnit(u.id)} className="py-2 px-3 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200">Remove</button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-            <div className="grid grid-cols-2 gap-2">
+              </div>
+            )}
+            {/* Desktop table view */}
+            {!isMobile && (
+              <table className="w-full text-sm">
+                <thead><tr className="bg-olive-700 text-white"><th className="text-left p-2 rounded-tl">Name</th><th className="text-left p-2">Spreadsheet</th><th className="text-left p-2 rounded-tr">Actions</th></tr></thead>
+                <tbody>
+                  {units.map(u => (
+                    <tr key={u.id} className="border-b border-olive-100">
+                      <td className="p-2 font-medium">{u.name}</td>
+                      <td className="p-2">
+                        <a href={`https://docs.google.com/spreadsheets/d/${u.spreadsheetId}`} target="_blank" rel="noopener noreferrer"
+                          className="text-olive-600 hover:underline text-xs">Open ↗</a>
+                      </td>
+                      <td className="p-2 flex gap-2">
+                        <button onClick={() => onEnterUnit(u)} className="text-xs px-2 py-1 bg-olive-700 text-white rounded hover:bg-olive-800">Enter Unit</button>
+                        <button onClick={() => handleRemoveUnit(u.id)} className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">Remove</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 value={newUnitName}
                 onChange={e => setNewUnitName(e.target.value)}
                 placeholder="Unit name"
-                className="border border-olive-200 rounded px-2 py-1 text-sm"
+                className="border border-olive-200 rounded px-3 py-2 text-sm"
               />
               <input
                 value={newUnitSheetId}
                 onChange={e => setNewUnitSheetId(e.target.value)}
                 placeholder="Google Sheet ID"
-                className="border border-olive-200 rounded px-2 py-1 text-sm"
+                className="border border-olive-200 rounded px-3 py-2 text-sm"
               />
               {newUnitName && (
-                <p className="col-span-2 text-xs text-olive-500">
+                <p className="col-span-1 sm:col-span-2 text-xs text-olive-500">
                   Tab prefix: <span className="font-mono font-medium">{derivedPrefix}</span>
                   {' '}— soldiers tab: <span className="font-mono">{derivedPrefix}</span>, scheduling tabs: {derivedPrefix}_TaskSchedule, …
                 </p>
               )}
               <button
                 onClick={handleAddUnit}
-                className="col-span-2 px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800"
+                className="col-span-1 sm:col-span-2 px-3 py-2 bg-olive-700 text-white text-sm rounded hover:bg-olive-800"
               >
                 Add Unit
               </button>
@@ -380,32 +429,54 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
         {!loading && activeTab === 'commanders' && (
           <div className="bg-white rounded-xl border border-olive-200 shadow-sm p-4 space-y-4">
             <h2 className="font-semibold text-olive-800">Commanders</h2>
-            <table className="w-full text-sm">
-              <thead><tr className="bg-olive-700 text-white"><th className="text-left p-2 rounded-tl">Email</th><th className="text-left p-2">Unit</th><th className="text-left p-2 rounded-tr">Action</th></tr></thead>
-              <tbody>
+            {/* Mobile card view */}
+            {isMobile && (
+              <div className="space-y-3">
                 {commanders.map(c => {
                   const unitName = units.find(u => u.id === c.unitId)?.name ?? c.unitId
                   return (
-                    <tr key={c.id} className="border-b border-olive-100">
-                      <td className="p-2">{c.email}</td>
-                      <td className="p-2 text-olive-500">{unitName}</td>
-                      <td className="p-2">
-                        <button onClick={() => handleRemoveCommander(c.id)} className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">Remove</button>
-                      </td>
-                    </tr>
+                    <div key={c.id} className="border border-olive-100 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-olive-800 text-sm break-all">{c.email}</p>
+                          <p className="text-xs text-olive-500">{unitName}</p>
+                        </div>
+                        <button onClick={() => handleRemoveCommander(c.id)} className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200">Remove</button>
+                      </div>
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
-            <div className="grid grid-cols-2 gap-2">
+              </div>
+            )}
+            {/* Desktop table view */}
+            {!isMobile && (
+              <table className="w-full text-sm">
+                <thead><tr className="bg-olive-700 text-white"><th className="text-left p-2 rounded-tl">Email</th><th className="text-left p-2">Unit</th><th className="text-left p-2 rounded-tr">Action</th></tr></thead>
+                <tbody>
+                  {commanders.map(c => {
+                    const unitName = units.find(u => u.id === c.unitId)?.name ?? c.unitId
+                    return (
+                      <tr key={c.id} className="border-b border-olive-100">
+                        <td className="p-2">{c.email}</td>
+                        <td className="p-2 text-olive-500">{unitName}</td>
+                        <td className="p-2">
+                          <button onClick={() => handleRemoveCommander(c.id)} className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">Remove</button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input value={newCmdEmail} onChange={e => setNewCmdEmail(e.target.value)}
-                placeholder="commander@example.com" className="border border-olive-200 rounded px-2 py-1 text-sm" />
+                placeholder="commander@example.com" className="border border-olive-200 rounded px-3 py-2 text-sm" />
               <select value={newCmdUnitId} onChange={e => setNewCmdUnitId(e.target.value)}
-                className="border border-olive-200 rounded px-2 py-1 text-sm">
+                className="border border-olive-200 rounded px-3 py-2 text-sm">
                 <option value="">Select unit...</option>
                 {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
-              <button onClick={handleAddCommander} className="col-span-2 px-3 py-1 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Commander</button>
+              <button onClick={handleAddCommander} className="col-span-1 sm:col-span-2 px-3 py-2 bg-olive-700 text-white text-sm rounded hover:bg-olive-800">Add Commander</button>
             </div>
           </div>
         )}
@@ -582,6 +653,23 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           <DiagnosticPage masterDs={masterDs} />
         )}
       </main>
+
+      {/* Bottom navigation for mobile */}
+      <BottomNav
+        items={[
+          { id: 'dashboard', label: 'Dashboard', icon: '📊', onClick: () => setActiveTab('dashboard') },
+          { id: 'units', label: 'Units', icon: '🏢', onClick: () => setActiveTab('units') },
+          { id: 'tasks', label: 'Tasks', icon: '📋', onClick: () => setActiveTab('tasks') },
+          { id: 'config', label: 'Config', icon: '⚙️', onClick: () => setActiveTab('config') },
+        ] as NavItem[]}
+        moreItems={[
+          { label: 'Admins', onClick: () => setActiveTab('admins') },
+          { label: 'Commanders', onClick: () => setActiveTab('commanders') },
+          { label: 'Roles', onClick: () => setActiveTab('roles') },
+          { label: 'Diagnostic', onClick: () => setActiveTab('diagnostic') },
+        ] as MoreMenuItem[]}
+        activeId={activeTab}
+      />
     </div>
   )
 }
