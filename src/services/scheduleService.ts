@@ -6,7 +6,8 @@ import type { LeaveRequestRepository } from './leaveRequestRepository'
 import type { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
 import type { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
 import type { HistoryService } from './historyService'
-import type { LeaveSchedule, TaskSchedule, Task, AppConfig, LeaveAssignment, Soldier } from '../models'
+import type { LeaveSchedule, TaskSchedule, Task, AppConfig, LeaveAssignment, Soldier, TaskAssignment } from '../models'
+// Task type is used for looking up task dates when calculating leave capacity
 
 /**
  * Orchestrates leave and task schedule generation:
@@ -27,14 +28,31 @@ export class ScheduleService {
     scheduleStart: string,
     scheduleEnd: string,
     changedBy: string,
+    allSoldiers?: Soldier[],  // NEW: all soldiers from all units for global scheduling
+    generatedTaskAssignments?: TaskAssignment[],  // NEW: task assignments from prior task scheduling
+    expandedTasks?: Task[],  // NEW: expanded tasks array for looking up task dates
   ): Promise<LeaveSchedule> {
     // Load data - use Promise.all for parallelism, exponential backoff handles 429s
-    let [soldiers, requests, existing, taskAssignments] = await Promise.all([
+    let [unitSoldiers, requests, existing, storedTaskAssignments] = await Promise.all([
       this.soldiers.list(),
       this.leaveRequests.list(),
       this.leaveAssignments.list(),
       this.taskAssignments.list(),
     ])
+
+    // Use allSoldiers if provided (multi-unit scheduling), otherwise fall back to unit soldiers
+    const soldiers = (allSoldiers && allSoldiers.length > 0) ? allSoldiers : unitSoldiers
+
+    // Merge stored task assignments with newly generated ones (if provided)
+    const taskAssignments = generatedTaskAssignments
+      ? [...storedTaskAssignments, ...generatedTaskAssignments]
+      : storedTaskAssignments
+
+    if (import.meta.env.DEV) {
+      console.log('[scheduleService] Leave scheduling with', soldiers.length, 'soldiers',
+        allSoldiers && allSoldiers.length > 0 ? '(multi-unit)' : '(unit-only)')
+      console.log('[scheduleService] Task assignments to respect:', taskAssignments.length)
+    }
 
     // Clear future leave assignments (from today forward) to allow regeneration
     // Keep historical leave assignments before today
@@ -49,13 +67,10 @@ export class ScheduleService {
       existing = existing.filter(a => a.endDate < today)
     }
 
-    // NOTE: Multi-unit leave assignments are loaded from current unit only.
-    // In multi-unit scheduling, soldiers from other units won't have their leaves pre-loaded.
-    // This is acceptable for MVP - their leave data would need to be fetched from their unit's spreadsheet.
-    // TODO: Load leaves from all unit spreadsheets for full multi-unit support
-
     // Generate automatic cyclical leaves based on the rotation pattern, respecting role capacity
-    const withCyclicalLeaves = generateCyclicalLeaves(soldiers, existing, taskAssignments, config, scheduleStart, scheduleEnd)
+    // Now uses ALL soldiers globally and respects task assignments
+    // Pass expanded tasks so capacity calculation can check which soldiers are on tasks each day
+    const withCyclicalLeaves = generateCyclicalLeaves(soldiers, existing, taskAssignments, config, scheduleStart, scheduleEnd, expandedTasks ?? [])
 
     // Process manual leave requests (which override cyclical leaves)
     const schedule = scheduleLeave(requests, soldiers, withCyclicalLeaves, config, scheduleStart, scheduleEnd)

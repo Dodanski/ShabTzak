@@ -1,0 +1,278 @@
+==================================================================================
+SCHEDULING FLOW DIAGRAM: AdminDashboard → Schedule Generation
+==================================================================================
+
+ADMIN PANEL FLOW (Multi-Unit):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User clicks "Generate Schedule for All Units" button
+                        ↓
+AdminPanel.handleGenerateScheduleForAllUnits()
+[src/components/AdminPanel.tsx:48-102]
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE 1: TASK SCHEDULING (PRIORITY)                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│ 1. Expand recurring tasks                                   │
+│    expandRecurringTasks(tasks, scheduleEnd)                │
+│                                                               │
+│ 2. Load data from master sheet:                             │
+│    - All soldiers: masterDs.soldiers.list()                │
+│    - All tasks (expanded)                                  │
+│                                                               │
+│ 3. Call generateTaskSchedule():                             │
+│    scheduleService.generateTaskSchedule(                    │
+│      expandedTasks,                                         │
+│      currentAdminEmail,                                     │
+│      undefined,            // onProgress                    │
+│      undefined,            // leaveAssignments (not yet!)   │
+│      configData,                                            │
+│      soldiers             // ALL soldiers from admin sheet  │
+│    )                                                        │
+│                                                               │
+│ 4. Task scheduler assigns soldiers to tasks:               │
+│    - Checks role eligibility                               │
+│    - Prefers same unit (unit affinity)                     │
+│    - Sorts by fairness score                               │
+│    - Returns TaskSchedule with assignments                 │
+│    - Saved to master TaskSchedule sheet                    │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE 2: LEAVE SCHEDULING                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│ 1. Load data from master sheet:                             │
+│    - Soldiers: masterDs.soldiers.list()                    │
+│    - Leave requests, existing leaves, task assignments      │
+│                                                               │
+│ 2. Call generateLeaveSchedule():                            │
+│    scheduleService.generateLeaveSchedule(                   │
+│      configData,                                            │
+│      today,                                                 │
+│      scheduleEnd,                                           │
+│      currentAdminEmail                                      │
+│    )                                                        │
+│                                                               │
+│ 3. Inside generateLeaveSchedule():                          │
+│    a) Load soldiers: this.soldiers.list()  ← UNIT ONLY!   │
+│    b) Clear future leave assignments                        │
+│    c) Generate cyclical leaves (10:4 ratio):               │
+│       - generateCyclicalLeaves(soldiers, existing, ...)    │
+│       - calculateLeaveCapacityPerRole() for each day       │
+│       - Assigns leaves based on capacity & phase offset    │
+│    d) Process manual leave requests                         │
+│    e) Save to master LeaveSchedule sheet                   │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+                        ↓
+Schedule generated for all units
+
+
+UNIT APP FLOW (Multi-Unit):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User clicks "Generate Schedule" button in unit view
+                        ↓
+UnitApp.handleGenerateSchedule() [src/App.tsx:195-234]
+                        ↓
+runSchedule(callback) [useScheduleGenerator hook]
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE 1: TASK SCHEDULING (PRIORITY)                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│ ds.scheduleService.generateTaskSchedule(                    │
+│   expandedTasks,                                            │
+│   'user',                                                   │
+│   onProgress callback,                                      │
+│   undefined,            // leaveAssignments (not yet!)      │
+│   config,                                                   │
+│   allSoldiers          // MULTI-UNIT soldiers from master  │
+│ )                                                           │
+│                                                               │
+│ Inside generateTaskSchedule():                              │
+│ - Load local soldiers: this.soldiers.list()                │
+│ - Compare with allSoldiers: if allSoldiers.length > local  │
+│   → use allSoldiers (multi-unit)                           │
+│   → else use local soldiers only                           │
+│ - Call scheduleTasks(tasks, schedulingSoldiers, ...)       │
+│ - Task scheduler works across all units                    │
+│ - Save to master TaskSchedule sheet                        │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE 2: LEAVE SCHEDULING                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│ ds.scheduleService.generateLeaveSchedule(                   │
+│   config,                                                   │
+│   startDate,                                                │
+│   endDate,                                                  │
+│   'user'                                                    │
+│ )                                                           │
+│                                                               │
+│ ⚠️  NOTE: NO allSoldiers parameter!                         │
+│ Only processes unit soldiers (incomplete pool)             │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE 3: FAIRNESS ADJUSTMENTS                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│ For each new leave assignment:                              │
+│   ds.fairnessUpdate.applyLeaveAssignment(                   │
+│     soldierId, leaveType, isWeekend, 'user'                │
+│   )                                                         │
+│ [Rate limited: 1 per second]                               │
+│                                                               │
+│ Reload all data                                             │
+│ Return to Dashboard                                         │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+
+
+DATA FLOW SOURCES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           MASTER SPREADSHEET                                 │
+│                      (Admin sees all units here)                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│  Soldiers Tab: All soldiers from all units                                   │
+│  ├─ Unit A soldiers (100 rows)                                              │
+│  └─ Unit B soldiers (80 rows)                                               │
+│     → Loaded by: masterDs.soldiers.list()                                   │
+│                                                                                │
+│  TaskSchedule Tab: Master task assignments                                   │
+│  ├─ Shared across all units                                                 │
+│  └─ Updated when admin generates schedule                                    │
+│     → Loaded by: masterDs.taskAssignments.list()                            │
+│     → Written by: scheduleService.generateTaskSchedule()                    │
+│                                                                                │
+│  LeaveSchedule Tab: Master leave assignments                                 │
+│  ├─ Shared across all units                                                 │
+│  └─ Updated when admin generates schedule                                    │
+│     → Loaded by: masterDs.leaveAssignments.list()                           │
+│     → Written by: scheduleService.generateLeaveSchedule()                   │
+│                                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+                              ↑           ↑
+                              │           │
+                    ┌─────────┘           └─────────┐
+                    │                                 │
+        ┌───────────────────────┐       ┌────────────────────────┐
+        │  UNIT A SPREADSHEET   │       │  UNIT B SPREADSHEET    │
+        ├───────────────────────┤       ├────────────────────────┤
+        │ Soldiers Tab: 100     │       │ Soldiers Tab: 80       │
+        │ (unit local copy)     │       │ (unit local copy)      │
+        │                       │       │                        │
+        │ TaskSchedule Tab:     │       │ TaskSchedule Tab:      │
+        │ (reads from master)   │       │ (reads from master)    │
+        │                       │       │                        │
+        │ LeaveSchedule Tab:    │       │ LeaveSchedule Tab:     │
+        │ (reads from master)   │       │ (reads from master)    │
+        └───────────────────────┘       └────────────────────────┘
+                ↑                                ↑
+                │ useDataService()               │
+                │ loadAllSoldiers=true           │ useDataService()
+                │                                │ loadAllSoldiers=true
+                │                                │
+        ┌───────┴────────────────┐     ┌────────┴─────────────────┐
+        │ Unit A Commander View  │     │  Unit B Commander View   │
+        │ (UnitApp)              │     │ (UnitApp)                │
+        │                        │     │                          │
+        │ - soldiers: 100        │     │ - soldiers: 80           │
+        │ - allSoldiers: 180     │     │ - allSoldiers: 180       │
+        │   (both units)         │     │   (both units)           │
+        │                        │     │                          │
+        │ Can generate schedule  │     │ Can generate schedule    │
+        │ using all 180 soldiers │     │ using all 180 soldiers  │
+        └────────────────────────┘     └──────────────────────────┘
+
+
+CRITICAL DATA FLOW ISSUES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ISSUE 1: Leave Generation Missing allSoldiers Parameter
+─────────────────────────────────────────────────────────
+
+generateTaskSchedule(tasks, changedBy, onProgress, leaveAssignments, config, allSoldiers)
+                                                                                    ↑
+                                                                        Used ✓
+
+generateLeaveSchedule(config, scheduleStart, scheduleEnd, changedBy)
+                                                                    
+                                                                        NO allSoldiers!
+                                                                        Uses this.soldiers
+                                                                        (unit-only)
+
+
+ISSUE 2: Leave Capacity Based on Incomplete Soldier Pool
+─────────────────────────────────────────────────────────
+
+calculateLeaveCapacityPerRole(soldiers, ..., date, existingLeaves)
+                              ↑
+                    Only unit soldiers!
+
+Example with 2 units:
+  Config: minBasePresenceByRole.Driver = 5
+  
+  Unit A has 5 drivers:
+    Leave capacity = max(0, 5 - 5 - onLeave) = 0
+    Result: No drivers from Unit A can take leave!
+  
+  Unit B has 3 drivers:
+    Leave capacity = max(0, 3 - 5 - onLeave) = 0
+    Result: No drivers from Unit B can take leave!
+  
+  CORRECT: Should be = max(0, 8 - 5 - onLeave) = available slots
+
+
+ISSUE 3: Cross-Unit Leave Conflicts
+────────────────────────────────────
+
+Unit A generates leaves:   2 drivers on leave ✓
+Unit B generates leaves:   3 drivers on leave ✓ (isolated check)
+
+When viewed together:
+  Total: 5 drivers on leave
+  Available: 8 total
+  Required at base: 5
+  Actual at base: 3 ✗ VIOLATION!
+
+
+ISSUE 4: Task Scheduler Unit Affinity Lock-In
+───────────────────────────────────────────────
+
+Task needs 5 soldiers from multiple roles
+
+First assignment (random): Unit A soldier
+  → taskUnit = Unit A
+
+Remaining 4 assignments:
+  All prefer Unit A soldiers
+  Even if Unit B soldiers more deserving (fairness)
+  
+Result: Task heavily Unit A-biased by lock-in
+
+
+ISSUE 5: Cross-Unit Leave Conflicts in Task Scheduling
+───────────────────────────────────────────────────────
+
+scheduleTasks(tasks, multiUnitSoldiers, existing, allTasks, leaveAssignments, config)
+                                                                     ↑
+                                                        Unit-only leaves
+
+When assigning Unit B soldier to task:
+  leaveAssignments = only Unit A's leaves
+  
+If Unit B soldier on leave (from Unit B schedule):
+  Scheduler doesn't know!
+  Assigns to task anyway ✗ CONFLICT!
+

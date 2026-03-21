@@ -79,12 +79,17 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       console.log('[AdminPanel] Generated tasks:', taskSchedule.assignments.length)
 
       // THEN generate leave schedule, respecting task assignments
+      // Pass all soldiers, task assignments, and expanded tasks so leaves are calculated globally
+      // and soldiers on tasks are excluded from leave capacity
       console.log('[AdminPanel] Generating leave schedule for all units...')
       const leaveSchedule = await masterDs.scheduleService.generateLeaveSchedule(
         configData,
         today,
         scheduleEnd,
-        currentAdminEmail
+        currentAdminEmail,
+        soldiers,  // All soldiers from all units
+        taskSchedule.assignments,  // Task assignments to respect (soldiers on tasks can't be on leave)
+        expandedTasks  // Expanded tasks for looking up task dates
       )
 
       console.log('[AdminPanel] Generated leaves:', leaveSchedule.assignments.length)

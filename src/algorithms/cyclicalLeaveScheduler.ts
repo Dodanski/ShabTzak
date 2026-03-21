@@ -1,6 +1,6 @@
 import { parseDate, formatDate, getDateRange } from '../utils/dateUtils'
 import { calculateLeaveCapacityPerRole } from './leaveCapacityCalculator'
-import type { Soldier, LeaveAssignment, TaskAssignment, AppConfig } from '../models'
+import type { Soldier, LeaveAssignment, TaskAssignment, AppConfig, Task } from '../models'
 
 /**
  * Generates cyclical home leaves distributed fairly across soldiers of each role.
@@ -8,6 +8,9 @@ import type { Soldier, LeaveAssignment, TaskAssignment, AppConfig } from '../mod
  *
  * Pattern per role: soldiers take turns in N-day cycles (e.g., 10:4 ratio)
  * Each soldier has a randomized phase offset to stagger leave times.
+ *
+ * IMPORTANT: Tasks have priority over leaves. Soldiers assigned to tasks on a given day
+ * cannot take leave that day, and the capacity calculation accounts for this.
  */
 export function generateCyclicalLeaves(
   soldiers: Soldier[],
@@ -16,6 +19,7 @@ export function generateCyclicalLeaves(
   config: AppConfig,
   scheduleStart: string,
   scheduleEnd: string,
+  tasks: Task[] = [],  // NEW: tasks array to check task assignments by date
 ): LeaveAssignment[] {
   const result = [...existingLeaves]
   const startDate = parseDate(scheduleStart)
@@ -69,7 +73,8 @@ export function generateCyclicalLeaves(
       const dateStr = formatDate(currentDate)
 
       // Check capacity for this role on this date
-      const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr, result)
+      // Pass tasks array so capacity calculation accounts for soldiers on tasks
+      const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr, result, tasks)
       let availableSlots = capacity[role] ?? 0
 
       if (availableSlots > 0) {
