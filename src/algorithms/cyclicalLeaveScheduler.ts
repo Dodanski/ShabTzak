@@ -69,7 +69,7 @@ export function generateCyclicalLeaves(
       const dateStr = formatDate(currentDate)
 
       // Check capacity for this role on this date
-      const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr)
+      const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr, result)
       let availableSlots = capacity[role] ?? 0
 
       if (availableSlots > 0) {

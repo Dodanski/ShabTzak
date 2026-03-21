@@ -4,6 +4,32 @@ import { meetsMinimumPresence } from './presenceValidator'
 import { isWeekend, parseDate, formatDate, getDateRange } from '../utils/dateUtils'
 import type { Soldier, LeaveRequest, LeaveAssignment, AppConfig, LeaveSchedule } from '../models'
 
+function meetsMinimumPresenceByRole(
+  soldiers: Soldier[],
+  assignments: LeaveAssignment[],
+  date: string,
+  config: AppConfig,
+): boolean {
+  const checkDate = parseDate(date)
+  const onLeaveIds = new Set(
+    assignments
+      .filter(a => {
+        const s = parseDate(a.startDate.split('T')[0])
+        const e = parseDate(a.endDate.split('T')[0])
+        return s <= checkDate && checkDate <= e
+      })
+      .map(a => a.soldierId)
+  )
+  const roleMinima = config.minBasePresenceByRole ?? {}
+  for (const [role, minRequired] of Object.entries(roleMinima)) {
+    const roleActive = soldiers.filter(s => s.status === 'Active' && s.role === role)
+    if (roleActive.length === 0) continue // no soldiers of this role, skip
+    const onLeave = roleActive.filter(s => onLeaveIds.has(s.id)).length
+    if (roleActive.length - onLeave < minRequired) return false
+  }
+  return true
+}
+
 /**
  * Greedy leave scheduler: sorts pending requests by priority (descending) then
  * fairness score (ascending), assigns each request if it satisfies all constraints.
@@ -36,11 +62,29 @@ export function scheduleLeave(
     const soldier = soldierMap.get(request.soldierId)
     if (!soldier) continue
 
-    // Check availability: no overlap, valid service period, active status
-    if (!isLeaveAvailable(soldier, request.startDate, request.endDate, result)) continue
+    const dates = getDateRange(parseDate(request.startDate), parseDate(request.endDate))
+    const dateSet = new Set(dates.map(d => formatDate(d)))
+
+    // Identify conflicting cyclical (non-manual) leaves for this soldier — manual overrides these
+    const conflictingCyclicalIndices: number[] = []
+    for (let i = 0; i < result.length; i++) {
+      const existing = result[i]
+      if (existing.soldierId !== request.soldierId) continue
+      if (!existing.isLocked || existing.requestId) continue // only displace cyclical (locked, no requestId)
+      const existingDates = getDateRange(
+        parseDate(existing.startDate.split('T')[0]),
+        parseDate(existing.endDate.split('T')[0]),
+      )
+      if (existingDates.some(d => dateSet.has(formatDate(d)))) {
+        conflictingCyclicalIndices.push(i)
+      }
+    }
+
+    // Check availability against result minus the cyclical leaves that would be displaced
+    const resultWithoutConflicts = result.filter((_, i) => !conflictingCyclicalIndices.includes(i))
+    if (!isLeaveAvailable(soldier, request.startDate, request.endDate, resultWithoutConflicts)) continue
 
     // Check base presence for every day of the proposed leave
-    const dates = getDateRange(parseDate(request.startDate), parseDate(request.endDate))
     const tentative: LeaveAssignment = {
       id: `tentative-${request.id}`,
       soldierId: request.soldierId,
@@ -51,12 +95,19 @@ export function scheduleLeave(
       isLocked: false,
       createdAt: new Date().toISOString(),
     }
-    const wouldViolatePresence = dates.some(date =>
-      !meetsMinimumPresence(soldiers, [...result, tentative], formatDate(date), config)
-    )
+    const proposedAssignments = [...resultWithoutConflicts, tentative]
+    const wouldViolatePresence = dates.some(date => {
+      const dateStr = formatDate(date)
+      return !meetsMinimumPresence(soldiers, proposedAssignments, dateStr, config)
+        || !meetsMinimumPresenceByRole(soldiers, proposedAssignments, dateStr, config)
+    })
     if (wouldViolatePresence) continue
 
-    // Approve: create the leave assignment
+    // Remove the displaced cyclical leaves (reverse order to keep indices valid)
+    for (let i = conflictingCyclicalIndices.length - 1; i >= 0; i--) {
+      result.splice(conflictingCyclicalIndices[i], 1)
+    }
+
     result.push({
       id: `assign-${request.id}`,
       soldierId: request.soldierId,

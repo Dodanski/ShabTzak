@@ -42,7 +42,7 @@ describe('Dashboard', () => {
 
   it('shows pending leave request count', () => {
     render(<Dashboard soldiers={[ACTIVE]} leaveRequests={[PENDING_REQUEST]} taskAssignments={[]} conflicts={[]} onGenerateSchedule={vi.fn()} />)
-    expect(screen.getByText(/pending leave/i)).toBeInTheDocument()
+    expect(screen.getByText(/pending requests/i)).toBeInTheDocument()
   })
 
   it('shows task assignment count', () => {
