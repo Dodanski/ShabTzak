@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const MOBILE_BREAKPOINT = 640 // Tailwind's 'sm' breakpoint
+const MOBILE_BREAKPOINT = 768 // Tailwind's 'md' breakpoint
 
 export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(() =>

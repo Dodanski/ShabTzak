@@ -53,7 +53,7 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
           </div>
 
           {/* Center: nav links - hidden on mobile */}
-          <nav className="hidden sm:flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+          <nav className="hidden md:flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
             {navLinks.map(({ href, label }) => {
               const isActive = hash === href || (href === '#' && (hash === '' || hash === '#'))
               return (
@@ -92,7 +92,7 @@ export default function AppShell({ children, unitName, onBackToAdmin }: AppShell
           </div>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-6 pb-20 sm:pb-6">
+      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-3 sm:py-6 pb-20 md:pb-6">
         {children}
       </main>
 
