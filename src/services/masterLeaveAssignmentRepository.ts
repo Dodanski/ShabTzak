@@ -100,8 +100,8 @@ export class MasterLeaveAssignmentRepository {
   }
 
   async createBatch(inputs: CreateLeaveAssignmentInput[]): Promise<LeaveAssignment[]> {
-    const BATCH_SIZE = 50
-    const DELAY_MS = 500
+    const BATCH_SIZE = 30  // Reduced from 50 to lower API pressure
+    const DELAY_MS = 2000  // Increased from 500ms to 2s between batches
 
     const assignments = inputs.map(input => ({
       id: generateId(),

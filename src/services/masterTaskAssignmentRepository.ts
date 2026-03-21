@@ -142,9 +142,9 @@ export class MasterTaskAssignmentRepository {
       }
     }
 
-    // Batch in groups of 20 with minimal delay
-    const BATCH_SIZE = 20
-    const DELAY_MS = 300
+    // Batch in groups with delay between batches to avoid rate limiting
+    const BATCH_SIZE = 15  // Reduced from 20 to lower API pressure
+    const DELAY_MS = 1500  // Increased from 300ms to 1.5s between batches
     const PROGRESS_UPDATE_FREQUENCY = 3
 
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {

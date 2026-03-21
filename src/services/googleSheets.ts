@@ -1,6 +1,6 @@
 const SHEETS_API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
-const MAX_RETRIES = 3
-const BASE_DELAY_MS = 500 // Start with 500ms delay
+const MAX_RETRIES = 5  // Increased from 3 to handle sustained rate limiting
+const BASE_DELAY_MS = 1000 // Start with 1s delay (increased from 500ms)
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -25,7 +25,7 @@ async function retryWithBackoff<T>(
         if (attempt === maxRetries) throw lastError
       }
 
-      // Exponential backoff: 500ms, 1s, 2s
+      // Exponential backoff: 1s, 2s, 4s, 8s, 16s
       const delay = BASE_DELAY_MS * Math.pow(2, attempt)
       console.warn(`[API Rate Limited] Retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`)
       await sleep(delay)
