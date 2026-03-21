@@ -1,240 +1,144 @@
-# ShabTzak — IDF Shift Scheduling App
+# ShabTzak Implementation Progress
 
-Shabbat shift-scheduling web app for IDF units. Admins manage units/tasks, commanders schedule soldiers and leave. **Deployed to GitHub Pages.**
+## Project
+Web-based IDF soldier scheduling system — React SPA + Google Sheets API + OAuth.
+Manages weekend duties, leave requests, and task assignments across military units.
 
----
-
-## Current State (as of 2026-03-20)
-
-### Last commits
-```
-1d55fb8 merge: resolve conflict with origin/main - keep multi-role display in TasksPage
-6afdd61 feat: implement mobile responsive design
-29de591 feat: implement multi-unit scheduling & alternative role requirements
-```
-
-### Test status
-- **535 passing, 1 failing**
-- Failing test: `src/components/Dashboard.test.tsx` — `'shows pending leave request count'`
-- Root cause: The mobile responsive redesign renamed the stat label from "Pending Leave" to **"Pending Requests"** in `Dashboard.tsx:42`. The test still searches for `/pending leave/i`.
-- Fix: In `Dashboard.test.tsx` line 45, change `screen.getByText(/pending leave/i)` to `screen.getByText(/pending requests/i)`.
-
-### Immediate next action
-Fix the one failing test described above. Then run `npm test -- --run` to confirm all 536 pass before doing anything else.
+**Stack:** React 18, TypeScript, Vite 5, Tailwind CSS v3, Vitest, Google Sheets API v4
+**Node version:** 18.16.0 (affects some package compatibility — see adaptations below)
 
 ---
 
-## Quick Start
+## CURRENT TASK: Fix Mobile Navigation Bug
 
-```bash
-npm run dev      # Dev server
-npm run deploy   # Build & deploy to GitHub Pages
-npm run build    # TypeScript + Vite build check
-npm test -- --run  # Run all tests once
+### Problem
+The bottom navigation bar (main nav tabs: Soldiers, Tasks, Schedule, etc.) **disappears in portrait phone view**. It only shows when the phone is rotated to landscape mode.
+
+### Root Cause
+In `src/components/BottomNav.tsx` line 45, the nav uses `sm:hidden` class:
+```tsx
+<nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-olive-200 sm:hidden z-50 ...">
 ```
 
-**Stack:** React 18, TypeScript, Vite, Tailwind CSS, Google Sheets (database), Google OAuth
+The `sm` breakpoint is 640px. Most phones in portrait are ~375px (visible), but landscape is ~667px (hidden). This is backwards — we want the bottom nav visible on ALL phone sizes.
+
+### Solution (User-Approved)
+Change from `sm:hidden` to `md:hidden` (768px breakpoint):
+- Portrait phone (~375px): Shows bottom nav ✓
+- Landscape phone (~667px): Shows bottom nav ✓
+- Tablets and larger (768px+): Hides bottom nav, uses top nav ✓
+
+### Files to Modify
+1. `src/components/BottomNav.tsx` — Change `sm:hidden` to `md:hidden` on line 45
+2. `src/components/AppShell.tsx` — Change `hidden sm:flex` to `hidden md:flex` on line 56 (top nav)
+3. `src/components/AppShell.tsx` — Change `pb-20 sm:pb-6` to `pb-20 md:pb-6` on line 95 (main content padding)
+4. `src/hooks/useIsMobile.ts` — Change `MOBILE_BREAKPOINT` from 640 to 768 (line 3)
+
+### After Fix
+Run `npm run build` to verify no TypeScript errors, then test on mobile device.
 
 ---
 
-## Architecture: Two-Spreadsheet Model
-
-**Admin Sheet** (`VITE_SPREADSHEET_ID`) — `MasterDataService`
-- Tabs: `Admins`, `Units`, `Commanders`, `Tasks`, `Config`, `History`, `Roles`
-
-**Per-Unit Sheet** (ID from Units tab) — `DataService`
-- `{tabPrefix}` — Soldiers (15 cols: ID, FirstName, LastName, Role, Unit, ServiceStart, ServiceEnd, InitialFairness, CurrentFairness, Status, HoursWorked, WeekendLeavesCount, MidweekLeavesCount, AfterLeavesCount, InactiveReason)
-- `{tabPrefix}_TaskSchedule` — Task assignments
-- `{tabPrefix}_LeaveRequests` — Leave requests
-- `{tabPrefix}_LeaveSchedule` — Leave assignments
-
-**Critical:** Soldiers live in unit-named tab (e.g., `"א'"`) NOT `{prefix}_Soldiers`.
-**Critical:** Soldiers now have 15 columns (Unit added at index 4). Old spreadsheets with 14 columns parse safely — Unit defaults to `undefined`.
-
----
-
-## Data Models
-
-| Type | Key Fields |
-|------|-----------|
-| **Soldier** | `id`, `firstName`, `lastName`, `role`, `unit?` (new), `serviceStart/End`, `status`, fairness/hours/leave counts |
-| **Task** | `id`, `taskType`, `startTime/endTime` (ISO), `durationHours`, `roleRequirements[]`, `minRestAfter`, `isSpecial` |
-| **RoleRequirement** | `roles: string[]` (array, not single role), `count: number` — backward compat: old `role?: string` field normalized to `roles[]` in parsers |
-| **LeaveRequest** | `id`, `soldierId`, `startDate/endDate`, `leaveType`, `priority`, `status` |
-| **LeaveAssignment** | `id`, `soldierId`, dates, `leaveType`, `isWeekend`, `requestId` |
-| **AppConfig** | `leaveRatioDaysInBase`, `leaveRatioDaysHome`, `leaveBaseExitHour`, `leaveBaseReturnHour`, `minBasePresenceByRole`, `weekendDays`, others |
-| **AvailabilityStatus** | `'available' \| 'on-leave' \| 'on-task' \| 'on-way-home' \| 'on-way-to-base'` — `buildAvailabilityMatrix` returns `CellData` objects (not raw strings) |
+## Environment Notes (for new agent)
+- Node 18.16.0 — several "latest" packages require Node 20+
+- Use `vitest --run` (not `vitest`) in non-interactive contexts
+- jsdom pinned to `^24` (v28 breaks on Node 18 — ESM-only dependency issue)
+- jsdom v24 does NOT have `navigator.clipboard` — use `Object.defineProperty(navigator, 'clipboard', ...)` in tests
+- Tailwind pinned to `v3` (v4 has breaking API changes)
+- Datetime strings passed to algorithm functions must be UTC (`Z` suffix) for correct timezone math
+- `tsconfig.app.json` excludes `*.test.ts(x)` — test files are not type-checked during `npm run build`
+- Google type declarations (`TokenClient`, etc.) are in `src/types/google.d.ts` inside `declare global {}`
+- `models/index.ts` re-exports domain type aliases (`SoldierRole`, `ConstraintType`, etc.) from constants
+- Production build: `npm run build` → `tsc -b && vite build` (✅ passing)
+- `Array.prototype.at()` is not in ES2020 lib — use bracket notation `arr[arr.length - 1]` instead
 
 ---
 
-## Key Features
+## Overall Progress
 
-### Mobile Responsive Design (added 2026-03-19)
-- **Breakpoint:** `< 640px` = mobile, `>= 640px` = desktop (Tailwind `sm:`)
-- **`useIsMobile` hook:** `src/hooks/useIsMobile.ts` — listens to `window.resize`, returns boolean
-- **`BottomNav` component:** `src/components/BottomNav.tsx` — fixed bottom nav bar, `sm:hidden`, supports a "More" overflow menu
-- **Card layouts on mobile:** SoldierCard, LeaveRequestCard components replace table rows
-- **Pages with mobile layouts:** SoldiersPage, TasksPage, LeaveRequestsPage, HistoryPage, AdminPanel (admins/units/commanders tabs)
-- **ScheduleCalendar on mobile:** Shows a soldier selector dropdown; renders only the selected soldier's row instead of the full grid
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| 1. Project Setup & Infrastructure | 1–10 | ✅ Complete |
+| 2. Data Layer & Google Sheets Integration | 11–25 | ✅ Complete |
+| 3. Core Domain Services / Algorithms | 26–40 | ✅ Complete |
+| 4. Scheduling Algorithms (advanced) | 41–60 | 🔄 In Progress (2/20) |
+| 5. UI Components | 61–85 | 🔄 In Progress (19/25) |
+| 6. Export & Multi-User Features | 86–95 | 🔄 In Progress (3/10) |
+| 7. Polish & Production Ready | 96–100 | 🔄 In Progress (1/5) |
 
-### Alternative Role Requirements
-- Tasks accept ANY of multiple roles per slot: `{ roles: ["Driver", "Fighter", "Squad leader"], count: 2 }`
-- Backward compatible: old `{ role: "Driver", count: 1 }` shape normalized to `roles[]` in `parsers.ts`
-- TasksPage UI: multi-select checkboxes when adding/editing role requirements
-- Scheduler picks best available soldier matching ANY of the acceptable roles
-
-### Multi-Unit Scheduling
-- **Soldier Pool:** All soldiers from all units available for task assignment
-- **Global Fairness:** Fairness tracked across ALL soldiers, not per-unit
-- **Unit Affinity:** Scheduler prefers same-unit soldiers when fairness scores are equal; fills from other units if needed
-- **Task Completion Priority:** Tasks are filled 100% before leave scheduling runs
-- **Unit Tracking:** `TaskAssignment.assignedUnitId` records which unit each assigned soldier belongs to
-- **View:** Commanders see only their unit; Admin sees all units
-
-### Smart Cyclical Leaves
-- **Role-based capacity:** Only generates leaves when `minBasePresenceByRole` is maintained per role
-- **Pattern:** N days in base + M days at home (10:4 default, configurable in Config tab)
-- **Per-soldier phase offset:** Soldiers are staggered — not all going on leave simultaneously
-- **Exit/Return times:** Partial-day transitions use `leaveBaseExitHour` / `leaveBaseReturnHour`
-- **Transition days:** Day before leave = "on-way-home", day after = "on-way-to-base" (affects task availability)
-- **Manual leaves override** cyclical pattern
-
-### Schedule Generation (Priority Hierarchy)
-1. **Tasks (100% fill)** — All task role slots must be filled with available soldiers
-2. **Cyclical leaves** — Auto-generated respecting `minBasePresenceByRole`
-3. **Manual leave requests** — Override cyclical; processed by priority order
-4. **Unit Affinity** — Secondary tiebreaker in task assignment
+**Test suite: 304 tests, 48 files, all passing**
+**Production build: ✅ passing (162 kB JS bundle)**
 
 ---
 
-## Schedule Generation Flow
+## Completed Tasks
 
-```
-1. calculateSchedulePeriod() → min(soldier.serviceStart) to max(soldier.serviceEnd)
-2. expandRecurringTasks() → 1 task definition becomes N daily instances (_day0, _day1, ...)
-3. generateLeaveSchedule():
-   a. generateCyclicalLeaves() → respecting minBasePresenceByRole capacity, per-soldier phase offsets
-   b. scheduleLeave() → processes manual requests (override cyclical)
-   c. Batch-create leave assignments (50/batch, 2s delay)
-4. generateTaskSchedule():
-   a. scheduleTasks() → greedy, unit affinity, global fairness sort
-   b. Batch-create task assignments (20/batch, 1s delay)
-5. applyLeaveAssignment() loop → update soldier fairness (1s delay every 5 updates)
-```
+### Batches 1–8 (Tasks 1–25) — Phases 1 & 2 ✅
+All infrastructure, data models, constants, utilities, Google Sheets integration, all repositories, DataService facade — complete.
 
----
+### Batch 9–12 (Tasks 26–41) — Phase 3 + Phase 4 start ✅
+Fairness calculator, availability checkers, presence validator, leave/task schedulers, conflict detectors, domain services (SoldierService, TaskService, LeaveRequestService, ScheduleService, FairnessUpdateService), buildAvailabilityMatrix, checkDrivingHoursLimit.
 
-## Key Algorithms
+### Batch 13 (Tasks 42–46) — Phase 5: Core UI ✅
+AuthContext + useAuth, LoginPage, AppShell, SoldiersPage, LeaveRequestForm.
 
-**`calculateLeaveCapacityPerRole()`** — `src/algorithms/leaveCapacityCalculator.ts`
-- For each role: `capacity = total_active_of_role - minBasePresence[role]`
+### Batch 14 (Tasks 47–49) — Phase 5: More UI + App Wiring ✅
+ScheduleCalendar (availability grid), Dashboard (stats), App.tsx hash-based routing.
 
-**`scheduleTasks()`** — `src/algorithms/taskScheduler.ts`
-1. For each role requirement: get `roles[]` array (or normalize legacy `role` field)
-2. Filter eligible soldiers: active, role in `roles[]`, rest period met, within service dates, not on leave
-3. Determine task's unit (majority unit of already-assigned soldiers on this task)
-4. Sort by: unit affinity first, then global fairness ascending
-5. Assign up to required count; record `assignedUnitId`
-
-**`generateCyclicalLeaves()`** — `src/algorithms/cyclicalLeaveScheduler.ts`
-1. Group soldiers by role
-2. Each soldier gets a phase offset (staggered start in the N+M cycle)
-3. For each date, if capacity > 0 for that role: assign soldiers in cycle order
-4. Exit day / full days / return day handled with partial-day timestamps
-
-**`buildAvailabilityMatrix()`** — `src/algorithms/availabilityMatrix.ts`
-- Returns `CellData` objects (not raw strings) — `{ status, label? }`
-- Statuses: `available`, `on-leave`, `on-task`, `on-way-home`, `on-way-to-base`
-- Service date filtering: cells outside `serviceStart/End` render as gray `'-'`
-
-**`isTaskAvailable()`** — `src/algorithms/taskAvailability.ts`
-- Checks: active status, role match, within service dates, rest period met, not on this task, not on leave, not on conflicting transition day
+### Batch 15 (Tasks 50–59) — Hooks, Export, Pages, Build ✅
+- ✅ **Task 50** — `useDataService` hook: initializes DataService when OAuth token available, loads all data
+- ✅ **Task 51** — `LeaveRequestsPage`: list with approve/deny buttons, status badges
+- ✅ **Task 52** — `SchedulePage`: ScheduleCalendar + conflict list + Generate Schedule button
+- ✅ **Task 53** — `formatScheduleAsText`: formats leave assignments as WhatsApp-friendly text
+- ✅ **Task 54** — `exportToPdf`: triggers browser print dialog
+- ✅ **Task 55** — `ConflictList`: conflict items with type badge, message, suggestions
+- ✅ **Task 56** — `ErrorBoundary`: class-based React error boundary with retry button
+- ✅ **Task 57** — App.tsx full wiring: useDataService + ErrorBoundary + real handlers (discharge, addSoldier, approve, deny, generateSchedule)
+- ✅ **Task 58** — Export buttons on SchedulePage: "Copy for WhatsApp" + "Print"
+- ✅ **Task 59** — Production build: fixed TS errors, build passes cleanly
 
 ---
 
-## Rate Limiting & Batching
+## Next Up
 
-- **Sheets API:** Exponential backoff retry (3 retries, base 500ms, caps at 429)
-- **Leave assignments:** Batch 50 per call, 2s delay between batches
-- **Task assignments:** Batch 20 per call, 1s delay between batches
-- **Fairness updates:** 1s delay every 5 updates (in `App.tsx` after schedule generation)
-- **Progress tracking:** Update every 60 assignments, auto-reload at 14-day milestones
+### Batch 16 (Tasks 60–69) — Multi-User + E2E + Polish
+- 🔲 **Task 60** — `VersionConflictBanner`: detects stale data via VersionService, shows reload prompt
+- 🔲 **Task 61** — `useScheduleGenerator` hook: wraps ScheduleService, exposes loading/conflict state
+- 🔲 **Task 62** — `TasksPage` component: list tasks with add/delete
+- 🔲 **Task 63** — Wire TasksPage into App.tsx (add `#tasks` hash route)
+- 🔲 **Task 64** — History snapshot view: show last N history entries
+- 🔲 **Task 65** — `useLoadingToast` hook: simple in-app toast for async operation feedback
+- 🔲 **Task 66** — Add VITE_SPREADSHEET_ID to `.env.local` example and README
+- 🔲 **Task 67** — E2E smoke test setup with Playwright
+- 🔲 **Task 68** — E2E: login → navigate → generate schedule flow
+- 🔲 **Task 69** — Final review: lighthouse score, bundle size, deploy instructions
 
 ---
 
-## File Structure (Key Files)
+## Architecture
 
 ```
 src/
-  algorithms/
-    taskScheduler.ts           # Greedy assignment, unit affinity, global fairness
-    leaveScheduler.ts          # Manual leave request processing
-    cyclicalLeaveScheduler.ts  # Auto-generate staggered cyclical leaves
-    leaveCapacityCalculator.ts # Role-based capacity: total - minBasePresence
-    taskAvailability.ts        # Availability rules (status, role, rest, transition days)
-    availabilityMatrix.ts      # Builds CellData matrix for calendar display
-
-  components/
-    SchedulePage.tsx               # Calendar page, controls schedule generation
-    ScheduleCalendar.tsx           # Soldier mode grid (80+ days); mobile: soldier selector
-    TaskModeCalendar.tsx           # Task mode weekly calendar (06:00-23:59)
-    AdminDashboard.tsx             # Admin dashboard orchestrator
-    AdminDashboardPieChart.tsx     # Soldier status pie chart with expandable lists
-    AdminWeeklyTaskCalendar.tsx    # Weekly task view across all units
-    AdminPanel.tsx                 # Admin management tabs; mobile card views for tables
-    Dashboard.tsx                  # Commander dashboard; stat labels: "Active Soldiers",
-                                   #   "Pending Requests", "Task Assignments", "Conflicts"
-    SoldiersPage.tsx               # Soldiers list; mobile: SoldierCard layout
-    TasksPage.tsx                  # Tasks list; mobile: card layout; multi-role UI
-    LeaveRequestsPage.tsx          # Leave requests; mobile: LeaveRequestCard layout
-    HistoryPage.tsx                # History log; mobile: card layout
-    SoldierCard.tsx                # Mobile card component for soldiers
-    LeaveRequestCard.tsx           # Mobile card component for leave requests
-    BottomNav.tsx                  # Mobile bottom navigation bar (sm:hidden)
-    AppShell.tsx                   # App layout; includes BottomNav on mobile
-
-  hooks/
-    useIsMobile.ts             # Returns true if window.innerWidth < 640px
-    useDataService.ts          # Data loading hook
-
-  services/
-    scheduleService.ts         # Orchestrates schedule generation
-    googleSheets.ts            # API client with backoff retry
-    masterDataService.ts       # Admin spreadsheet access
-    taskAssignmentRepository.ts  # createBatch (20/call)
-    leaveAssignmentRepository.ts # createBatch (50/call)
-    parsers.ts                 # Normalizes old role? field → roles[] array
-    serializers.ts             # 15-column soldier serialization (includes Unit at index 4)
-
-  models/
-    Soldier.ts                 # Includes optional `unit?: string` field
-    Task.ts                    # RoleRequirement uses `roles: string[]` not `role: string`
+  constants/        — ROLES, LEAVE_TYPES, FAIRNESS_WEIGHTS, DEFAULT_CONFIG
+  models/           — Soldier, Task, Leave, Schedule, Config + re-exports from constants
+  utils/            — dateUtils, validation, exportUtils
+  config/           — env.ts (VITE_GOOGLE_CLIENT_ID, VITE_SPREADSHEET_ID)
+  types/            — google.d.ts (GIS global type declarations)
+  algorithms/       — fairness, availability, schedulers, conflict detectors, availabilityMatrix
+  services/         — GoogleSheets, repositories, domain services, DataService facade
+  context/          — AuthContext (Google OAuth)
+  hooks/            — useDataService
+  components/       — LoginPage, AppShell, ErrorBoundary, Dashboard, SoldiersPage,
+                      LeaveRequestForm, LeaveRequestsPage, ScheduleCalendar,
+                      SchedulePage, ConflictList
+  App.tsx           — AuthProvider + ErrorBoundary + hash routing
 ```
 
----
-
-## Environment Variables
-
+## Git Log (recent)
 ```
-VITE_GOOGLE_CLIENT_ID=...
-VITE_GOOGLE_API_KEY=...
-VITE_SPREADSHEET_ID=1t9g1Fu3IuLzEAC1n-R4x6KEP-fQVAkXV6xwbIQ0kyCM
-VITE_ADMIN_EMAIL=guy.moshk@gmail.com
+3154c45 feat: add hooks, export utils, new pages, error boundary, build fix (Batch 15)
+2c72d5b feat: add ScheduleCalendar, Dashboard, and wire App.tsx (Batch 14)
+01e927b feat: add React UI components (Batch 13)
+a7fb6f9 feat: add fairness updates, availability matrix, and driving hour limit check
+4603ab2 feat: add domain services for soldier, task, leave request, and schedule generation
 ```
-
----
-
-## Time Format Handling
-
-- **Tasks:** Stored as `HH:MM:SS` (no date) for recurring tasks; `YYYY-MM-DDTHH:MM:SS` for pillbox
-- **Dates:** ISO format `YYYY-MM-DD`
-- **Day boundary:** 06:00–05:59 (06:00 starts new day in calendar display)
-- **Time picker:** Custom 24-hour input — no AM/PM
-
----
-
-## Known Issues / Pending Work
-
-1. **Failing test (fix first):** `src/components/Dashboard.test.tsx:45` — change `/pending leave/i` to `/pending requests/i`
-2. **REFACTOR_PLAN.md exists** (`REFACTOR_PLAN.md`) — describes moving to a single shared `TaskSchedule` / `LeaveSchedule` in the Admin/Master sheet instead of per-unit sheets. Not yet implemented. Read it before making architectural changes.
-3. **`act()` warnings in AdminPanel tests** — not failures, just React testing warnings about state updates outside `act()`. Non-blocking.
