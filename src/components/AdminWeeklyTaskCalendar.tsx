@@ -28,6 +28,30 @@ function getWeekDates(weekStartStr: string): string[] {
   })
 }
 
+/**
+ * Gets all assignments for a given base task on a specific date.
+ * Matches expanded task IDs based on the day index.
+ */
+function getAssignmentsForTaskOnDate(
+  task: Task,
+  date: string,
+  taskAssignments: TaskAssignment[]
+): TaskAssignment[] {
+  // Calculate the day index for this date based on the task's original start date
+  const taskStartDate = task.startTime.split('T')[0]
+  const taskStartMs = new Date(taskStartDate).getTime()
+  const targetDateMs = new Date(date).getTime()
+  const dayIndex = Math.floor((targetDateMs - taskStartMs) / (24 * 60 * 60 * 1000))
+
+  // If the date is before the task start, no assignments
+  if (dayIndex < 0) return []
+
+  // The expanded task ID for this day would be "{taskId}_day{dayIndex}"
+  const expectedExpandedId = `${task.id}_day${dayIndex}`
+
+  return taskAssignments.filter(a => a.taskId === expectedExpandedId)
+}
+
 export default function AdminWeeklyTaskCalendar({
   tasks,
   weekStart,
@@ -39,6 +63,7 @@ export default function AdminWeeklyTaskCalendar({
 
   // Create soldier map for quick lookup
   const soldierMap = new Map(soldiers.map(s => [s.id, s]))
+
 
   const weekDates = getWeekDates(weekStart)
   const today = new Date().toISOString().split('T')[0]
@@ -155,7 +180,7 @@ export default function AdminWeeklyTaskCalendar({
                             </p>
 
                             {(() => {
-                              const assignedSoldiers = taskAssignments.filter(a => a.taskId === task.id)
+                              const assignedSoldiers = getAssignmentsForTaskOnDate(task, date, taskAssignments)
                               if (assignedSoldiers.length === 0) {
                                 return <p className="text-xs text-red-500 italic">No soldiers assigned</p>
                               }
@@ -256,7 +281,7 @@ export default function AdminWeeklyTaskCalendar({
 
                           {/* Show assigned soldiers */}
                           {(() => {
-                            const assignedSoldiers = taskAssignments.filter(a => a.taskId === task.id)
+                            const assignedSoldiers = getAssignmentsForTaskOnDate(task, date, taskAssignments)
                             if (assignedSoldiers.length === 0) {
                               return <p className="text-xs text-red-500 italic">No soldiers assigned</p>
                             }

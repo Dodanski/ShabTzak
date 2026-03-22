@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { MasterDataService } from '../services/masterDataService'
-import type { Admin, Unit, Commander, Task, Soldier, AppConfig, CreateTaskInput, UpdateTaskInput } from '../models'
+import type { Admin, Unit, Commander, Task, Soldier, AppConfig, CreateTaskInput, UpdateTaskInput, TaskAssignment } from '../models'
 import { deriveTabPrefix } from '../utils/tabPrefix'
 import TasksPage from './TasksPage'
 import AdminDashboard from './AdminDashboard'
@@ -28,6 +28,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   const [tasks, setTasks] = useState<Task[]>([])
   const [soldiers, setSoldiers] = useState<Soldier[]>([])
   const [roles, setRoles] = useState<string[]>([])
+  const [taskAssignments, setTaskAssignments] = useState<TaskAssignment[]>([])
   const [newRoleName, setNewRoleName] = useState('')
   const [configData, setConfigData] = useState<AppConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -124,7 +125,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
 
   async function reload() {
     setLoading(true)
-    const [a, u, c, r, t, cfg, s] = await Promise.all([
+    const [a, u, c, r, t, cfg, s, ta] = await Promise.all([
       masterDs.admins.list(),
       masterDs.units.list(),
       masterDs.commanders.list(),
@@ -132,8 +133,9 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       masterDs.tasks.list(),
       masterDs.config.read(),
       masterDs.soldiers.list(),
+      masterDs.taskAssignments.list(),
     ])
-    setAdmins(a); setUnits(u); setCommanders(c); setRoles(r); setTasks(t); setConfigData(cfg); setSoldiers(s)
+    setAdmins(a); setUnits(u); setCommanders(c); setRoles(r); setTasks(t); setConfigData(cfg); setSoldiers(s); setTaskAssignments(ta)
     setLoading(false)
   }
 
@@ -316,7 +318,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
           <AdminDashboard
             tasks={tasks}
             soldiers={soldiers}
-            taskAssignments={[]}  // TODO: load from master.taskAssignments.list()
+            taskAssignments={taskAssignments}
             onGenerateSchedule={handleGenerateScheduleForAllUnits}
             isGeneratingSchedule={scheduleGenerating}
             scheduleError={scheduleError}
