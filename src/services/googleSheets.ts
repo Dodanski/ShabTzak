@@ -185,6 +185,30 @@ export class GoogleSheetsService {
   }
 
   /**
+   * Clear multiple ranges in a single API call using batchClear
+   * Much more efficient than calling clearValues multiple times
+   */
+  async batchClearRanges(spreadsheetId: string, ranges: string[]): Promise<void> {
+    if (ranges.length === 0) return
+
+    return retryWithBackoff(async () => {
+      const url = `${SHEETS_API_BASE}/${spreadsheetId}/values:batchClear`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ranges }),
+      })
+      if (!response.ok) {
+        const statusText = `${response.status} ${response.statusText}`
+        throw new Error(`Failed to batch clear: ${statusText}`)
+      }
+    })
+  }
+
+  /**
    * Execute a batchUpdate on a spreadsheet (e.g. add sheets)
    */
   async batchUpdate(spreadsheetId: string, requests: object[]): Promise<void> {

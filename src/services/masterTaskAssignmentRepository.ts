@@ -193,7 +193,7 @@ export class MasterTaskAssignmentRepository {
 
   /**
    * Delete task assignments by their schedule IDs.
-   * Uses batchUpdate API to clear multiple rows in a single request.
+   * Uses batchClear API to clear multiple rows in a single request.
    */
   async deleteByScheduleIds(scheduleIds: string[]): Promise<void> {
     if (scheduleIds.length === 0) return
@@ -215,25 +215,17 @@ export class MasterTaskAssignmentRepository {
 
     console.log(`[masterTaskAssignmentRepository] Deleting ${rowIndicesToClear.length} task assignments`)
 
-    // Use batchUpdate to clear multiple rows in fewer API calls
-    // Group consecutive rows for efficient range clearing
-    const BATCH_SIZE = 50  // Max rows per API call
-    const DELAY_MS = 500
+    // Use batchClear to clear multiple rows in fewer API calls
+    // Each batch clears up to 100 ranges in a single API call
+    const BATCH_SIZE = 100  // Google Sheets allows many ranges per batchClear
+    const DELAY_MS = 1000  // Delay between batches to avoid rate limiting
 
     for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
       const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
-      // Create batch of empty rows
-      const emptyRows = batch.map(() => ['', '', '', '', '', '', '', ''])
+      // Create array of range strings for batchClear
+      const ranges = batch.map(rowNum => `${this.tabName}!A${rowNum}:H${rowNum}`)
 
-      // Use batch update - update each row individually but in sequence
-      // This is still multiple calls but much faster than before
-      await Promise.all(batch.map((rowNum, idx) =>
-        this.sheets.updateValues(
-          this.spreadsheetId,
-          `${this.tabName}!A${rowNum}:H${rowNum}`,
-          [emptyRows[idx]]
-        )
-      ))
+      await this.sheets.batchClearRanges(this.spreadsheetId, ranges)
 
       if (i + BATCH_SIZE < rowIndicesToClear.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_MS))

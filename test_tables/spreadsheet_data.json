@@ -475,24 +475,6 @@
       "InactiveReason": ""
     },
     {
-      "ID": 8129679,
-      "First Name": "נתנאל",
-      "Last Name": "דור",
-      "Role": "Driver",
-      "Phone": "054-2402070",
-      "Unit": "Unit2",
-      "ServiceStart": "2026-03-27",
-      "ServiceEnd": "2026-05-25",
-      "InitialFairness": "0",
-      "CurrentFairness": "0",
-      "Status": "Active",
-      "HoursWorked": "0",
-      "WeekendLeavesCount": "0",
-      "MidweekLeavesCount": "0",
-      "AfterLeavesCount": "0",
-      "InactiveReason": ""
-    },
-    {
       "ID": 7549970,
       "First Name": "יוסף יצחק",
       "Last Name": "חזקוב",
@@ -6071,674 +6053,674 @@
       "CreatedBy": ""
     },
     {
-      "ScheduleID": "sched_20260320_1329_D2CP",
-      "TaskID": "Tour 3_day27",
-      "SoldierID": "8129679",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_73OR",
-      "TaskID": "Tour 3_day27",
-      "SoldierID": "8461290",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_Z7R0",
-      "TaskID": "Tour 3_day27",
-      "SoldierID": "9033701",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_OHDC",
-      "TaskID": "Alfa Tour 3_day27",
-      "SoldierID": "8569001",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_QTNO",
-      "TaskID": "Alfa Tour 3_day27",
-      "SoldierID": "6855906",
-      "AssignedRole": "A Driver",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_MDH7",
-      "TaskID": "Alfa Tour 3_day27",
-      "SoldierID": "8458334",
-      "AssignedRole": "A Medic",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_MB3O",
-      "TaskID": "Alfa Tour 3_day27",
-      "SoldierID": "5406834",
-      "AssignedRole": "A Radio Operator",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_5ITT",
-      "TaskID": "Tour 1_day28",
-      "SoldierID": "8594133",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_SIHX",
-      "TaskID": "Tour 1_day28",
-      "SoldierID": "8129679",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_LM8P",
-      "TaskID": "Tour 1_day28",
-      "SoldierID": "8461290",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_S62R",
-      "TaskID": "Tour 1_day28",
-      "SoldierID": "9033701",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_CW97",
-      "TaskID": "Tour 1_day28",
-      "SoldierID": "8595303",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_F68K",
-      "TaskID": "Alfa Tour 1_day28",
-      "SoldierID": "6855906",
-      "AssignedRole": "A Driver",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_DTFL",
-      "TaskID": "Alfa Tour 1_day28",
-      "SoldierID": "5406834",
-      "AssignedRole": "A Radio Operator",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_2GFX",
-      "TaskID": "Alfa Tour 1_day28",
-      "SoldierID": "8458334",
-      "AssignedRole": "A Medic",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_MOW9",
-      "TaskID": "Alfa Tour 1_day28",
-      "SoldierID": "8569001",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_GF8K",
-      "TaskID": "Tour 2_day28",
-      "SoldierID": "8164702",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_DMT8",
-      "TaskID": "Tour 2_day28",
-      "SoldierID": "7470983",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_0OE7",
-      "TaskID": "Tour 2_day28",
-      "SoldierID": "5360955",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_XO3B",
-      "TaskID": "Tour 2_day28",
-      "SoldierID": "7097304",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_GLUX",
-      "TaskID": "Tour 2_day28",
-      "SoldierID": "7660317",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_LLGJ",
-      "TaskID": "Alfa Tour 2_day28",
-      "SoldierID": "7342496",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_PC41",
-      "TaskID": "Tour 3_day28",
-      "SoldierID": "8594133",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_ZX3V",
-      "TaskID": "Tour 3_day28",
-      "SoldierID": "8129679",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_S7AK",
-      "TaskID": "Tour 3_day28",
-      "SoldierID": "8461290",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_K0QO",
-      "TaskID": "Tour 3_day28",
-      "SoldierID": "9033701",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_0TNZ",
-      "TaskID": "Alfa Tour 3_day28",
-      "SoldierID": "8569001",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_KDZ7",
-      "TaskID": "Alfa Tour 3_day28",
-      "SoldierID": "6855906",
-      "AssignedRole": "A Driver",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_DHZE",
-      "TaskID": "Alfa Tour 3_day28",
-      "SoldierID": "8458334",
-      "AssignedRole": "A Medic",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_G129",
-      "TaskID": "Alfa Tour 3_day28",
-      "SoldierID": "5406834",
-      "AssignedRole": "A Radio Operator",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_XJW9",
-      "TaskID": "Tour 1_day29",
-      "SoldierID": "8594133",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_97C9",
-      "TaskID": "Tour 1_day29",
-      "SoldierID": "8129679",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_4CK4",
-      "TaskID": "Tour 1_day29",
-      "SoldierID": "8461290",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_IOHE",
-      "TaskID": "Tour 1_day29",
-      "SoldierID": "9033701",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_O5QQ",
-      "TaskID": "Tour 1_day29",
-      "SoldierID": "8595303",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_TFB9",
-      "TaskID": "Alfa Tour 1_day29",
-      "SoldierID": "6855906",
-      "AssignedRole": "A Driver",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_P5FT",
-      "TaskID": "Alfa Tour 1_day29",
-      "SoldierID": "5406834",
-      "AssignedRole": "A Radio Operator",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_DTDX",
-      "TaskID": "Alfa Tour 1_day29",
-      "SoldierID": "8458334",
-      "AssignedRole": "A Medic",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_KZEG",
-      "TaskID": "Alfa Tour 1_day29",
-      "SoldierID": "8569001",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_B5BJ",
-      "TaskID": "Tour 2_day29",
-      "SoldierID": "8164702",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_N2NK",
-      "TaskID": "Tour 2_day29",
-      "SoldierID": "7470983",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_9CNR",
-      "TaskID": "Tour 2_day29",
-      "SoldierID": "5360955",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_TSR4",
-      "TaskID": "Tour 2_day29",
-      "SoldierID": "7097304",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_7MMN",
-      "TaskID": "Tour 2_day29",
-      "SoldierID": "7660317",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_I6FJ",
-      "TaskID": "Alfa Tour 2_day29",
-      "SoldierID": "7342496",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_236B",
-      "TaskID": "Tour 3_day29",
-      "SoldierID": "8594133",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_EH4E",
-      "TaskID": "Tour 3_day29",
-      "SoldierID": "8129679",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_N4L8",
-      "TaskID": "Tour 3_day29",
-      "SoldierID": "8461290",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_FROP",
-      "TaskID": "Tour 3_day29",
-      "SoldierID": "9033701",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_VA19",
-      "TaskID": "Alfa Tour 3_day29",
-      "SoldierID": "8569001",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_UXG4",
-      "TaskID": "Alfa Tour 3_day29",
-      "SoldierID": "6855906",
-      "AssignedRole": "A Driver",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_T1NW",
-      "TaskID": "Alfa Tour 3_day29",
-      "SoldierID": "8458334",
-      "AssignedRole": "A Medic",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_FD85",
-      "TaskID": "Alfa Tour 3_day29",
-      "SoldierID": "5406834",
-      "AssignedRole": "A Radio Operator",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_ZW1I",
-      "TaskID": "Tour 1_day30",
-      "SoldierID": "8594133",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_7INH",
-      "TaskID": "Tour 1_day30",
-      "SoldierID": "8129679",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_0FIW",
-      "TaskID": "Tour 1_day30",
-      "SoldierID": "8461290",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_HJ38",
-      "TaskID": "Tour 1_day30",
-      "SoldierID": "9033701",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_DJBM",
-      "TaskID": "Tour 1_day30",
-      "SoldierID": "8595303",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit2",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_0FM4",
-      "TaskID": "Alfa Tour 1_day30",
-      "SoldierID": "6855906",
-      "AssignedRole": "A Driver",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_DK82",
-      "TaskID": "Alfa Tour 1_day30",
-      "SoldierID": "5406834",
-      "AssignedRole": "A Radio Operator",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_I5WD",
-      "TaskID": "Alfa Tour 1_day30",
-      "SoldierID": "8458334",
-      "AssignedRole": "A Medic",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_6WQN",
-      "TaskID": "Alfa Tour 1_day30",
-      "SoldierID": "8569001",
-      "AssignedRole": "A Fighter",
-      "AssignedUnitID": "Command Post",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_CYLG",
-      "TaskID": "Tour 2_day30",
-      "SoldierID": "8164702",
-      "AssignedRole": "Driver",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_O1UY",
-      "TaskID": "Tour 2_day30",
-      "SoldierID": "7470983",
-      "AssignedRole": "Squad Leader",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_UNP9",
-      "TaskID": "Tour 2_day30",
-      "SoldierID": "5360955",
-      "AssignedRole": "Medic",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_ZXKZ",
-      "TaskID": "Tour 2_day30",
-      "SoldierID": "7097304",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
-    },
-    {
-      "ScheduleID": "sched_20260320_1329_G2EZ",
-      "TaskID": "Tour 2_day30",
-      "SoldierID": "7660317",
-      "AssignedRole": "Fighter",
-      "AssignedUnitID": "Unit1",
-      "IsLocked": "false",
-      "CreatedAt": "2026-03-20T13:29:10.847Z",
-      "CreatedBy": "guy.moshk@gmail.com"
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
+    },
+    {
+      "ScheduleID": "",
+      "TaskID": "",
+      "SoldierID": "",
+      "AssignedRole": "",
+      "AssignedUnitID": "",
+      "IsLocked": "",
+      "CreatedAt": "",
+      "CreatedBy": ""
     },
     {
       "ScheduleID": "sched_20260320_1329_V2GP",

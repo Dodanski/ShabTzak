@@ -307,6 +307,29 @@ export function crossValidate(
   const soldierIds = new Set(soldiers.map(s => s.id))
   const taskIds = new Set(tasks.map(t => t.id))
 
+  // Check for duplicate soldier IDs
+  const seenSoldierIds = new Map<string, Soldier[]>()
+  for (const soldier of soldiers) {
+    const existing = seenSoldierIds.get(soldier.id) || []
+    existing.push(soldier)
+    seenSoldierIds.set(soldier.id, existing)
+  }
+
+  for (const [id, duplicates] of seenSoldierIds) {
+    if (duplicates.length > 1) {
+      const units = duplicates.map(s => s.unit || 'Unknown').join(', ')
+      const roles = duplicates.map(s => s.role).join(', ')
+      errors.push({
+        severity: 'error',
+        entity: 'soldier',
+        id,
+        field: 'id',
+        message: `Duplicate soldier ID found ${duplicates.length} times in units: [${units}] with roles: [${roles}]. Each soldier must have a unique ID.`,
+        value: { units: duplicates.map(s => s.unit), roles: duplicates.map(s => s.role) }
+      })
+    }
+  }
+
   // Check soldier roles vs task roles
   const soldierRoles = new Set(soldiers.map(s => s.role).filter(Boolean))
   const taskRoles = new Set(

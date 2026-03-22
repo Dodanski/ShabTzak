@@ -170,7 +170,7 @@ export class MasterLeaveAssignmentRepository {
 
   /**
    * Delete leave assignments by their IDs.
-   * Uses parallel API calls within batches for better performance.
+   * Uses batchClear API to clear multiple rows in a single request.
    */
   async deleteByIds(ids: string[]): Promise<void> {
     if (ids.length === 0) return
@@ -192,21 +192,16 @@ export class MasterLeaveAssignmentRepository {
 
     console.log(`[masterLeaveAssignmentRepository] Deleting ${rowIndicesToClear.length} leave assignments`)
 
-    // Use parallel API calls within batches for better performance
-    const BATCH_SIZE = 50
-    const DELAY_MS = 500
+    // Use batchClear to clear multiple rows in fewer API calls
+    const BATCH_SIZE = 100  // Google Sheets allows many ranges per batchClear
+    const DELAY_MS = 1000  // Delay between batches to avoid rate limiting
 
     for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
       const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
+      // Create array of range strings for batchClear
+      const ranges = batch.map(rowNum => `${this.tabName}!A${rowNum}:I${rowNum}`)
 
-      // Execute batch in parallel
-      await Promise.all(batch.map(rowNum =>
-        this.sheets.updateValues(
-          this.spreadsheetId,
-          `${this.tabName}!A${rowNum}:I${rowNum}`,
-          [['', '', '', '', '', '', '', '', '']]
-        )
-      ))
+      await this.sheets.batchClearRanges(this.spreadsheetId, ranges)
 
       if (i + BATCH_SIZE < rowIndicesToClear.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_MS))
