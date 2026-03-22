@@ -1,6 +1,6 @@
 import { combinedFairnessScore } from './fairness'
 import { isTaskAvailable, checkDrivingHoursLimit } from './taskAvailability'
-import type { Soldier, Task, TaskAssignment, TaskSchedule, LeaveAssignment, AppConfig } from '../models'
+import type { Soldier, Task, TaskAssignment, TaskSchedule, LeaveAssignment, AppConfig, ScheduleConflict } from '../models'
 
 /**
  * Greedy task scheduler: processes tasks by start time, assigns soldiers to each
@@ -31,8 +31,12 @@ export function scheduleTasks(
   console.log('[taskScheduler] Soldiers:', soldiers.map(s => ({ id: s.id, role: s.role, status: s.status })))
 
   const result: TaskAssignment[] = [...existingAssignments]
+  const conflicts: ScheduleConflict[] = []
   // Use all tasks in system for rest period checking, fallback to just scheduled tasks
   const tasksForValidation = allTasksInSystem || tasks
+
+  // Track capacity shortages by role
+  const capacityShortages: Map<string, { needed: number; available: number; unfilledTasks: string[] }> = new Map()
 
 
   // Group tasks by date for visibility
@@ -132,6 +136,22 @@ export function scheduleTasks(
           createdBy: 'scheduler',
         })
       }
+
+      // Track unfilled positions (capacity shortage)
+      const unfilled = remaining - ranked.length
+      if (unfilled > 0) {
+        const roleKey = rolesAccepted.join('|')
+        const existing = capacityShortages.get(roleKey) || { needed: 0, available: 0, unfilledTasks: [] }
+        existing.needed += unfilled
+        existing.unfilledTasks.push(task.id)
+        // Count soldiers with this role for reference
+        if (existing.available === 0) {
+          existing.available = soldiers.filter(s =>
+            rolesAccepted.includes('Any') || rolesAccepted.includes(s.role)
+          ).length
+        }
+        capacityShortages.set(roleKey, existing)
+      }
     }
   }
 
@@ -154,15 +174,32 @@ export function scheduleTasks(
   }
 
   const newAssignmentsCount = result.length - existingAssignments.length
+
+  // Generate capacity shortage conflicts
+  for (const [roleKey, shortage] of capacityShortages) {
+    const uniqueTasks = [...new Set(shortage.unfilledTasks)]
+    conflicts.push({
+      type: 'CAPACITY_SHORTAGE',
+      message: `Missing ${shortage.needed} soldiers with role "${roleKey}" to fill ${uniqueTasks.length} tasks. Currently have ${shortage.available} soldiers with this role.`,
+      affectedSoldierIds: [],
+      affectedTaskIds: uniqueTasks.slice(0, 10), // Limit to first 10 for display
+      suggestions: [
+        `Add ${Math.ceil(shortage.needed / 30)} more soldiers with role "${roleKey}"`,
+        `Consider splitting "${roleKey}" tasks across multiple shifts`,
+      ],
+    })
+  }
+
   console.log('[taskScheduler] END:', {
     totalAssignments: result.length,
     newAssignments: newAssignmentsCount,
+    capacityShortages: capacityShortages.size > 0 ? Object.fromEntries(capacityShortages) : 'none',
   })
 
   return {
     startDate,
     endDate,
     assignments: result,
-    conflicts: [],
+    conflicts,
   }
 }

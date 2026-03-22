@@ -30,3 +30,4 @@ export type ConflictType =
   | 'REST_PERIOD_VIOLATION'
   | 'OVERLAPPING_ASSIGNMENT'
   | 'OVER_QUOTA'
+  | 'CAPACITY_SHORTAGE'  // Not enough soldiers with required role

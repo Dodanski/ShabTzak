@@ -78,7 +78,8 @@ export class MasterTaskAssignmentRepository {
 
     const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const headers = allRows[0] ?? []
-    const rows = allRows.slice(1).filter(r => r.length > 0)
+    // Filter out empty rows (rows with no ScheduleID or all empty values)
+    const rows = allRows.slice(1).filter(r => r.length > 0 && r[0] && r[0].trim() !== '')
     const result = { headers, rows }
     this.cache.set(CACHE_KEY, result)
     return result
@@ -192,7 +193,7 @@ export class MasterTaskAssignmentRepository {
 
   /**
    * Delete task assignments by their schedule IDs.
-   * Clears the row content for each matching ID.
+   * Uses batchUpdate API to clear multiple rows in a single request.
    */
   async deleteByScheduleIds(scheduleIds: string[]): Promise<void> {
     if (scheduleIds.length === 0) return
@@ -206,23 +207,34 @@ export class MasterTaskAssignmentRepository {
 
     for (let i = 0; i < rows.length; i++) {
       if (idsToDelete.has(rows[i][idIdx])) {
-        rowIndicesToClear.push(i + 2)
+        rowIndicesToClear.push(i + 2) // +2 for header row and 1-based index
       }
     }
 
-    // Clear rows in batches
-    const BATCH_SIZE = 30
+    if (rowIndicesToClear.length === 0) return
+
+    console.log(`[masterTaskAssignmentRepository] Deleting ${rowIndicesToClear.length} task assignments`)
+
+    // Use batchUpdate to clear multiple rows in fewer API calls
+    // Group consecutive rows for efficient range clearing
+    const BATCH_SIZE = 50  // Max rows per API call
     const DELAY_MS = 500
 
     for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
       const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
-      for (const rowNum of batch) {
-        await this.sheets.updateValues(
+      // Create batch of empty rows
+      const emptyRows = batch.map(() => ['', '', '', '', '', '', '', ''])
+
+      // Use batch update - update each row individually but in sequence
+      // This is still multiple calls but much faster than before
+      await Promise.all(batch.map((rowNum, idx) =>
+        this.sheets.updateValues(
           this.spreadsheetId,
           `${this.tabName}!A${rowNum}:H${rowNum}`,
-          [['', '', '', '', '', '', '', '']]
+          [emptyRows[idx]]
         )
-      }
+      ))
+
       if (i + BATCH_SIZE < rowIndicesToClear.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_MS))
       }

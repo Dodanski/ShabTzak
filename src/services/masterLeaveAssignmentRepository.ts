@@ -54,7 +54,8 @@ export class MasterLeaveAssignmentRepository {
 
     const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
     const headers = allRows[0] ?? []
-    const rows = allRows.slice(1).filter(r => r.length > 0)
+    // Filter out empty rows (rows with no ID or all empty values)
+    const rows = allRows.slice(1).filter(r => r.length > 0 && r[0] && r[0].trim() !== '')
     const result = { headers, rows }
     this.cache.set(CACHE_KEY, result)
     return result
@@ -169,7 +170,7 @@ export class MasterLeaveAssignmentRepository {
 
   /**
    * Delete leave assignments by their IDs.
-   * Clears the row content for each matching ID.
+   * Uses parallel API calls within batches for better performance.
    */
   async deleteByIds(ids: string[]): Promise<void> {
     if (ids.length === 0) return
@@ -187,19 +188,26 @@ export class MasterLeaveAssignmentRepository {
       }
     }
 
-    // Clear rows in batches
-    const BATCH_SIZE = 30
+    if (rowIndicesToClear.length === 0) return
+
+    console.log(`[masterLeaveAssignmentRepository] Deleting ${rowIndicesToClear.length} leave assignments`)
+
+    // Use parallel API calls within batches for better performance
+    const BATCH_SIZE = 50
     const DELAY_MS = 500
 
     for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
       const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
-      for (const rowNum of batch) {
-        await this.sheets.updateValues(
+
+      // Execute batch in parallel
+      await Promise.all(batch.map(rowNum =>
+        this.sheets.updateValues(
           this.spreadsheetId,
           `${this.tabName}!A${rowNum}:I${rowNum}`,
           [['', '', '', '', '', '', '', '', '']]
         )
-      }
+      ))
+
       if (i + BATCH_SIZE < rowIndicesToClear.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_MS))
       }

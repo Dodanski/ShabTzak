@@ -48,7 +48,8 @@ interface RawSoldier {
 }
 
 interface RawTask {
-  ID: string
+  ID?: string
+  'about th'?: string  // Alternate column name in some spreadsheets
   TaskType: string
   StartTime: string
   EndTime: string
@@ -108,13 +109,15 @@ function transformSoldiers(raw: RawSoldier[]): Soldier[] {
   }))
 }
 
+// Base date for schedule - should match soldier service dates
+const SCHEDULE_START = '2026-03-27'
+
 function normalizeTime(timeStr: string): string {
   if (!timeStr) return ''
   // If it already has 'T' (is full ISO), return as-is
   if (timeStr.includes('T')) return timeStr
-  // Otherwise it's time-only, prepend today's date
-  const today = new Date().toISOString().split('T')[0]
-  return `${today}T${timeStr}`
+  // Otherwise it's time-only, prepend schedule start date
+  return `${SCHEDULE_START}T${timeStr}`
 }
 
 function transformTasks(raw: RawTask[]): Task[] {
@@ -131,8 +134,11 @@ function transformTasks(raw: RawTask[]): Task[] {
       roleRequirements = []
     }
 
+    // Handle alternate column names for ID
+    const taskId = r.ID || r['about th'] || r.TaskType
+
     return {
-      id: r.ID,
+      id: taskId,
       taskType: r.TaskType,
       startTime: normalizeTime(r.StartTime),
       endTime: normalizeTime(r.EndTime),
