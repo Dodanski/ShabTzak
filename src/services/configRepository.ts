@@ -9,6 +9,8 @@ type PartialNumericConfig = Partial<Pick<AppConfig,
 >>
 
 type EditableConfig = {
+  scheduleStartDate?: string
+  scheduleEndDate?: string
   leaveRatioDaysInBase?: number | string
   leaveRatioDaysHome?: number | string
   longLeaveMaxDays?: number | string
@@ -53,16 +55,29 @@ export class ConfigRepository {
       : []
 
     return {
+      // Schedule period
+      scheduleStartDate: getString('scheduleStartDate', DEFAULT_CONFIG.scheduleStartDate),
+      scheduleEndDate: getString('scheduleEndDate', DEFAULT_CONFIG.scheduleEndDate),
+
+      // Leave ratio
       leaveRatioDaysInBase: getNum('leaveRatioDaysInBase', DEFAULT_CONFIG.leaveRatioDaysInBase),
       leaveRatioDaysHome: getNum('leaveRatioDaysHome', DEFAULT_CONFIG.leaveRatioDaysHome),
       longLeaveMaxDays: getNum('longLeaveMaxDays', DEFAULT_CONFIG.longLeaveMaxDays),
       weekendDays: [...DEFAULT_CONFIG.weekendDays],
+
+      // Capacity
       minBasePresence: getNum('minBasePresence', DEFAULT_CONFIG.minBasePresence),
       minBasePresenceByRole: {} as AppConfig['minBasePresenceByRole'],
+
+      // Tasks
       maxDrivingHours: getNum('maxDrivingHours', DEFAULT_CONFIG.maxDrivingHours),
       defaultRestPeriod: getNum('defaultRestPeriod', DEFAULT_CONFIG.defaultRestPeriod),
       taskTypeRestPeriods: {},
+
+      // Admin
       adminEmails,
+
+      // Leave timing
       leaveBaseExitHour: getString('leaveBaseExitHour', DEFAULT_CONFIG.leaveBaseExitHour),
       leaveBaseReturnHour: getString('leaveBaseReturnHour', DEFAULT_CONFIG.leaveBaseReturnHour),
     }

@@ -253,6 +253,23 @@ export function validateTaskAssignment(assignment: TaskAssignment): ValidationEr
 export function validateConfig(config: AppConfig): ValidationError[] {
   const errors: ValidationError[] = []
 
+  // Schedule period validation
+  if (config.scheduleStartDate && !isValidDate(config.scheduleStartDate)) {
+    errors.push({ severity: 'error', entity: 'config', id: 'config', field: 'scheduleStartDate', message: 'Invalid schedule start date format (expected YYYY-MM-DD)', value: config.scheduleStartDate })
+  }
+
+  if (config.scheduleEndDate && !isValidDate(config.scheduleEndDate)) {
+    errors.push({ severity: 'error', entity: 'config', id: 'config', field: 'scheduleEndDate', message: 'Invalid schedule end date format (expected YYYY-MM-DD)', value: config.scheduleEndDate })
+  }
+
+  if (config.scheduleStartDate && config.scheduleEndDate &&
+      isValidDate(config.scheduleStartDate) && isValidDate(config.scheduleEndDate)) {
+    if (config.scheduleStartDate > config.scheduleEndDate) {
+      errors.push({ severity: 'error', entity: 'config', id: 'config', field: 'scheduleEndDate', message: 'Schedule end date must be after start date', value: `${config.scheduleStartDate} > ${config.scheduleEndDate}` })
+    }
+  }
+
+  // Leave ratio validation
   if (!config.leaveRatioDaysInBase || config.leaveRatioDaysInBase <= 0) {
     errors.push({ severity: 'error', entity: 'config', id: 'config', field: 'leaveRatioDaysInBase', message: 'Leave ratio days in base must be positive', value: config.leaveRatioDaysInBase })
   }

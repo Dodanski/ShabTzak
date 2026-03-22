@@ -28,15 +28,37 @@ export type RequestStatus = typeof REQUEST_STATUS[number]
 export const SOLDIER_STATUS = ['Active', 'Inactive'] as const
 export type SoldierStatus = typeof SOLDIER_STATUS[number]
 
+// Helper to compute default schedule dates
+function getDefaultScheduleDates() {
+  const today = new Date()
+  const endDate = new Date(today)
+  endDate.setDate(endDate.getDate() + 30) // Default: 30 days from today
+  return {
+    start: today.toISOString().split('T')[0],
+    end: endDate.toISOString().split('T')[0],
+  }
+}
+
 // Configuration defaults
 export const DEFAULT_CONFIG = {
+  // Schedule period defaults (computed at runtime)
+  get scheduleStartDate() { return getDefaultScheduleDates().start },
+  get scheduleEndDate() { return getDefaultScheduleDates().end },
+
+  // Leave ratio
   leaveRatioDaysInBase: 10,
   leaveRatioDaysHome: 4,
   longLeaveMaxDays: 4,
   weekendDays: ['Friday', 'Saturday'],
+
+  // Capacity
   minBasePresence: 20,
+
+  // Tasks
   maxDrivingHours: 8,
   defaultRestPeriod: 6,
+
+  // Leave timing
   leaveBaseExitHour: '06:00',
   leaveBaseReturnHour: '22:00',
 } as const

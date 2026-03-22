@@ -87,8 +87,17 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   const { auth } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
 
-  // Calculate schedule period based on soldier availability
+  // Calculate schedule period - uses config dates if set, otherwise falls back to soldier service dates
   const getSchedulePeriod = () => {
+    // Priority 1: Use config dates if they are set
+    if (configData?.scheduleStartDate && configData?.scheduleEndDate) {
+      return {
+        start: configData.scheduleStartDate,
+        end: configData.scheduleEndDate
+      }
+    }
+
+    // Priority 2: Calculate from soldier service dates
     // Use allSoldiers if available (multi-unit), otherwise use unit soldiers
     const soldiersForPeriod = (allSoldiers && allSoldiers.length > 0) ? allSoldiers : soldiers
 
