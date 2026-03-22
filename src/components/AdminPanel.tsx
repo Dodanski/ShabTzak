@@ -144,6 +144,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
   useEffect(() => {
     if (configData) {
       setEditingConfig({
+        scheduleStartDate: configData.scheduleStartDate,
+        scheduleEndDate: configData.scheduleEndDate,
         leaveRatioDaysInBase: configData.leaveRatioDaysInBase,
         leaveRatioDaysHome: configData.leaveRatioDaysHome,
         longLeaveMaxDays: configData.longLeaveMaxDays,
@@ -554,6 +556,33 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
             <h2 className="font-semibold text-olive-800">Configuration</h2>
             {configData && (
               <div className="grid grid-cols-2 gap-4">
+                {/* Schedule Period - Important, shown first */}
+                <div className="col-span-2 bg-olive-50 p-3 rounded-lg border border-olive-200">
+                  <h3 className="text-sm font-semibold text-olive-800 mb-3">Schedule Period</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-olive-600 block mb-1">Start Date</label>
+                      <input
+                        type="date"
+                        value={editingConfig.scheduleStartDate ?? ''}
+                        onChange={e => setEditingConfig({ ...editingConfig, scheduleStartDate: e.target.value })}
+                        className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">First day of schedule generation</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-olive-600 block mb-1">End Date</label>
+                      <input
+                        type="date"
+                        value={editingConfig.scheduleEndDate ?? ''}
+                        onChange={e => setEditingConfig({ ...editingConfig, scheduleEndDate: e.target.value })}
+                        className="w-full border border-olive-200 rounded px-2 py-1 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Last day of schedule generation</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Numeric fields */}
                 <div>
                   <label className="text-xs font-semibold text-olive-600 block mb-1">Leave Days in Base</label>
@@ -655,6 +684,8 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
               </button>
               <button
                 onClick={() => setEditingConfig({
+                  scheduleStartDate: configData?.scheduleStartDate ?? '',
+                  scheduleEndDate: configData?.scheduleEndDate ?? '',
                   leaveRatioDaysInBase: configData?.leaveRatioDaysInBase ?? 10,
                   leaveRatioDaysHome: configData?.leaveRatioDaysHome ?? 4,
                   longLeaveMaxDays: configData?.longLeaveMaxDays ?? 4,
