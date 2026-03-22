@@ -57,14 +57,15 @@ export class ScheduleService {
     // Clear future leave assignments (from today forward) to allow regeneration
     // Keep historical leave assignments before today
     const today = new Date().toISOString().split('T')[0]
-    const futureLeaves = existing.filter(a => a.endDate >= today)
+    const futureLeaves = existing.filter(a => a.endDate.split('T')[0] >= today)
 
     if (futureLeaves.length > 0) {
-      if (import.meta.env.DEV) {
-        console.log(`[scheduleService] Clearing ${futureLeaves.length} future leave assignments (from ${today} onward)`)
-      }
+      console.log(`[scheduleService] Deleting ${futureLeaves.length} future leave assignments (from ${today} onward)`)
+      // Actually delete from spreadsheet
+      const futureIds = futureLeaves.map(a => a.id)
+      await this.leaveAssignments.deleteByIds(futureIds)
       // Filter out future leaves from existing, keep only historical ones
-      existing = existing.filter(a => a.endDate < today)
+      existing = existing.filter(a => a.endDate.split('T')[0] < today)
     }
 
     // Generate automatic cyclical leaves based on the rotation pattern, respecting role capacity
@@ -133,9 +134,11 @@ export class ScheduleService {
     })
 
     if (futureAssignments.length > 0) {
-      if (import.meta.env.DEV) {
-        console.log(`[scheduleService] Clearing ${futureAssignments.length} future task assignments (from ${today} onward)`)
-      }
+      console.log(`[scheduleService] Deleting ${futureAssignments.length} future task assignments (from ${today} onward)`)
+      // Actually delete from spreadsheet
+      const futureIds = futureAssignments.map(a => a.scheduleId)
+      await this.taskAssignments.deleteByScheduleIds(futureIds)
+      // Filter out future assignments from existing
       existing = existing.filter(a => {
         const baseId = getBaseTaskId(a.taskId)
         const task = tasks.find(t => getBaseTaskId(t.id) === baseId)

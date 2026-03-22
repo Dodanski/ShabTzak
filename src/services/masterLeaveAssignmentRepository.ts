@@ -166,4 +166,45 @@ export class MasterLeaveAssignmentRepository {
     )
     this.cache.invalidate(CACHE_KEY)
   }
+
+  /**
+   * Delete leave assignments by their IDs.
+   * Clears the row content for each matching ID.
+   */
+  async deleteByIds(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+
+    const { headers, rows } = await this.fetchAll()
+    const idIdx = headers.findIndex(h => h.toLowerCase().trim() === 'id')
+    if (idIdx === -1) return
+
+    const idsToDelete = new Set(ids)
+    const rowIndicesToClear: number[] = []
+
+    for (let i = 0; i < rows.length; i++) {
+      if (idsToDelete.has(rows[i][idIdx])) {
+        rowIndicesToClear.push(i + 2)
+      }
+    }
+
+    // Clear rows in batches
+    const BATCH_SIZE = 30
+    const DELAY_MS = 500
+
+    for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
+      const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
+      for (const rowNum of batch) {
+        await this.sheets.updateValues(
+          this.spreadsheetId,
+          `${this.tabName}!A${rowNum}:I${rowNum}`,
+          [['', '', '', '', '', '', '', '', '']]
+        )
+      }
+      if (i + BATCH_SIZE < rowIndicesToClear.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
+      }
+    }
+
+    this.cache.invalidate(CACHE_KEY)
+  }
 }

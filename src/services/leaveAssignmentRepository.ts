@@ -164,4 +164,46 @@ export class LeaveAssignmentRepository {
     )
     this.cache.invalidate(CACHE_KEY)
   }
+
+  /**
+   * Delete leave assignments by their IDs.
+   * Clears the row content (keeping rows to avoid shifting) for each matching ID.
+   */
+  async deleteByIds(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+
+    const { headers, rows } = await this.fetchAll()
+    const idIdx = headers.findIndex(h => h.toLowerCase().trim() === 'id')
+    if (idIdx === -1) return
+
+    const idsToDelete = new Set(ids)
+    const rowIndicesToClear: number[] = []
+
+    for (let i = 0; i < rows.length; i++) {
+      if (idsToDelete.has(rows[i][idIdx])) {
+        rowIndicesToClear.push(i + 2) // +2 for header row and 1-based indexing
+      }
+    }
+
+    // Clear rows in batches (clear content, don't delete rows to avoid index shifting)
+    const BATCH_SIZE = 50
+    const DELAY_MS = 300
+
+    for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
+      const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
+      // Clear each row by writing empty values
+      for (const rowNum of batch) {
+        await this.sheets.updateValues(
+          this.spreadsheetId,
+          `${this.tabName}!A${rowNum}:I${rowNum}`,
+          [['', '', '', '', '', '', '', '', '']]
+        )
+      }
+      if (i + BATCH_SIZE < rowIndicesToClear.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
+      }
+    }
+
+    this.cache.invalidate(CACHE_KEY)
+  }
 }

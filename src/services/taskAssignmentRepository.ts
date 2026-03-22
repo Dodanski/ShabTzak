@@ -189,4 +189,45 @@ export class TaskAssignmentRepository {
     )
     this.cache.invalidate(CACHE_KEY)
   }
+
+  /**
+   * Delete task assignments by their schedule IDs.
+   * Clears the row content (keeping rows to avoid shifting) for each matching ID.
+   */
+  async deleteByScheduleIds(scheduleIds: string[]): Promise<void> {
+    if (scheduleIds.length === 0) return
+
+    const { headers, rows } = await this.fetchAll()
+    const idIdx = headers.indexOf('ScheduleID')
+    if (idIdx === -1) return
+
+    const idsToDelete = new Set(scheduleIds)
+    const rowIndicesToClear: number[] = []
+
+    for (let i = 0; i < rows.length; i++) {
+      if (idsToDelete.has(rows[i][idIdx])) {
+        rowIndicesToClear.push(i + 2) // +2 for header row and 1-based indexing
+      }
+    }
+
+    // Clear rows in batches
+    const BATCH_SIZE = 50
+    const DELAY_MS = 300
+
+    for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
+      const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
+      for (const rowNum of batch) {
+        await this.sheets.updateValues(
+          this.spreadsheetId,
+          `${this.tabName}!A${rowNum}:G${rowNum}`,
+          [['', '', '', '', '', '', '']]
+        )
+      }
+      if (i + BATCH_SIZE < rowIndicesToClear.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
+      }
+    }
+
+    this.cache.invalidate(CACHE_KEY)
+  }
 }
