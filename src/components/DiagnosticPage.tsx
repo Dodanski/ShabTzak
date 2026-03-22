@@ -30,9 +30,14 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
       newLogs.push('\n📥 Loading Tasks...')
       const tasks = await masterDs.tasks.list()
       newLogs.push(`✓ Found ${tasks.length} tasks`)
-      tasks.slice(0, 3).forEach(t => {
-        const roles = t.roleRequirements.map(r => `${r.count}x ${r.role}`).join(', ')
-        newLogs.push(`  - ${t.id}: ${t.taskType} (${roles}) at ${t.startTime}`)
+      tasks.slice(0, 5).forEach(t => {
+        // Handle both old (role) and new (roles) format
+        const roles = t.roleRequirements.map(r => {
+          const roleList = r.roles ?? (r.role ? [r.role] : [])
+          return `${r.count}x [${roleList.join('|')}]`
+        }).join(', ')
+        newLogs.push(`  - ${t.id}: ${t.taskType} requires: ${roles || '⚠️ NO ROLES'}`)
+        newLogs.push(`      startTime: ${t.startTime}`)
       })
 
       newLogs.push('\n📥 Loading LeaveRequests...')
@@ -52,11 +57,23 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
       newLogs.push('📊 ANALYSIS')
       newLogs.push('='.repeat(50))
 
-      const roles = new Set(soldiers.map(s => s.role))
-      newLogs.push(`\nSoldier Roles: ${Array.from(roles).join(', ')}`)
+      const soldierRoles = new Map<string, number>()
+      soldiers.forEach(s => {
+        soldierRoles.set(s.role, (soldierRoles.get(s.role) || 0) + 1)
+      })
+      newLogs.push(`\nSoldier Roles: ${Array.from(soldierRoles.entries()).map(([r, c]) => `${r}(${c})`).join(', ') || '⚠️ NONE'}`)
 
-      const taskRoles = new Set(tasks.flatMap(t => t.roleRequirements.map(r => r.role)))
-      newLogs.push(`Task Roles Required: ${Array.from(taskRoles).join(', ')}`)
+      const taskRoles = new Set(tasks.flatMap(t =>
+        t.roleRequirements.flatMap(r => r.roles ?? (r.role ? [r.role] : []))
+      ))
+      newLogs.push(`Task Roles Required: ${Array.from(taskRoles).join(', ') || '⚠️ NONE'}`)
+
+      // Check for role mismatches
+      const soldierRoleSet = new Set(soldiers.map(s => s.role))
+      const missingRoles = Array.from(taskRoles).filter(r => r !== 'Any' && !soldierRoleSet.has(r))
+      if (missingRoles.length > 0) {
+        newLogs.push(`\n⚠️ ROLE MISMATCH: Tasks require ${missingRoles.join(', ')} but no soldiers have these roles!`)
+      }
 
       const activeCount = soldiers.filter(s => s.status === 'Active').length
       newLogs.push(`\nActive Soldiers: ${activeCount} / ${soldiers.length}`)
@@ -78,6 +95,37 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
         newLogs.push('  2. Task dates in the past')
         newLogs.push('  3. Role mismatches')
         newLogs.push('  4. Service date conflicts')
+
+        // Detailed eligibility check for first task
+        if (futureTasks.length > 0) {
+          newLogs.push('\n📋 DETAILED CHECK for first future task:')
+          const testTask = futureTasks[0]
+          const taskDate = testTask.startTime.split('T')[0]
+          newLogs.push(`  Task: ${testTask.id} (${testTask.taskType})`)
+          newLogs.push(`  Date: ${taskDate}`)
+          const reqRoles = testTask.roleRequirements.flatMap(r => r.roles ?? (r.role ? [r.role] : []))
+          newLogs.push(`  Requires: ${reqRoles.join(', ') || '⚠️ EMPTY'}`)
+
+          if (reqRoles.length === 0) {
+            newLogs.push('\n  ⚠️ Task has NO role requirements - check RoleRequirements column format!')
+            newLogs.push('     Expected format: [{"roles":["Driver"],"count":1}]')
+          }
+
+          soldiers.forEach(s => {
+            const issues: string[] = []
+            if (s.status !== 'Active') issues.push(`status=${s.status}`)
+            if (!reqRoles.includes('Any') && !reqRoles.includes(s.role)) {
+              issues.push(`role mismatch (${s.role} not in [${reqRoles.join(',')}])`)
+            }
+            if (taskDate < s.serviceStart) issues.push(`before service start`)
+            if (taskDate > s.serviceEnd) issues.push(`after service end`)
+            if (issues.length > 0) {
+              newLogs.push(`  ❌ ${s.id} (${s.role}): ${issues.join(', ')}`)
+            } else {
+              newLogs.push(`  ✓ ${s.id} (${s.role}): ELIGIBLE`)
+            }
+          })
+        }
       } else {
         newLogs.push(`\n✓ Tasks ARE being scheduled (${taskAssignments.length} assignments)`)
       }
@@ -132,11 +180,17 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
           <div className="bg-white rounded border p-4">
             <h4 className="font-semibold mb-2">Tasks ({data.tasks.length})</h4>
             <ul className="text-sm space-y-1">
-              {data.tasks.map((t: any) => (
-                <li key={t.id} className="text-gray-700">
-                  {t.id}: {t.roleRequirements.map((r: any) => r.role).join(',')}
-                </li>
-              ))}
+              {data.tasks.map((t: any) => {
+                const roles = t.roleRequirements.map((r: any) => {
+                  const roleList = r.roles ?? (r.role ? [r.role] : [])
+                  return `${r.count}x[${roleList.join('|') || '?'}]`
+                }).join(', ')
+                return (
+                  <li key={t.id} className="text-gray-700">
+                    {t.id}: {roles || <span className="text-red-600">NO ROLES</span>}
+                  </li>
+                )
+              })}
             </ul>
           </div>
 

@@ -65,6 +65,22 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       const expandTasksModule = await import('../algorithms/taskExpander')
       const expandedTasks = expandTasksModule.expandRecurringTasks(tasks, scheduleEnd)
 
+      // Debug: Log data before scheduling
+      console.log('[AdminPanel] === SCHEDULE GENERATION DEBUG ===')
+      console.log('[AdminPanel] Soldiers:', soldiers.length)
+      soldiers.slice(0, 5).forEach(s => {
+        console.log(`  - ${s.id}: role="${s.role}" status="${s.status}" service=${s.serviceStart} to ${s.serviceEnd}`)
+      })
+      console.log('[AdminPanel] Tasks:', tasks.length)
+      tasks.slice(0, 3).forEach(t => {
+        const roles = t.roleRequirements.map(r => {
+          const roleList = r.roles ?? (r.role ? [r.role] : [])
+          return `${r.count}x[${roleList.join('|')}]`
+        }).join(', ')
+        console.log(`  - ${t.id}: ${t.taskType} requires: ${roles || 'EMPTY!'}`)
+      })
+      console.log('[AdminPanel] Expanded tasks:', expandedTasks.length)
+
       // Generate task schedule for all soldiers FIRST
       console.log('[AdminPanel] Generating task schedule for all', soldiers.length, 'soldiers...')
       const taskSchedule = await masterDs.scheduleService.generateTaskSchedule(

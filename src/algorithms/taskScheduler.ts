@@ -27,9 +27,8 @@ export function scheduleTasks(
     existingAssignmentsCount: existingAssignments.length,
     leaveAssignmentsCount: leaveAssignments?.length ?? 0,
   })
-  if (import.meta.env.DEV) {
-    console.log('[taskScheduler] Soldiers:', soldiers.map(s => ({ id: s.id, role: s.role, status: s.status })))
-  }
+  // Always log soldier info for debugging (can be disabled later)
+  console.log('[taskScheduler] Soldiers:', soldiers.map(s => ({ id: s.id, role: s.role, status: s.status })))
 
   const result: TaskAssignment[] = [...existingAssignments]
   // Use all tasks in system for rest period checking, fallback to just scheduled tasks
@@ -84,16 +83,13 @@ export function scheduleTasks(
         return true
       })
 
-      if (import.meta.env.DEV) {
-        console.log(`[taskScheduler] Task ${task.id}, requirement roles=${rolesAccepted}:`, {
-          remaining,
-          eligibleCount: eligible.length,
-          eligibleIds: eligible.map(s => s.id),
-          alreadyAssigned: alreadyAssigned,
-        })
-      } else {
-        console.log(`[taskScheduler] Task ${task.id}: ${eligible.length} eligible for roles ${rolesAccepted}`)
-      }
+      // Always log eligibility for debugging
+      console.log(`[taskScheduler] Task ${task.id}, requirement roles=${rolesAccepted}:`, {
+        remaining,
+        eligibleCount: eligible.length,
+        eligibleIds: eligible.map(s => s.id),
+        alreadyAssigned: alreadyAssigned,
+      })
 
       // Determine task's unit based on majority of already-assigned soldiers
       const getTaskUnit = () => {
