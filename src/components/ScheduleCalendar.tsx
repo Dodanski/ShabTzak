@@ -33,18 +33,31 @@ export default function ScheduleCalendar({
   }
 
   // Expand recurring tasks to match the _dayN IDs created by the scheduler
+  // The day index must be calculated from the task's original start date, not the dates array index
   const expandedTasks = tasks.flatMap(task => {
     if (task.isSpecial) {
       // Pillbox task - don't expand
       return [task]
     }
     // Regular recurring task - create instances for each day in the schedule
-    return dates.map((date, idx) => ({
-      ...task,
-      id: `${task.id}_day${idx}`,
-      startTime: `${date}T${task.startTime.split('T')[1]}`,
-      endTime: `${date}T${task.endTime.split('T')[1]}`,
-    }))
+    // Calculate day index based on offset from task's original start date
+    const taskStartDate = task.startTime.split('T')[0]
+    const taskStartMs = new Date(taskStartDate).getTime()
+
+    return dates.map(date => {
+      const dateMs = new Date(date).getTime()
+      const dayIndex = Math.floor((dateMs - taskStartMs) / (24 * 60 * 60 * 1000))
+
+      // Only include dates on or after the task start date
+      if (dayIndex < 0) return null
+
+      return {
+        ...task,
+        id: `${task.id}_day${dayIndex}`,
+        startTime: `${date}T${task.startTime.split('T')[1]}`,
+        endTime: `${date}T${task.endTime.split('T')[1]}`,
+      }
+    }).filter(Boolean) as Task[]
   })
 
   const matrix = buildAvailabilityMatrix(soldiers, expandedTasks, taskAssignments, leaveAssignments, dates)

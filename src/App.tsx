@@ -344,7 +344,15 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           allSoldiers={allSoldiers}
           dates={actualScheduleDates}
           tasks={tasks}
-          taskAssignments={taskAssignments}
+          taskAssignments={taskAssignments.filter(a => {
+            // Filter to show only assignments for soldiers in this unit
+            // Use assignedUnitId to handle duplicate soldier IDs across units
+            if (a.assignedUnitId) {
+              return a.assignedUnitId === unitName
+            }
+            // Fallback: check if soldier is in current unit's soldier list
+            return soldiers.some(s => s.id === a.soldierId)
+          })}
           leaveAssignments={leaveAssignments}
           conflicts={conflicts}
           onGenerate={handleGenerateSchedule}
