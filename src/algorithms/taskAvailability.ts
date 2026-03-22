@@ -20,14 +20,18 @@ export function hasRequiredRole(soldier: Soldier, task: Task): boolean {
 }
 
 /**
- * Check if soldier is on leave during the task date
+ * Check if soldier is on leave during the task date.
+ * Note: leaveAssignments may have ISO datetime strings (e.g., "2026-03-20T00:00:00")
+ * while taskDate is just a date string (e.g., "2026-03-20"). We normalize both to date-only.
  */
 function isOnLeaveOnDate(soldier: Soldier, taskDate: string, leaveAssignments: LeaveAssignment[]): boolean {
-  return leaveAssignments.some(la =>
-    la.soldierId === soldier.id &&
-    la.startDate <= taskDate &&
-    taskDate <= la.endDate
-  )
+  return leaveAssignments.some(la => {
+    if (la.soldierId !== soldier.id) return false
+    // Normalize to date-only strings for comparison
+    const leaveStart = la.startDate.split('T')[0]
+    const leaveEnd = la.endDate.split('T')[0]
+    return leaveStart <= taskDate && taskDate <= leaveEnd
+  })
 }
 
 /**
@@ -42,18 +46,19 @@ function getTransitionDayType(
   for (const la of leaveAssignments) {
     if (la.soldierId !== soldier.id) continue
 
-    const leaveStart = la.startDate
-    const leaveEnd = la.endDate
+    // Normalize to date-only strings to avoid timezone issues
+    const leaveStartDate = la.startDate.split('T')[0]
+    const leaveEndDate = la.endDate.split('T')[0]
 
     // Check if task date is day before leave (on the way home)
-    const dayBeforeLeave = new Date(leaveStart)
+    const dayBeforeLeave = new Date(leaveStartDate + 'T12:00:00Z') // Use noon UTC to avoid timezone edge cases
     dayBeforeLeave.setDate(dayBeforeLeave.getDate() - 1)
     if (taskDate === dayBeforeLeave.toISOString().split('T')[0]) {
       return 'fromBase'
     }
 
     // Check if task date is day after leave (on the way to base)
-    const dayAfterLeave = new Date(leaveEnd)
+    const dayAfterLeave = new Date(leaveEndDate + 'T12:00:00Z')
     dayAfterLeave.setDate(dayAfterLeave.getDate() + 1)
     if (taskDate === dayAfterLeave.toISOString().split('T')[0]) {
       return 'toBase'
@@ -111,15 +116,16 @@ export function isTaskAvailable(
     if (config) {
       const transitionType = getTransitionDayType(soldier, taskDate, leaveAssignments)
       if (transitionType === 'fromBase') {
-        // On the way home: can't do tasks that start before exit hour
-        const exitHour = parseInt(config.leaveBaseExitHour.split(':')[0], 10)
-        const taskStartHour = parseInt(task.startTime.split('T')[1].split(':')[0], 10)
-        if (taskStartHour < exitHour) return false
+        // On the way home: can't do tasks that START before exit time (including minutes)
+        // Compare as HH:MM strings for proper ordering
+        const exitTime = config.leaveBaseExitHour.substring(0, 5) // "06:00" -> "06:00"
+        const taskStartTime = task.startTime.split('T')[1].substring(0, 5) // "08:30:00" -> "08:30"
+        if (taskStartTime < exitTime) return false
       } else if (transitionType === 'toBase') {
-        // On the way to base: can't do tasks that end after return hour
-        const returnHour = parseInt(config.leaveBaseReturnHour.split(':')[0], 10)
-        const taskEndHour = parseInt(task.endTime.split('T')[1].split(':')[0], 10)
-        if (taskEndHour > returnHour) return false
+        // On the way to base: can't do tasks that END after return time (including minutes)
+        const returnTime = config.leaveBaseReturnHour.substring(0, 5)
+        const taskEndTime = task.endTime.split('T')[1].substring(0, 5)
+        if (taskEndTime > returnTime) return false
       }
     }
   }

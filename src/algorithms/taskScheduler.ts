@@ -1,5 +1,5 @@
 import { combinedFairnessScore } from './fairness'
-import { isTaskAvailable } from './taskAvailability'
+import { isTaskAvailable, checkDrivingHoursLimit } from './taskAvailability'
 import type { Soldier, Task, TaskAssignment, TaskSchedule, LeaveAssignment, AppConfig } from '../models'
 
 /**
@@ -63,7 +63,7 @@ export function scheduleTasks(
       const remaining = requirement.count - alreadyAssigned
       if (remaining <= 0) continue
 
-      // Find eligible soldiers: role match + available (rest period, status, leave)
+      // Find eligible soldiers: role match + available (rest period, status, leave) + driving hours
       const eligible = soldiers.filter(s => {
         // Check if soldier's role matches ANY of the acceptable roles
         const matchesRole = rolesAccepted.includes('Any') || rolesAccepted.includes(s.role)
@@ -72,10 +72,16 @@ export function scheduleTasks(
           return false
         }
         const available = isTaskAvailable(s, task, tasksForValidation, result, leaveAssignments, config)
-        if (!available && import.meta.env.DEV) {
-          console.log(`    - ${s.id}: not available`)
+        if (!available) {
+          if (import.meta.env.DEV) console.log(`    - ${s.id}: not available`)
+          return false
         }
-        return available
+        // Check driving hours limit for Driver role soldiers
+        if (config && !checkDrivingHoursLimit(s, task, tasksForValidation, result, config)) {
+          if (import.meta.env.DEV) console.log(`    - ${s.id}: would exceed driving hours limit`)
+          return false
+        }
+        return true
       })
 
       if (import.meta.env.DEV) {
