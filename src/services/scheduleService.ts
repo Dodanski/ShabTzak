@@ -145,8 +145,10 @@ export class ScheduleService {
       })
     }
 
-    // Use allSoldiers if provided and valid (multi-unit scheduling), otherwise use unit soldiers
-    const schedulingSoldiers = (allSoldiers && allSoldiers.length > soldiers.length)
+    // Use allSoldiers if provided (multi-unit scheduling), otherwise use unit soldiers
+    // Note: We use allSoldiers if it exists and has any soldiers, regardless of count comparison
+    // This fixes a bug where allSoldiers.length === soldiers.length would fall back incorrectly
+    const schedulingSoldiers = (allSoldiers && allSoldiers.length > 0)
       ? allSoldiers
       : soldiers
 

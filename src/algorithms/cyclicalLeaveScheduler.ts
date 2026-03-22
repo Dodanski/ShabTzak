@@ -3,6 +3,23 @@ import { calculateLeaveCapacityPerRole } from './leaveCapacityCalculator'
 import type { Soldier, LeaveAssignment, TaskAssignment, AppConfig, Task } from '../models'
 
 /**
+ * Generates a deterministic phase offset for a soldier based on their ID.
+ * This ensures the same soldier always gets the same phase offset across runs,
+ * while still distributing offsets fairly across the cycle.
+ */
+function getPhaseOffsetForSoldier(soldierId: string, cycleLength: number): number {
+  // Simple hash of soldier ID to get a deterministic number
+  let hash = 0
+  for (let i = 0; i < soldierId.length; i++) {
+    const char = soldierId.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  // Ensure positive and within cycle
+  return Math.abs(hash) % cycleLength
+}
+
+/**
  * Generates cyclical home leaves distributed fairly across soldiers of each role.
  * Respects minBasePresenceByRole: soldiers can only take leave if there's capacity.
  *
@@ -52,9 +69,28 @@ export function generateCyclicalLeaves(
     const roleSoldiers = soldiersByRole.get(soldier.role)!
     roleSoldiers.push(soldier)
 
-    // Randomize initial phase offset to stagger leaves
-    const phaseOffset = Math.floor(Math.random() * cycleLength)
+    // Use deterministic phase offset based on soldier ID for consistent scheduling
+    const phaseOffset = getPhaseOffsetForSoldier(soldier.id, cycleLength)
     soldiersPhaseOffset.set(soldier.id, phaseOffset)
+  }
+
+  // Build task ID -> date map for checking if soldiers are on tasks
+  const taskDateMap = new Map<string, string>()
+  for (const task of tasks) {
+    const taskDate = task.startTime.split('T')[0]
+    taskDateMap.set(task.id, taskDate)
+  }
+
+  // Build soldier ID -> dates on task map
+  const soldierTaskDates = new Map<string, Set<string>>()
+  for (const assignment of taskAssignments) {
+    const taskDate = taskDateMap.get(assignment.taskId)
+    if (taskDate) {
+      if (!soldierTaskDates.has(assignment.soldierId)) {
+        soldierTaskDates.set(assignment.soldierId, new Set())
+      }
+      soldierTaskDates.get(assignment.soldierId)!.add(taskDate)
+    }
   }
 
   // Generate leaves per role
@@ -81,6 +117,10 @@ export function generateCyclicalLeaves(
         // Assign leave to soldiers based on their individual phase offset
         for (const soldier of roleSoldiers) {
           if (availableSlots <= 0) break
+
+          // Skip if soldier is assigned to a task on this day (tasks have priority)
+          const soldierTasks = soldierTaskDates.get(soldier.id)
+          if (soldierTasks && soldierTasks.has(dateStr)) continue
 
           // Skip if manually locked
           const isManualLocked =
