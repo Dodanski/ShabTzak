@@ -169,6 +169,17 @@ export class MasterLeaveAssignmentRepository {
   }
 
   /**
+   * Clear all leave assignments (keeps header row).
+   * Use this before generating a fresh schedule to prevent empty row accumulation.
+   */
+  async clearAll(): Promise<void> {
+    console.log('[masterLeaveAssignmentRepository] Clearing all leave assignments')
+    // Clear everything except row 1 (header)
+    await this.sheets.clearValues(this.spreadsheetId, `${this.tabName}!A2:I`)
+    this.cache.invalidate(CACHE_KEY)
+  }
+
+  /**
    * Delete leave assignments by their IDs.
    * Uses batchClear API to clear multiple rows in a single request.
    */

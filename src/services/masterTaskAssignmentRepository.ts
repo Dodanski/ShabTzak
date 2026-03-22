@@ -192,6 +192,17 @@ export class MasterTaskAssignmentRepository {
   }
 
   /**
+   * Clear all task assignments (keeps header row).
+   * Use this before generating a fresh schedule to prevent empty row accumulation.
+   */
+  async clearAll(): Promise<void> {
+    console.log('[masterTaskAssignmentRepository] Clearing all task assignments')
+    // Clear everything except row 1 (header)
+    await this.sheets.clearValues(this.spreadsheetId, `${this.tabName}!A2:H`)
+    this.cache.invalidate(CACHE_KEY)
+  }
+
+  /**
    * Delete task assignments by their schedule IDs.
    * Uses batchClear API to clear multiple rows in a single request.
    */

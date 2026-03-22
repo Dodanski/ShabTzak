@@ -54,18 +54,12 @@ export class ScheduleService {
       console.log('[scheduleService] Task assignments to respect:', taskAssignments.length)
     }
 
-    // Clear future leave assignments (from today forward) to allow regeneration
-    // Keep historical leave assignments before today
-    const today = new Date().toISOString().split('T')[0]
-    const futureLeaves = existing.filter(a => a.endDate.split('T')[0] >= today)
-
-    if (futureLeaves.length > 0) {
-      console.log(`[scheduleService] Deleting ${futureLeaves.length} future leave assignments (from ${today} onward)`)
-      // Actually delete from spreadsheet
-      const futureIds = futureLeaves.map(a => a.id)
-      await this.leaveAssignments.deleteByIds(futureIds)
-      // Filter out future leaves from existing, keep only historical ones
-      existing = existing.filter(a => a.endDate.split('T')[0] < today)
+    // Clear all existing leave assignments and start fresh
+    // This prevents accumulation of empty rows from row-by-row clearing
+    if (existing.length > 0) {
+      console.log(`[scheduleService] Clearing all ${existing.length} existing leave assignments for fresh generation`)
+      await this.leaveAssignments.clearAll()
+      existing = []  // All cleared, start fresh
     }
 
     // Generate automatic cyclical leaves based on the rotation pattern, respecting role capacity
@@ -115,37 +109,12 @@ export class ScheduleService {
       this.taskAssignments.list(),
     ])
 
-    // Clear future assignments (from today forward) to allow regeneration
-    // Keep historical assignments before today.
-    // NOTE: stored assignments use the original task ID (e.g. "Guard"), but
-    // the expanded tasks passed here have suffixed IDs (e.g. "Guard_day5").
-    // Strip the suffix before matching.
-    const today = new Date().toISOString().split('T')[0]
-    let existing = allExisting
-
-    const getBaseTaskId = (taskId: string) => taskId.replace(/_day\d+$/, '').replace(/_pill\d+$/, '')
-
-    const futureAssignments = existing.filter(a => {
-      const baseId = getBaseTaskId(a.taskId)
-      const task = tasks.find(t => getBaseTaskId(t.id) === baseId)
-      if (!task) return false
-      const taskDate = task.startTime.split('T')[0]
-      return taskDate >= today
-    })
-
-    if (futureAssignments.length > 0) {
-      console.log(`[scheduleService] Deleting ${futureAssignments.length} future task assignments (from ${today} onward)`)
-      // Actually delete from spreadsheet
-      const futureIds = futureAssignments.map(a => a.scheduleId)
-      await this.taskAssignments.deleteByScheduleIds(futureIds)
-      // Filter out future assignments from existing
-      existing = existing.filter(a => {
-        const baseId = getBaseTaskId(a.taskId)
-        const task = tasks.find(t => getBaseTaskId(t.id) === baseId)
-        if (!task) return true
-        const taskDate = task.startTime.split('T')[0]
-        return taskDate < today
-      })
+    // Clear all existing assignments and start fresh
+    // This prevents accumulation of empty rows from row-by-row clearing
+    let existing: TaskAssignment[] = []
+    if (allExisting.length > 0) {
+      console.log(`[scheduleService] Clearing all ${allExisting.length} existing task assignments for fresh generation`)
+      await this.taskAssignments.clearAll()
     }
 
     // Use allSoldiers if provided (multi-unit scheduling), otherwise use unit soldiers
