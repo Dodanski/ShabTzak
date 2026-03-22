@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { MasterDataService } from '../services/masterDataService'
+import { validateAllData, formatValidationResult, type ValidationResult } from '../utils/dataValidation'
 
 interface DiagnosticPageProps {
   masterDs: MasterDataService
@@ -9,6 +10,7 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
   const [logs, setLogs] = useState<string[]>([])
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
 
   useEffect(() => {
     loadData()
@@ -130,6 +132,17 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
         newLogs.push(`\n✓ Tasks ARE being scheduled (${taskAssignments.length} assignments)`)
       }
 
+      // Run comprehensive validation
+      newLogs.push('\n' + '='.repeat(50))
+      newLogs.push('🔍 COMPREHENSIVE DATA VALIDATION')
+      newLogs.push('='.repeat(50))
+
+      const config = await masterDs.config.read()
+      const validation = validateAllData(soldiers, tasks, requests, leaves, taskAssignments, config)
+      setValidationResult(validation)
+
+      newLogs.push(formatValidationResult(validation))
+
       setData({ soldiers, tasks, requests, leaves, taskAssignments })
     } catch (err) {
       newLogs.push(`❌ Error: ${err instanceof Error ? err.message : String(err)}`)
@@ -152,8 +165,29 @@ export default function DiagnosticPage({ masterDs }: DiagnosticPageProps) {
         disabled={loading}
         className="px-4 py-2 bg-olive-700 text-white rounded hover:bg-olive-800 disabled:opacity-50"
       >
-        {loading ? 'Loading...' : 'Reload Data'}
+        {loading ? 'Loading...' : 'Reload Data & Validate'}
       </button>
+
+      {/* Validation Status Banner */}
+      {validationResult && (
+        <div className={`rounded-lg px-4 py-3 ${validationResult.valid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{validationResult.valid ? '✅' : '❌'}</span>
+            <div>
+              <p className={`font-semibold ${validationResult.valid ? 'text-green-800' : 'text-red-800'}`}>
+                {validationResult.valid ? 'Data Validation Passed' : `Data Validation Failed (${validationResult.errors.length} errors)`}
+              </p>
+              <p className="text-sm text-gray-600">
+                Soldiers: {validationResult.summary.soldiers.valid}/{validationResult.summary.soldiers.total} |
+                Tasks: {validationResult.summary.tasks.valid}/{validationResult.summary.tasks.total}
+                {validationResult.summary.roleMismatches.length > 0 && (
+                  <span className="text-red-600"> | Role Mismatches: {validationResult.summary.roleMismatches.join(', ')}</span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="font-semibold mb-3">Diagnostic Output:</h3>
