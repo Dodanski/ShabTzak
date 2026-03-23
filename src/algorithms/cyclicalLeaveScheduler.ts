@@ -21,13 +21,19 @@ function getPhaseOffsetForSoldier(soldierId: string, cycleLength: number): numbe
 
 /**
  * Generates cyclical home leaves distributed fairly across soldiers of each role.
- * Respects minBasePresenceByRole: soldiers can only take leave if there's capacity.
  *
- * Pattern per role: soldiers take turns in N-day cycles (e.g., 10:4 ratio)
- * Each soldier has a randomized phase offset to stagger leave times.
+ * KEY PRINCIPLES:
+ * 1. Fair leave ratio: All soldiers should get approximately the same leave ratio
+ *    (e.g., 4 days home per 14-day cycle = ~28.5%)
+ * 2. Task priority: Soldiers on tasks cannot take leave that day, but they should
+ *    get compensating leave on other days
+ * 3. Max consecutive leave: Leave cannot exceed leaveRatioDaysHome consecutive days
+ * 4. Capacity limits: respects minBasePresenceByRole
  *
- * IMPORTANT: Tasks have priority over leaves. Soldiers assigned to tasks on a given day
- * cannot take leave that day, and the capacity calculation accounts for this.
+ * ALGORITHM:
+ * - Track each soldier's "leave debt" (expected leave days - actual leave days)
+ * - On each day, prioritize soldiers with highest debt who aren't on tasks
+ * - This ensures soldiers who miss leave due to tasks get compensating leave later
  */
 export function generateCyclicalLeaves(
   soldiers: Soldier[],
@@ -36,12 +42,14 @@ export function generateCyclicalLeaves(
   config: AppConfig,
   scheduleStart: string,
   scheduleEnd: string,
-  tasks: Task[] = [],  // NEW: tasks array to check task assignments by date
+  tasks: Task[] = [],
 ): LeaveAssignment[] {
   const result = [...existingLeaves]
   const startDate = parseDate(scheduleStart)
   const endDate = parseDate(scheduleEnd)
   const cycleLength = config.leaveRatioDaysInBase + config.leaveRatioDaysHome
+  const leaveRatio = config.leaveRatioDaysHome / cycleLength  // Target ratio (e.g., 4/14 ≈ 0.286)
+  const maxConsecutiveLeaveDays = config.leaveRatioDaysHome  // Max consecutive leave days
 
   // Find manually-added leaves (with requestId) to lock out
   const manualLockDates = new Map<string, Set<string>>()
@@ -57,28 +65,20 @@ export function generateCyclicalLeaves(
     }
   }
 
-  // Group soldiers by role and initialize phase offsets (randomized)
+  // Group soldiers by role
   const soldiersByRole = new Map<string, Soldier[]>()
-  const soldiersPhaseOffset = new Map<string, number>()
-
   for (const soldier of soldiers) {
     if (soldier.status !== 'Active') continue
     if (!soldiersByRole.has(soldier.role)) {
       soldiersByRole.set(soldier.role, [])
     }
-    const roleSoldiers = soldiersByRole.get(soldier.role)!
-    roleSoldiers.push(soldier)
-
-    // Use deterministic phase offset based on soldier ID for consistent scheduling
-    const phaseOffset = getPhaseOffsetForSoldier(soldier.id, cycleLength)
-    soldiersPhaseOffset.set(soldier.id, phaseOffset)
+    soldiersByRole.get(soldier.role)!.push(soldier)
   }
 
-  // Build task ID -> date map for checking if soldiers are on tasks
+  // Build task ID -> date map
   const taskDateMap = new Map<string, string>()
   for (const task of tasks) {
-    const taskDate = task.startTime.split('T')[0]
-    taskDateMap.set(task.id, taskDate)
+    taskDateMap.set(task.id, task.startTime.split('T')[0])
   }
 
   // Build soldier ID -> dates on task map
@@ -93,104 +93,181 @@ export function generateCyclicalLeaves(
     }
   }
 
-  // Generate leaves per role
-  for (const [role, roleSoldiers] of soldiersByRole) {
-    // Sort soldiers by ID for deterministic processing
-    roleSoldiers.sort((a, b) => a.id.localeCompare(b.id))
+  // === LEAVE TRACKING PER SOLDIER ===
+  // Track: leave days assigned, consecutive leave days, expected leave by ratio
+  interface SoldierLeaveTracking {
+    leaveDaysAssigned: number
+    consecutiveLeaveDays: number
+    lastLeaveDate: string | null
+    phaseOffset: number  // For staggering start of leave periods
+  }
 
-    // Track which soldiers already have leave on each date (to not double-assign)
-    const assignedToday = new Map<string, Set<string>>()
+  const leaveTracking = new Map<string, SoldierLeaveTracking>()
+  for (const soldier of soldiers) {
+    if (soldier.status !== 'Active') continue
+    leaveTracking.set(soldier.id, {
+      leaveDaysAssigned: 0,
+      consecutiveLeaveDays: 0,
+      lastLeaveDate: null,
+      phaseOffset: getPhaseOffsetForSoldier(soldier.id, cycleLength),
+    })
+  }
 
-    // Iterate through schedule period
-    let currentDate = new Date(startDate)
-    let dayNumber = 0
+  // Count existing leaves for each soldier
+  for (const leave of existingLeaves) {
+    const tracking = leaveTracking.get(leave.soldierId)
+    if (tracking) {
+      tracking.leaveDaysAssigned++
+    }
+  }
 
-    while (currentDate <= endDate) {
-      const dateStr = formatDate(currentDate)
+  // Track which soldiers have leave on each date
+  const assignedToday = new Map<string, Set<string>>()
 
-      // Check capacity for this role on this date
-      // Pass tasks array so capacity calculation accounts for soldiers on tasks
+  // Process each day
+  let currentDate = new Date(startDate)
+  let dayNumber = 0
+
+  while (currentDate <= endDate) {
+    const dateStr = formatDate(currentDate)
+    assignedToday.set(dateStr, new Set())
+
+    // Process each role separately
+    for (const [role, roleSoldiers] of soldiersByRole) {
+      // Get capacity for this role today
       const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr, result, tasks)
       let availableSlots = capacity[role] ?? 0
 
-      if (availableSlots > 0) {
-        // Assign leave to soldiers based on their individual phase offset
-        for (const soldier of roleSoldiers) {
-          if (availableSlots <= 0) break
+      if (availableSlots <= 0) {
+        // No capacity for this role today, skip to next role (not next day)
+        continue
+      }
 
-          // Skip if soldier is assigned to a task on this day (tasks have priority)
-          const soldierTasks = soldierTaskDates.get(soldier.id)
-          if (soldierTasks && soldierTasks.has(dateStr)) continue
+      // Calculate leave priority for each soldier
+      // Priority = leave debt (expected - actual) + phase bonus for staggering
+      const getPriority = (soldier: Soldier): number => {
+        const tracking = leaveTracking.get(soldier.id)
+        if (!tracking) return -Infinity
 
-          // Skip if manually locked
-          const isManualLocked =
-            manualLockDates.has(soldier.id) && manualLockDates.get(soldier.id)!.has(dateStr)
-          if (isManualLocked) continue
+        // Expected leave days by this point based on ratio
+        const expectedLeaveDays = (dayNumber + 1) * leaveRatio
 
-          // Skip if already assigned on this date
-          if (!assignedToday.has(dateStr)) {
-            assignedToday.set(dateStr, new Set())
+        // Leave debt: how many days behind are they?
+        const leaveDebt = expectedLeaveDays - tracking.leaveDaysAssigned
+
+        // Phase bonus: stagger soldiers so they don't all want leave on the same days
+        // Soldiers whose phase says "should be on leave now" get a small bonus
+        const soldierPosition = (dayNumber + tracking.phaseOffset) % cycleLength
+        const isInPhaseLeave = soldierPosition >= config.leaveRatioDaysInBase
+        const phaseBonus = isInPhaseLeave ? 0.5 : 0
+
+        // Penalty if at max consecutive leave days
+        const consecutivePenalty = tracking.consecutiveLeaveDays >= maxConsecutiveLeaveDays ? -1000 : 0
+
+        return leaveDebt + phaseBonus + consecutivePenalty
+      }
+
+      // Filter soldiers eligible for leave today
+      const eligibleSoldiers = roleSoldiers.filter(soldier => {
+        const tracking = leaveTracking.get(soldier.id)
+        if (!tracking) return false
+
+        // Skip if on task today
+        const soldierTasks = soldierTaskDates.get(soldier.id)
+        if (soldierTasks && soldierTasks.has(dateStr)) return false
+
+        // Skip if manually locked
+        if (manualLockDates.has(soldier.id) && manualLockDates.get(soldier.id)!.has(dateStr)) return false
+
+        // Skip if already assigned today
+        if (assignedToday.get(dateStr)!.has(soldier.id)) return false
+
+        // Skip if at max consecutive leave days
+        if (tracking.consecutiveLeaveDays >= maxConsecutiveLeaveDays) return false
+
+        return true
+      })
+
+      // Sort by priority (highest first)
+      eligibleSoldiers.sort((a, b) => getPriority(b) - getPriority(a))
+
+      // Assign leave to top priority soldiers up to capacity
+      for (const soldier of eligibleSoldiers) {
+        if (availableSlots <= 0) break
+
+        const tracking = leaveTracking.get(soldier.id)!
+
+        // Determine if this is exit day, return day, or full day
+        const isStartOfLeavePeriod = tracking.consecutiveLeaveDays === 0
+        const willBeLastDay = tracking.consecutiveLeaveDays === maxConsecutiveLeaveDays - 1
+
+        const leaveId = `cycle-${role}-${soldier.id}-${dateStr}`
+        const alreadyExists = result.some(l =>
+          l.id === leaveId || l.id === `${leaveId}-exit` || l.id === `${leaveId}-return`
+        )
+
+        if (!alreadyExists) {
+          if (isStartOfLeavePeriod) {
+            // Exit day - leaving base
+            result.push({
+              id: `${leaveId}-exit`,
+              soldierId: soldier.id,
+              startDate: `${dateStr}T${config.leaveBaseExitHour}:00`,
+              endDate: `${dateStr}T23:59:59`,
+              leaveType: 'After',
+              isWeekend: false,
+              isLocked: true,
+              createdAt: new Date().toISOString(),
+            })
+          } else if (willBeLastDay) {
+            // Return day - coming back to base
+            result.push({
+              id: `${leaveId}-return`,
+              soldierId: soldier.id,
+              startDate: `${dateStr}T00:00:00`,
+              endDate: `${dateStr}T${config.leaveBaseReturnHour}:00`,
+              leaveType: 'After',
+              isWeekend: false,
+              isLocked: true,
+              createdAt: new Date().toISOString(),
+            })
+          } else {
+            // Full day at home
+            result.push({
+              id: leaveId,
+              soldierId: soldier.id,
+              startDate: dateStr,
+              endDate: dateStr,
+              leaveType: 'After',
+              isWeekend: false,
+              isLocked: true,
+              createdAt: new Date().toISOString(),
+            })
           }
-          if (assignedToday.get(dateStr)!.has(soldier.id)) continue
 
-          // Calculate soldier's position in cycle based on their phase offset
-          const phaseOffset = soldiersPhaseOffset.get(soldier.id) ?? 0
-          const soldierPosition = (dayNumber + phaseOffset) % cycleLength
-          const isInLeavePhase = soldierPosition >= config.leaveRatioDaysInBase
+          // Update tracking
+          tracking.leaveDaysAssigned++
+          tracking.consecutiveLeaveDays++
+          tracking.lastLeaveDate = dateStr
 
-          if (isInLeavePhase) {
-            const dayInLeave = soldierPosition - config.leaveRatioDaysInBase
-            const isExitDay = dayInLeave === 0
-            const isReturnDay = dayInLeave === config.leaveRatioDaysHome - 1
-
-            const leaveId = `cycle-${role}-${soldier.id}-${dateStr}`
-            const alreadyExists = result.some(l => l.id === leaveId || l.id === `${leaveId}-exit` || l.id === `${leaveId}-return`)
-
-            if (!alreadyExists) {
-              if (isExitDay) {
-                result.push({
-                  id: `${leaveId}-exit`,
-                  soldierId: soldier.id,
-                  startDate: `${dateStr}T${config.leaveBaseExitHour}:00`,
-                  endDate: `${dateStr}T23:59:59`,
-                  leaveType: 'After',
-                  isWeekend: false,
-                  isLocked: true,
-                  createdAt: new Date().toISOString(),
-                })
-              } else if (isReturnDay) {
-                result.push({
-                  id: `${leaveId}-return`,
-                  soldierId: soldier.id,
-                  startDate: `${dateStr}T00:00:00`,
-                  endDate: `${dateStr}T${config.leaveBaseReturnHour}:00`,
-                  leaveType: 'After',
-                  isWeekend: false,
-                  isLocked: true,
-                  createdAt: new Date().toISOString(),
-                })
-              } else {
-                result.push({
-                  id: leaveId,
-                  soldierId: soldier.id,
-                  startDate: dateStr,
-                  endDate: dateStr,
-                  leaveType: 'After',
-                  isWeekend: false,
-                  isLocked: true,
-                  createdAt: new Date().toISOString(),
-                })
-              }
-              availableSlots--
-              assignedToday.get(dateStr)!.add(soldier.id)
-            }
-          }
+          availableSlots--
+          assignedToday.get(dateStr)!.add(soldier.id)
         }
       }
 
-      currentDate.setDate(currentDate.getDate() + 1)
-      dayNumber++
+      // Reset consecutive days for soldiers who didn't get leave today
+      for (const soldier of roleSoldiers) {
+        if (!assignedToday.get(dateStr)!.has(soldier.id)) {
+          const tracking = leaveTracking.get(soldier.id)
+          if (tracking) {
+            tracking.consecutiveLeaveDays = 0
+          }
+        }
+      }
     }
+
+    currentDate.setDate(currentDate.getDate() + 1)
+    dayNumber++
   }
 
   return result

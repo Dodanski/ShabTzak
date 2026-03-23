@@ -29,5 +29,6 @@ dist-ssr
 
 # Soldier data files
 soldier_list.xlsx
+snapshots/*
 *.xlsx
 .~lock.*

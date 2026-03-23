@@ -3,8 +3,17 @@ import { isTaskAvailable, checkDrivingHoursLimit } from './taskAvailability'
 import type { Soldier, Task, TaskAssignment, TaskSchedule, LeaveAssignment, AppConfig, ScheduleConflict } from '../models'
 
 /**
- * Greedy task scheduler: processes tasks by start time, assigns soldiers to each
- * role requirement sorted by fairness score (lowest first).
+ * Get the base task type from a task ID (e.g., "Tour 2_day5" -> "Tour 2")
+ */
+function getBaseTaskType(taskId: string): string {
+  // Remove _dayN or _pillN suffix to get base task type
+  return taskId.replace(/_day\d+$/, '').replace(/_pill\d+$/, '')
+}
+
+/**
+ * Greedy task scheduler with rotation: processes tasks by start time, assigns soldiers
+ * to each role requirement. Uses dynamic fairness tracking to ensure rotation -
+ * soldiers who have been assigned more tasks during this scheduling run are deprioritized.
  *
  * @param tasks - Tasks to assign soldiers to
  * @param soldiers - Available soldiers
@@ -37,6 +46,38 @@ export function scheduleTasks(
 
   // Track capacity shortages by role
   const capacityShortages: Map<string, { needed: number; available: number; unfilledTasks: string[] }> = new Map()
+
+  // === ROTATION TRACKING ===
+  // Track assignments made during THIS scheduling run for fair rotation
+  // Key: soldierId, Value: { totalHours, taskTypeCount: Map<taskType, count> }
+  const sessionAssignments = new Map<string, {
+    totalHours: number
+    taskTypeCount: Map<string, number>
+    consecutiveDaysOnSameTask: Map<string, number>  // taskType -> consecutive days
+    lastTaskDate: Map<string, string>  // taskType -> last date assigned
+  }>()
+
+  // Initialize tracking for all soldiers
+  for (const soldier of soldiers) {
+    sessionAssignments.set(soldier.id, {
+      totalHours: 0,
+      taskTypeCount: new Map(),
+      consecutiveDaysOnSameTask: new Map(),
+      lastTaskDate: new Map(),
+    })
+  }
+
+  // Initialize from existing assignments
+  for (const assignment of existingAssignments) {
+    const task = tasksForValidation.find(t => t.id === assignment.taskId)
+    if (!task) continue
+    const tracking = sessionAssignments.get(assignment.soldierId)
+    if (!tracking) continue
+
+    const baseType = getBaseTaskType(task.id)
+    tracking.totalHours += task.durationHours
+    tracking.taskTypeCount.set(baseType, (tracking.taskTypeCount.get(baseType) ?? 0) + 1)
+  }
 
 
   // Group tasks by date for visibility
@@ -111,15 +152,42 @@ export function scheduleTasks(
       }
 
       const taskUnit = getTaskUnit()
+      const baseTaskType = getBaseTaskType(task.id)
+      const taskDate = task.startTime.split('T')[0]
 
-      // Sort by unit affinity (prefer same unit), then fairness
+      // Calculate dynamic fairness score that includes session assignments
+      const getDynamicFairness = (soldier: Soldier): number => {
+        const tracking = sessionAssignments.get(soldier.id)
+        if (!tracking) return combinedFairnessScore(soldier)
+
+        // Base fairness from soldier stats
+        let score = combinedFairnessScore(soldier)
+
+        // Add penalty for hours assigned during this session (encourages rotation)
+        score += tracking.totalHours * 2
+
+        // Add penalty for being assigned to this same task type before (encourages task variety)
+        const taskTypeCount = tracking.taskTypeCount.get(baseTaskType) ?? 0
+        score += taskTypeCount * 10
+
+        // Heavy penalty for consecutive days on the same task type (forces rotation)
+        const consecutiveDays = tracking.consecutiveDaysOnSameTask.get(baseTaskType) ?? 0
+        if (consecutiveDays > 0) {
+          // Exponential penalty for consecutive days
+          score += Math.pow(consecutiveDays, 2) * 20
+        }
+
+        return score
+      }
+
+      // Sort by unit affinity (prefer same unit), then dynamic fairness
       const ranked = [...eligible].sort((a, b) => {
         if (taskUnit) {
           const aUnit = a.unit === taskUnit ? 0 : 1
           const bUnit = b.unit === taskUnit ? 0 : 1
           if (aUnit !== bUnit) return aUnit - bUnit
         }
-        return combinedFairnessScore(a) - combinedFairnessScore(b)
+        return getDynamicFairness(a) - getDynamicFairness(b)
       })
 
       // Assign up to `remaining` soldiers
@@ -135,6 +203,37 @@ export function scheduleTasks(
           createdAt: new Date().toISOString(),
           createdBy: 'scheduler',
         })
+
+        // === UPDATE SESSION TRACKING ===
+        const tracking = sessionAssignments.get(soldier.id)
+        if (tracking) {
+          tracking.totalHours += task.durationHours
+          tracking.taskTypeCount.set(baseTaskType, (tracking.taskTypeCount.get(baseTaskType) ?? 0) + 1)
+
+          // Update consecutive days tracking
+          const lastDate = tracking.lastTaskDate.get(baseTaskType)
+          if (lastDate) {
+            // Check if this is the next day
+            const lastDateObj = new Date(lastDate)
+            const taskDateObj = new Date(taskDate)
+            const diffDays = Math.round((taskDateObj.getTime() - lastDateObj.getTime()) / (1000 * 60 * 60 * 24))
+            if (diffDays === 1) {
+              // Consecutive day - increment counter
+              tracking.consecutiveDaysOnSameTask.set(
+                baseTaskType,
+                (tracking.consecutiveDaysOnSameTask.get(baseTaskType) ?? 0) + 1
+              )
+            } else if (diffDays > 1) {
+              // Gap in days - reset counter
+              tracking.consecutiveDaysOnSameTask.set(baseTaskType, 1)
+            }
+            // Same day (diffDays === 0) - don't change counter
+          } else {
+            // First assignment to this task type
+            tracking.consecutiveDaysOnSameTask.set(baseTaskType, 1)
+          }
+          tracking.lastTaskDate.set(baseTaskType, taskDate)
+        }
       }
 
       // Track unfilled positions (capacity shortage)
