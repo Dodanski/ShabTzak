@@ -159,22 +159,20 @@ describe('Cyclical Leave Scheduler', () => {
     })
 
     it('allows leave for soldiers not assigned to tasks on that day', () => {
-      // Need enough soldiers for capacity > 0
+      // With block-based leave, we need a longer period and enough capacity
+      // for the soldier with a task conflict to still get a leave window
       const soldiers = [
         makeSoldier('s1'),
         makeSoldier('s2'),
         makeSoldier('s3'),
         makeSoldier('s4'),
         makeSoldier('s5'),
-        makeSoldier('s6'),
-        makeSoldier('s7'),
-        makeSoldier('s8'),
-        makeSoldier('s9'),
-        makeSoldier('s10'),
       ]
+      // Set minPresence to 0 and use a longer period (28 days = 2 cycles)
       const config = { ...BASE_CONFIG, minBasePresenceByRole: { Driver: 0 } }
 
-      // s1 has a task on 2026-03-10
+      // s1 has a task on 2026-03-10 - this should block them from leave on that day
+      // but they should still get a leave block on other dates
       const tasks = [makeTask('guard1', '2026-03-10', [{ roles: ['Driver'], count: 1 }])]
       const taskAssignments = [makeTaskAssignment('guard1', 's1')]
 
@@ -184,15 +182,15 @@ describe('Cyclical Leave Scheduler', () => {
         taskAssignments,
         config,
         '2026-03-01',
-        '2026-03-14',
+        '2026-03-28',  // Longer period (28 days)
         tasks
       )
 
-      // s1 should still get leave on OTHER days (not blocked from all leaves)
+      // s1 should still get leave - just not on the task day
       const s1Leaves = result.filter(l => l.soldierId === 's1')
       expect(s1Leaves.length).toBeGreaterThan(0)
 
-      // But s1 should NOT have leave on 2026-03-10 (task day)
+      // s1 should NOT have leave on 2026-03-10 (task day)
       const s1LeavesOn10th = s1Leaves.filter(l => l.startDate.startsWith('2026-03-10'))
       expect(s1LeavesOn10th.length).toBe(0)
     })
