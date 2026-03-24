@@ -213,7 +213,8 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       // No need to distribute - scheduleService saves to master sheet which all units read from.
 
       // Update fairness for newly created TASK assignments
-      if (result?.taskAssignments) {
+      // Use masterDs.fairnessUpdate to update soldiers across ALL units (not just current unit)
+      if (result?.taskAssignments && masterDs) {
         const existingTaskIds = new Set(taskAssignments.map(a => a.scheduleId))
         const newTaskAssignments = result.taskAssignments.filter(a => !existingTaskIds.has(a.scheduleId))
 
@@ -234,7 +235,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
           const durationHours = taskDurationMap.get(baseTaskId) ?? taskDurationMap.get(assignment.taskId) ?? 8
 
           try {
-            await ds.fairnessUpdate.applyTaskAssignment(
+            await masterDs.fairnessUpdate.applyTaskAssignment(
               assignment.soldierId, durationHours, auth.email ?? 'user'
             )
           } catch (e) {
@@ -248,25 +249,28 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       }
 
       // Update fairness for newly created LEAVE assignments
-      const existingLeaveIds = new Set(leaveAssignments.map(a => a.id))
-      const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')
-      const newLeaveAssignments = leaveSchedule.assignments.filter(a => !existingLeaveIds.has(a.id))
+      // Use masterDs.fairnessUpdate to update soldiers across ALL units
+      if (masterDs) {
+        const existingLeaveIds = new Set(leaveAssignments.map(a => a.id))
+        const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')
+        const newLeaveAssignments = leaveSchedule.assignments.filter(a => !existingLeaveIds.has(a.id))
 
-      // Process fairness updates with delays to avoid API rate limiting
-      // Rate: 1 update per second on average (more conservative for safety)
-      for (let i = 0; i < newLeaveAssignments.length; i++) {
-        const assignment = newLeaveAssignments[i]
-        try {
-          await ds.fairnessUpdate.applyLeaveAssignment(
-            assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
-          )
-        } catch (e) {
-          console.warn('[App] Failed to update fairness for soldier', assignment.soldierId, ':', e)
-          // Continue with next soldier even if one fails
-        }
-        // Consistent 1-second delay between updates for stable rate limiting
-        if (i < newLeaveAssignments.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+        // Process fairness updates with delays to avoid API rate limiting
+        // Rate: 1 update per second on average (more conservative for safety)
+        for (let i = 0; i < newLeaveAssignments.length; i++) {
+          const assignment = newLeaveAssignments[i]
+          try {
+            await masterDs.fairnessUpdate.applyLeaveAssignment(
+              assignment.soldierId, assignment.leaveType, assignment.isWeekend, auth.email ?? 'user'
+            )
+          } catch (e) {
+            console.warn('[App] Failed to update fairness for soldier', assignment.soldierId, ':', e)
+            // Continue with next soldier even if one fails
+          }
+          // Consistent 1-second delay between updates for stable rate limiting
+          if (i < newLeaveAssignments.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
         }
       }
       reload()

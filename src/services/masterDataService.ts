@@ -13,6 +13,7 @@ import { LeaveRequestRepository } from './leaveRequestRepository'
 import { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
 import { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
 import { ScheduleService } from './scheduleService'
+import { FairnessUpdateService } from './fairnessUpdateService'
 import { MASTER_SHEET_TABS } from '../constants'
 import type { Unit } from '../models'
 
@@ -45,6 +46,7 @@ export class MasterDataService {
   readonly taskAssignments: MasterTaskAssignmentRepository
   readonly leaveAssignments: MasterLeaveAssignmentRepository
   readonly scheduleService: ScheduleService
+  readonly fairnessUpdate: FairnessUpdateService
   readonly sheets: GoogleSheetsService
   private spreadsheetId: string
 
@@ -73,6 +75,7 @@ export class MasterDataService {
       this.taskAssignments,
       this.history
     )
+    this.fairnessUpdate = new FairnessUpdateService(this.soldiers, this.history)
 
     if (import.meta.env.DEV) {
       console.log('[MasterDataService] Initialized master repositories (TaskSchedule, LeaveSchedule)')

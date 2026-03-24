@@ -61,6 +61,16 @@ export function calculateLeaveCapacityPerRole(
     }
   }
 
+  // Calculate overall presence constraint from minBasePresence percentage
+  const activeSoldiers = soldiers.filter(s => s.status === 'Active')
+  const totalActive = activeSoldiers.length
+  const totalAlreadyOnLeave = activeSoldiers.filter(s => onLeaveToday.has(s.id)).length
+
+  // minBasePresence is a percentage (e.g., 66 means 66% must stay)
+  // So max on leave = totalActive * (100 - minBasePresence) / 100
+  const maxOnLeaveByOverallPresence = Math.floor(totalActive * (100 - config.minBasePresence) / 100)
+  const overallRemainingCapacity = Math.max(0, maxOnLeaveByOverallPresence - totalAlreadyOnLeave)
+
   // Group soldiers by role
   const soldiersByRole = new Map<string, Soldier[]>()
   for (const soldier of soldiers) {
@@ -78,18 +88,23 @@ export function calculateLeaveCapacityPerRole(
     const alreadyOnLeave = roleSoldiers.filter(s => onLeaveToday.has(s.id)).length
     const assignedToTasks = roleSoldiers.filter(s => onTaskToday.has(s.id)).length
 
-    // Two constraints on max soldiers on leave:
+    // Three constraints on max soldiers on leave:
     // 1. Leave ratio: at most ~28.5% (for 10:4) of role can be on leave at once
     const maxOnLeaveByRatio = Math.floor(totalOfRole * leaveRatio)
 
-    // 2. Min presence: must keep minRequired in base, minus those on tasks
+    // 2. Min presence per role: must keep minRequired in base, minus those on tasks
     const availableAfterTasksAndMinPresence = totalOfRole - minRequired - assignedToTasks
     const maxOnLeaveByMinPresence = Math.max(0, availableAfterTasksAndMinPresence)
 
-    // Take the more restrictive constraint
-    const maxOnLeave = Math.min(maxOnLeaveByRatio, maxOnLeaveByMinPresence)
+    // 3. Overall presence: respect the global minBasePresence percentage
+    // This role can only use its fair share of the remaining overall capacity
+    const roleShare = totalOfRole / totalActive
+    const maxOnLeaveByOverall = Math.floor(overallRemainingCapacity * roleShare) + alreadyOnLeave
 
-    // Capacity is how many MORE can go on leave (at least 1 to allow rotation)
+    // Take the most restrictive constraint
+    const maxOnLeave = Math.min(maxOnLeaveByRatio, maxOnLeaveByMinPresence, maxOnLeaveByOverall)
+
+    // Capacity is how many MORE can go on leave (at least 0)
     const availableForLeave = Math.max(0, maxOnLeave - alreadyOnLeave)
     capacity[role] = availableForLeave
   }
