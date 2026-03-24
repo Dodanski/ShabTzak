@@ -204,7 +204,7 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
   async function handleGenerateSchedule() {
     if (!ds || !configData) return
     try {
-      await runSchedule(() => {
+      const result = await runSchedule(() => {
         // Reload data after schedule generation completes
         reload()
       })
@@ -212,7 +212,42 @@ function UnitApp({ spreadsheetId, tabPrefix, unitName, masterDs, tasks, configDa
       // All units now automatically see the shared master schedule.
       // No need to distribute - scheduleService saves to master sheet which all units read from.
 
-      // Update fairness for newly created leave assignments
+      // Update fairness for newly created TASK assignments
+      if (result?.taskAssignments) {
+        const existingTaskIds = new Set(taskAssignments.map(a => a.scheduleId))
+        const newTaskAssignments = result.taskAssignments.filter(a => !existingTaskIds.has(a.scheduleId))
+
+        // Build a map from taskId to durationHours for quick lookup
+        const taskDurationMap = new Map<string, number>()
+        for (const task of tasks) {
+          taskDurationMap.set(task.id, task.durationHours)
+          // Also map expanded task IDs (e.g., "Tour 1_day0", "Tour 1_day1", etc.)
+          // The expanded tasks share the same durationHours as the base task
+        }
+
+        console.log(`[App] Updating fairness for ${newTaskAssignments.length} new task assignments`)
+
+        for (let i = 0; i < newTaskAssignments.length; i++) {
+          const assignment = newTaskAssignments[i]
+          // Extract base task ID (e.g., "Tour 1_day5" -> "Tour 1")
+          const baseTaskId = assignment.taskId.replace(/_day\d+$/, '').replace(/_pill\d+$/, '')
+          const durationHours = taskDurationMap.get(baseTaskId) ?? taskDurationMap.get(assignment.taskId) ?? 8
+
+          try {
+            await ds.fairnessUpdate.applyTaskAssignment(
+              assignment.soldierId, durationHours, auth.email ?? 'user'
+            )
+          } catch (e) {
+            console.warn('[App] Failed to update task fairness for soldier', assignment.soldierId, ':', e)
+          }
+          // Delay between updates to avoid API rate limiting
+          if (i < newTaskAssignments.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        }
+      }
+
+      // Update fairness for newly created LEAVE assignments
       const existingLeaveIds = new Set(leaveAssignments.map(a => a.id))
       const leaveSchedule = await ds.scheduleService.generateLeaveSchedule(configData, today, scheduleEnd, auth.email ?? 'user')
       const newLeaveAssignments = leaveSchedule.assignments.filter(a => !existingLeaveIds.has(a.id))

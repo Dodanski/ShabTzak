@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 import { expandRecurringTasks } from '../algorithms/taskExpander'
 import type { DataService } from '../services/dataService'
-import type { ScheduleConflict, Task, AppConfig, Soldier } from '../models'
+import type { ScheduleConflict, Task, TaskAssignment, AppConfig, Soldier } from '../models'
 
 export interface UseScheduleGeneratorResult {
-  generate: (onComplete?: () => void) => Promise<void>
+  generate: (onComplete?: () => void) => Promise<{ taskAssignments: TaskAssignment[] } | void>
   loading: boolean
   conflicts: ScheduleConflict[]
   error: Error | null
@@ -24,7 +24,7 @@ export function useScheduleGenerator(
   const [error, setError] = useState<Error | null>(null)
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null)
 
-  const generate = useCallback(async (onComplete?: () => void) => {
+  const generate = useCallback(async (onComplete?: () => void): Promise<{ taskAssignments: TaskAssignment[] } | void> => {
     if (!ds || !config) return
     setLoading(true)
     setError(null)
@@ -47,6 +47,9 @@ export function useScheduleGenerator(
 
       // Call onComplete callback when done (for data reload)
       onComplete?.()
+
+      // Return task assignments so caller can update fairness
+      return { taskAssignments: task.assignments }
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
