@@ -203,6 +203,55 @@ export class MasterTaskAssignmentRepository {
   }
 
   /**
+   * Clear only future task assignments (from today onwards), preserving past assignments.
+   * Uses the expanded tasks list to determine which assignments are for future dates.
+   * @param expandedTasks - The expanded tasks array with actual dates in startTime
+   * @returns The assignments that were kept (past assignments)
+   */
+  async clearFutureAssignments(expandedTasks: { id: string; startTime: string }[]): Promise<TaskAssignment[]> {
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+
+    // Build a map of taskId -> date for quick lookup
+    const taskDateMap = new Map<string, string>()
+    for (const task of expandedTasks) {
+      const taskDate = task.startTime.split('T')[0]
+      taskDateMap.set(task.id, taskDate)
+    }
+
+    const { headers, rows } = await this.fetchAll()
+    const allAssignments = rows.map(row => parseAssignment(row, headers))
+
+    // Separate past and future assignments
+    const pastAssignments: TaskAssignment[] = []
+    const futureScheduleIds: string[] = []
+
+    for (const assignment of allAssignments) {
+      const taskDate = taskDateMap.get(assignment.taskId)
+
+      // If we can't find the task date, check if the taskId contains date info
+      // or default to treating it as future (safer to regenerate)
+      if (taskDate) {
+        if (taskDate < today) {
+          pastAssignments.push(assignment)
+        } else {
+          futureScheduleIds.push(assignment.scheduleId)
+        }
+      } else {
+        // Task not found in expanded tasks - likely outdated, treat as future
+        futureScheduleIds.push(assignment.scheduleId)
+      }
+    }
+
+    console.log(`[masterTaskAssignmentRepository] Clearing ${futureScheduleIds.length} future assignments, keeping ${pastAssignments.length} past assignments`)
+
+    if (futureScheduleIds.length > 0) {
+      await this.deleteByScheduleIds(futureScheduleIds)
+    }
+
+    return pastAssignments
+  }
+
+  /**
    * Delete task assignments by their schedule IDs.
    * Uses batchClear API to clear multiple rows in a single request.
    */

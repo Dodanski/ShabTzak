@@ -109,12 +109,12 @@ export class ScheduleService {
       this.taskAssignments.list(),
     ])
 
-    // Clear all existing assignments and start fresh
-    // This prevents accumulation of empty rows from row-by-row clearing
+    // Clear only future assignments, preserving past assignments
+    // This prevents regenerating history while allowing fresh future schedules
     let existing: TaskAssignment[] = []
     if (allExisting.length > 0) {
-      console.log(`[scheduleService] Clearing all ${allExisting.length} existing task assignments for fresh generation`)
-      await this.taskAssignments.clearAll()
+      console.log(`[scheduleService] Clearing future task assignments, preserving past`)
+      existing = await this.taskAssignments.clearFutureAssignments(tasks)
     }
 
     // Use allSoldiers if provided (multi-unit scheduling), otherwise use unit soldiers

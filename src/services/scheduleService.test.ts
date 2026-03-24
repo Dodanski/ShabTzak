@@ -44,6 +44,8 @@ const makeRepo = (overrides = {}) => ({
   createBatch: vi.fn().mockResolvedValue(undefined),
   deleteByIds: vi.fn().mockResolvedValue(undefined),
   deleteByScheduleIds: vi.fn().mockResolvedValue(undefined),
+  clearAll: vi.fn().mockResolvedValue(undefined),
+  clearFutureAssignments: vi.fn().mockResolvedValue([]),  // Returns kept past assignments
   ...overrides,
 })
 
