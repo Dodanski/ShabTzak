@@ -54,12 +54,11 @@ export class ScheduleService {
       console.log('[scheduleService] Task assignments to respect:', taskAssignments.length)
     }
 
-    // Clear all existing leave assignments and start fresh
-    // This prevents accumulation of empty rows from row-by-row clearing
+    // Clear only future leave assignments, preserving past assignments
+    // This prevents regenerating history while allowing fresh future schedules
     if (existing.length > 0) {
-      console.log(`[scheduleService] Clearing all ${existing.length} existing leave assignments for fresh generation`)
-      await this.leaveAssignments.clearAll()
-      existing = []  // All cleared, start fresh
+      console.log(`[scheduleService] Clearing future leave assignments, preserving past`)
+      existing = await this.leaveAssignments.clearFutureAssignments()
     }
 
     // Generate automatic cyclical leaves based on the rotation pattern, respecting role capacity

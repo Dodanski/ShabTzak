@@ -180,6 +180,41 @@ export class MasterLeaveAssignmentRepository {
   }
 
   /**
+   * Clear only future leave assignments (from today onwards), preserving past assignments.
+   * Uses the endDate of each leave to determine if it's in the past.
+   * @param today - Optional today's date in YYYY-MM-DD format (defaults to current date)
+   * @returns The assignments that were kept (past assignments)
+   */
+  async clearFutureAssignments(today?: string): Promise<LeaveAssignment[]> {
+    const todayDate = today || new Date().toISOString().split('T')[0]
+
+    const { headers, rows } = await this.fetchAll()
+    const allAssignments = rows.map(row => parseLeaveAssignment(row, headers))
+
+    // Separate past and future assignments
+    // A leave is considered "past" if its endDate is before today
+    const pastAssignments: LeaveAssignment[] = []
+    const futureIds: string[] = []
+
+    for (const assignment of allAssignments) {
+      const leaveEndDate = assignment.endDate.split('T')[0]
+      if (leaveEndDate < todayDate) {
+        pastAssignments.push(assignment)
+      } else {
+        futureIds.push(assignment.id)
+      }
+    }
+
+    console.log(`[masterLeaveAssignmentRepository] Clearing ${futureIds.length} future assignments, keeping ${pastAssignments.length} past assignments`)
+
+    if (futureIds.length > 0) {
+      await this.deleteByIds(futureIds)
+    }
+
+    return pastAssignments
+  }
+
+  /**
    * Delete leave assignments by their IDs.
    * Uses batchClear API to clear multiple rows in a single request.
    */
