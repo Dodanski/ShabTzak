@@ -1,5 +1,172 @@
-import { parseDate } from '../utils/dateUtils'
+import { parseDate, formatDate, getDateRange } from '../utils/dateUtils'
 import type { Soldier, TaskAssignment, LeaveAssignment, AppConfig, Task } from '../models'
+
+/**
+ * Pre-computed base capacity data for a date range.
+ * This allows efficient capacity lookups without recalculating on every check.
+ */
+export interface BaseCapacityData {
+  /** Max soldiers on leave per role (based on ratio + min presence) */
+  maxOnLeaveByRole: Record<string, number>
+  /** Soldiers assigned to tasks on this date (by role) */
+  onTaskByRole: Record<string, Set<string>>
+  /** Overall max on leave (global minBasePresence constraint) */
+  maxOnLeaveOverall: number
+  /** Total active soldiers */
+  totalActive: number
+  /** Soldiers by role for quick lookup */
+  soldierIdsByRole: Record<string, string[]>
+}
+
+/**
+ * Pre-computes base leave capacity for all dates in a range.
+ * This is called ONCE at the start of schedule generation, avoiding
+ * repeated O(n) calculations in nested loops.
+ *
+ * @returns Map of date string -> BaseCapacityData
+ */
+export function calculateBaseLeaveCapacity(
+  soldiers: Soldier[],
+  taskAssignments: TaskAssignment[],
+  config: AppConfig,
+  tasks: Task[],
+  startDate: string,
+  endDate: string,
+): Map<string, BaseCapacityData> {
+  const capacityByDate = new Map<string, BaseCapacityData>()
+
+  // Pre-compute static data (doesn't change per date)
+  const activeSoldiers = soldiers.filter(s => s.status === 'Active')
+  const totalActive = activeSoldiers.length
+  const cycleLength = config.leaveRatioDaysInBase + config.leaveRatioDaysHome
+  const leaveRatio = config.leaveRatioDaysHome / cycleLength
+
+  // Group soldiers by role (static)
+  const soldiersByRole = new Map<string, Soldier[]>()
+  const soldierIdsByRole: Record<string, string[]> = {}
+  for (const soldier of activeSoldiers) {
+    if (!soldiersByRole.has(soldier.role)) {
+      soldiersByRole.set(soldier.role, [])
+      soldierIdsByRole[soldier.role] = []
+    }
+    soldiersByRole.get(soldier.role)!.push(soldier)
+    soldierIdsByRole[soldier.role].push(soldier.id)
+  }
+
+  // Pre-compute max on leave by role (static - based on ratio and min presence)
+  const maxOnLeaveByRole: Record<string, number> = {}
+  for (const [role, roleSoldiers] of soldiersByRole) {
+    const totalOfRole = roleSoldiers.length
+    const minRequired = config.minBasePresenceByRole[role] ?? 0
+
+    // Leave ratio constraint
+    const maxOnLeaveByRatio = Math.floor(totalOfRole * leaveRatio)
+
+    // Min presence constraint (without task deduction - that's per-date)
+    const maxOnLeaveByMinPresence = Math.max(0, totalOfRole - minRequired)
+
+    // Take the more restrictive of ratio and min presence
+    maxOnLeaveByRole[role] = Math.min(maxOnLeaveByRatio, maxOnLeaveByMinPresence)
+  }
+
+  // Overall max on leave (global constraint)
+  const maxOnLeaveOverall = Math.floor(totalActive * (100 - config.minBasePresence) / 100)
+
+  // Build task date index: date -> taskId -> true
+  const tasksByDate = new Map<string, Set<string>>()
+  for (const task of tasks) {
+    const taskDate = task.startTime.split('T')[0]
+    if (!tasksByDate.has(taskDate)) {
+      tasksByDate.set(taskDate, new Set())
+    }
+    tasksByDate.get(taskDate)!.add(task.id)
+  }
+
+  // Build assignment index: taskId -> soldier IDs
+  const assignmentsByTask = new Map<string, string[]>()
+  for (const assignment of taskAssignments) {
+    if (!assignmentsByTask.has(assignment.taskId)) {
+      assignmentsByTask.set(assignment.taskId, [])
+    }
+    assignmentsByTask.get(assignment.taskId)!.push(assignment.soldierId)
+  }
+
+  // Build soldier -> role index
+  const soldierRoleMap = new Map<string, string>()
+  for (const soldier of activeSoldiers) {
+    soldierRoleMap.set(soldier.id, soldier.role)
+  }
+
+  // Generate capacity data for each date
+  const dates = getDateRange(parseDate(startDate), parseDate(endDate))
+  for (const date of dates) {
+    const dateStr = formatDate(date)
+
+    // Find soldiers on tasks this date, grouped by role
+    const onTaskByRole: Record<string, Set<string>> = {}
+    for (const role of soldiersByRole.keys()) {
+      onTaskByRole[role] = new Set()
+    }
+
+    const taskIdsToday = tasksByDate.get(dateStr)
+    if (taskIdsToday) {
+      for (const taskId of taskIdsToday) {
+        const soldierIds = assignmentsByTask.get(taskId) ?? []
+        for (const soldierId of soldierIds) {
+          const role = soldierRoleMap.get(soldierId)
+          if (role && onTaskByRole[role]) {
+            onTaskByRole[role].add(soldierId)
+          }
+        }
+      }
+    }
+
+    capacityByDate.set(dateStr, {
+      maxOnLeaveByRole,
+      onTaskByRole,
+      maxOnLeaveOverall,
+      totalActive,
+      soldierIdsByRole,
+    })
+  }
+
+  return capacityByDate
+}
+
+/**
+ * Calculates remaining leave capacity for a specific date given current leave assignments.
+ * Uses pre-computed base capacity and dynamic leave tracking for efficiency.
+ */
+export function getRemainingCapacity(
+  baseCapacity: BaseCapacityData,
+  onLeaveByRole: Record<string, number>,
+  totalOnLeave: number,
+): Record<string, number> {
+  const capacity: Record<string, number> = {}
+
+  const overallRemainingCapacity = Math.max(0, baseCapacity.maxOnLeaveOverall - totalOnLeave)
+
+  for (const role of Object.keys(baseCapacity.maxOnLeaveByRole)) {
+    const maxForRole = baseCapacity.maxOnLeaveByRole[role]
+    const onTaskCount = baseCapacity.onTaskByRole[role]?.size ?? 0
+    const alreadyOnLeave = onLeaveByRole[role] ?? 0
+    const roleCount = baseCapacity.soldierIdsByRole[role]?.length ?? 0
+
+    // Adjust max by task assignments
+    const adjustedMax = Math.max(0, maxForRole - onTaskCount)
+
+    // Also respect overall capacity (proportional share)
+    const roleShare = roleCount / baseCapacity.totalActive
+    const maxByOverall = Math.floor(overallRemainingCapacity * roleShare) + alreadyOnLeave
+
+    // Take most restrictive
+    const effectiveMax = Math.min(adjustedMax, maxByOverall)
+
+    capacity[role] = Math.max(0, effectiveMax - alreadyOnLeave)
+  }
+
+  return capacity
+}
 
 /**
  * Calculates how many additional soldiers of each role can take leave on `date`
@@ -15,6 +182,8 @@ import type { Soldier, TaskAssignment, LeaveAssignment, AppConfig, Task } from '
  * capacity = max(0, maxOnLeave - alreadyOnLeave)
  *
  * Returns 0 if capacity would be negative (can't allow more leaves).
+ *
+ * NOTE: For bulk operations, prefer calculateBaseLeaveCapacity() + getRemainingCapacity()
  */
 export function calculateLeaveCapacityPerRole(
   soldiers: Soldier[],

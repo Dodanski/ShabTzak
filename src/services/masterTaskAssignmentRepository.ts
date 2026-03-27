@@ -144,8 +144,8 @@ export class MasterTaskAssignmentRepository {
     }
 
     // Batch in groups with delay between batches to avoid rate limiting
-    const BATCH_SIZE = 15  // Reduced from 20 to lower API pressure
-    const DELAY_MS = 1500  // Increased from 300ms to 1.5s between batches
+    const BATCH_SIZE = 35  // Higher throughput (aggressive)
+    const DELAY_MS = 600   // Faster but monitor for 429 errors
     const PROGRESS_UPDATE_FREQUENCY = 3
 
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {
@@ -276,9 +276,9 @@ export class MasterTaskAssignmentRepository {
     console.log(`[masterTaskAssignmentRepository] Deleting ${rowIndicesToClear.length} task assignments`)
 
     // Use batchClear to clear multiple rows in fewer API calls
-    // Each batch clears up to 100 ranges in a single API call
-    const BATCH_SIZE = 100  // Google Sheets allows many ranges per batchClear
-    const DELAY_MS = 1000  // Delay between batches to avoid rate limiting
+    // Each batch clears up to 150 ranges in a single API call
+    const BATCH_SIZE = 150  // batchClear can handle more ranges
+    const DELAY_MS = 800    // Slightly reduced
 
     for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
       const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)

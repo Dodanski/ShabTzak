@@ -1,6 +1,6 @@
 const SHEETS_API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
-const MAX_RETRIES = 5  // Increased from 3 to handle sustained rate limiting
-const BASE_DELAY_MS = 1000 // Start with 1s delay (increased from 500ms)
+const MAX_RETRIES = 5  // Handle sustained rate limiting
+const BASE_DELAY_MS = 300 // Start with 300ms delay (reduced for faster recovery)
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -25,7 +25,7 @@ async function retryWithBackoff<T>(
         if (attempt === maxRetries) throw lastError
       }
 
-      // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      // Exponential backoff: 0.3s, 0.6s, 1.2s, 2.4s, 4.8s (total ~9.3s max)
       const delay = BASE_DELAY_MS * Math.pow(2, attempt)
       console.warn(`[API Rate Limited] Retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`)
       await sleep(delay)
@@ -173,15 +173,20 @@ export class GoogleSheetsService {
   async clearValues(spreadsheetId: string, range: string): Promise<void> {
     const encodedRange = encodeURIComponent(range)
     const url = `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodedRange}:clear`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
+    await retryWithBackoff(async () => {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
+      if (!response.ok) {
+        const statusText = `${response.status} ${response.statusText}`
+        throw new Error(`Failed to clear range: ${statusText}`)
+      }
     })
-    if (!response.ok) throw new Error(`Failed to clear range: ${response.statusText}`)
   }
 
   /**

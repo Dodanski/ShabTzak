@@ -1,5 +1,5 @@
 import { parseDate, formatDate, getDateRange } from '../utils/dateUtils'
-import { calculateLeaveCapacityPerRole } from './leaveCapacityCalculator'
+import { calculateBaseLeaveCapacity, getRemainingCapacity } from './leaveCapacityCalculator'
 import type { Soldier, LeaveAssignment, TaskAssignment, AppConfig, Task } from '../models'
 
 /**
@@ -116,6 +116,41 @@ export function generateCyclicalLeaves(
   // Track leave assignments by soldier and date for quick lookup
   const soldierLeaveDates = new Map<string, Set<string>>()
 
+  // Track leave count by role by date (for efficient capacity checking)
+  const leaveCountByDateByRole = new Map<string, Record<string, number>>()
+
+  // === PRE-COMPUTE BASE CAPACITY FOR ALL DATES ===
+  // This is the critical optimization - calculate once instead of in nested loops
+  const baseCapacityByDate = calculateBaseLeaveCapacity(
+    soldiers, taskAssignments, config, tasks, scheduleStart, scheduleEnd
+  )
+
+  // Build soldier -> role map for quick lookup
+  const soldierRoleMap = new Map<string, string>()
+  for (const soldier of soldiers) {
+    if (soldier.status === 'Active') {
+      soldierRoleMap.set(soldier.id, soldier.role)
+    }
+  }
+
+  // Helper: Get current leave count by role for a date
+  const getLeaveCountByRole = (dateStr: string): Record<string, number> => {
+    if (!leaveCountByDateByRole.has(dateStr)) {
+      const counts: Record<string, number> = {}
+      for (const role of soldiersByRole.keys()) {
+        counts[role] = 0
+      }
+      leaveCountByDateByRole.set(dateStr, counts)
+    }
+    return leaveCountByDateByRole.get(dateStr)!
+  }
+
+  // Helper: Get total on leave for a date
+  const getTotalOnLeave = (dateStr: string): number => {
+    const counts = getLeaveCountByRole(dateStr)
+    return Object.values(counts).reduce((a, b) => a + b, 0)
+  }
+
   // Helper: Check if a date range is free of tasks for a soldier
   const canTakeLeaveBlock = (soldierId: string, startDateStr: string, numDays: number): boolean => {
     const soldierTasks = soldierTaskDates.get(soldierId)
@@ -132,7 +167,28 @@ export function generateCyclicalLeaves(
     return true
   }
 
-  // Helper: Assign a complete leave block
+  // Helper: Check capacity for a leave block using pre-computed data
+  const canFitLeaveBlock = (role: string, startDateStr: string, numDays: number): boolean => {
+    let checkDate = new Date(startDateStr)
+    for (let i = 0; i < numDays; i++) {
+      const checkDateStr = formatDate(checkDate)
+      if (checkDate > endDate) return false
+
+      const baseCapacity = baseCapacityByDate.get(checkDateStr)
+      if (!baseCapacity) return false
+
+      const leaveCountByRole = getLeaveCountByRole(checkDateStr)
+      const totalOnLeave = getTotalOnLeave(checkDateStr)
+      const capacity = getRemainingCapacity(baseCapacity, leaveCountByRole, totalOnLeave)
+
+      if ((capacity[role] ?? 0) <= 0) return false
+
+      checkDate.setDate(checkDate.getDate() + 1)
+    }
+    return true
+  }
+
+  // Helper: Assign a complete leave block and update tracking
   const assignLeaveBlock = (soldier: Soldier, startDateStr: string, role: string): void => {
     let currentDate = new Date(startDateStr)
 
@@ -186,11 +242,15 @@ export function generateCyclicalLeaves(
           })
         }
 
-        // Track this date
+        // Track this date for the soldier
         if (!soldierLeaveDates.has(soldier.id)) {
           soldierLeaveDates.set(soldier.id, new Set())
         }
         soldierLeaveDates.get(soldier.id)!.add(dateStr)
+
+        // Update leave count by role for this date
+        const counts = getLeaveCountByRole(dateStr)
+        counts[role] = (counts[role] ?? 0) + 1
       }
 
       currentDate.setDate(currentDate.getDate() + 1)
@@ -206,16 +266,14 @@ export function generateCyclicalLeaves(
 
     // Process each role
     for (const [role, roleSoldiers] of soldiersByRole) {
-      // Check capacity for this role today
-      const capacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, dateStr, result, tasks)
-      const maxOnLeaveToday = capacity[role] ?? 0
+      // Get capacity using pre-computed data
+      const baseCapacity = baseCapacityByDate.get(dateStr)
+      if (!baseCapacity) continue
 
-      // Count how many of this role are already on leave today
-      const onLeaveToday = roleSoldiers.filter(s =>
-        soldierLeaveDates.has(s.id) && soldierLeaveDates.get(s.id)!.has(dateStr)
-      ).length
-
-      let availableSlots = Math.max(0, maxOnLeaveToday - onLeaveToday)
+      const leaveCountByRole = getLeaveCountByRole(dateStr)
+      const totalOnLeave = getTotalOnLeave(dateStr)
+      const capacity = getRemainingCapacity(baseCapacity, leaveCountByRole, totalOnLeave)
+      let availableSlots = capacity[role] ?? 0
 
       // Find soldiers who should start leave today (sorted by priority)
       const soldiersReadyForLeave = roleSoldiers
@@ -251,25 +309,7 @@ export function generateCyclicalLeaves(
         }
 
         // Check capacity for all days of the leave block
-        let canFitBlock = true
-        let checkDate = new Date(dateStr)
-        for (let i = 0; i < leaveDuration && canFitBlock; i++) {
-          const checkDateStr = formatDate(checkDate)
-          if (checkDate > endDate) {
-            canFitBlock = false
-            break
-          }
-          const dayCapacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, checkDateStr, result, tasks)
-          const dayOnLeave = roleSoldiers.filter(s =>
-            soldierLeaveDates.has(s.id) && soldierLeaveDates.get(s.id)!.has(checkDateStr)
-          ).length
-          if (dayOnLeave >= (dayCapacity[role] ?? 0)) {
-            canFitBlock = false
-          }
-          checkDate.setDate(checkDate.getDate() + 1)
-        }
-
-        if (!canFitBlock) {
+        if (!canFitLeaveBlock(role, dateStr, leaveDuration)) {
           // Not enough capacity for full block, defer to later
           continue
         }
@@ -307,26 +347,8 @@ export function generateCyclicalLeaves(
 
         // Check if soldier can take a leave block starting this day
         if (canTakeLeaveBlock(soldier.id, tryDateStr, leaveDuration)) {
-          // Check capacity for all days
-          let canFitBlock = true
-          let checkDate = new Date(tryDateStr)
-          for (let i = 0; i < leaveDuration && canFitBlock; i++) {
-            const checkDateStr = formatDate(checkDate)
-            if (checkDate > endDate) {
-              canFitBlock = false
-              break
-            }
-            const dayCapacity = calculateLeaveCapacityPerRole(soldiers, taskAssignments, config, checkDateStr, result, tasks)
-            const dayOnLeave = roleSoldiers.filter(s =>
-              soldierLeaveDates.has(s.id) && soldierLeaveDates.get(s.id)!.has(checkDateStr)
-            ).length
-            if (dayOnLeave >= (dayCapacity[role] ?? 0)) {
-              canFitBlock = false
-            }
-            checkDate.setDate(checkDate.getDate() + 1)
-          }
-
-          if (canFitBlock) {
+          // Check capacity for all days using pre-computed data
+          if (canFitLeaveBlock(role, tryDateStr, leaveDuration)) {
             assignLeaveBlock(soldier, tryDateStr, role)
             foundSlot = true
           }

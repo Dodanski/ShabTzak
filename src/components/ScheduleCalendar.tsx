@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { buildAvailabilityMatrix } from '../algorithms/availabilityMatrix'
 import type { AvailabilityStatus } from '../algorithms/availabilityMatrix'
 import type { Soldier, Task, TaskAssignment, LeaveAssignment } from '../models'
@@ -34,7 +34,8 @@ export default function ScheduleCalendar({
 
   // Expand recurring tasks to match the _dayN IDs created by the scheduler
   // The day index must be calculated from the task's original start date, not the dates array index
-  const expandedTasks = tasks.flatMap(task => {
+  // Memoized to prevent recalculation on every render
+  const expandedTasks = useMemo(() => tasks.flatMap(task => {
     if (task.isSpecial) {
       // Pillbox task - don't expand
       return [task]
@@ -58,9 +59,13 @@ export default function ScheduleCalendar({
         endTime: `${date}T${task.endTime.split('T')[1]}`,
       }
     }).filter(Boolean) as Task[]
-  })
+  }), [tasks, dates])
 
-  const matrix = buildAvailabilityMatrix(soldiers, expandedTasks, taskAssignments, leaveAssignments, dates)
+  // Memoize matrix calculation to prevent rebuilding on every render
+  const matrix = useMemo(
+    () => buildAvailabilityMatrix(soldiers, expandedTasks, taskAssignments, leaveAssignments, dates),
+    [soldiers, expandedTasks, taskAssignments, leaveAssignments, dates]
+  )
 
   // Mobile view: soldier selector + horizontal scroll day view
   if (isMobile) {
