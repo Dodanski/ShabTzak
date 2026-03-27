@@ -179,7 +179,7 @@ export function generateCyclicalLeaves(
 
       const leaveCountByRole = getLeaveCountByRole(checkDateStr)
       const totalOnLeave = getTotalOnLeave(checkDateStr)
-      const capacity = getRemainingCapacity(baseCapacity, leaveCountByRole, totalOnLeave)
+      const capacity = getRemainingCapacity(baseCapacity, leaveCountByRole, totalOnLeave, config)
 
       if ((capacity[role] ?? 0) <= 0) return false
 
@@ -272,7 +272,7 @@ export function generateCyclicalLeaves(
 
       const leaveCountByRole = getLeaveCountByRole(dateStr)
       const totalOnLeave = getTotalOnLeave(dateStr)
-      const capacity = getRemainingCapacity(baseCapacity, leaveCountByRole, totalOnLeave)
+      const capacity = getRemainingCapacity(baseCapacity, leaveCountByRole, totalOnLeave, config)
       let availableSlots = capacity[role] ?? 0
 
       // Find soldiers who should start leave today (sorted by priority)

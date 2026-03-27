@@ -141,28 +141,36 @@ export function getRemainingCapacity(
   baseCapacity: BaseCapacityData,
   onLeaveByRole: Record<string, number>,
   totalOnLeave: number,
+  config: { minBasePresenceByRole: Record<string, number>; leaveRatioDaysInBase: number; leaveRatioDaysHome: number },
 ): Record<string, number> {
   const capacity: Record<string, number> = {}
 
   const overallRemainingCapacity = Math.max(0, baseCapacity.maxOnLeaveOverall - totalOnLeave)
+  const cycleLength = config.leaveRatioDaysInBase + config.leaveRatioDaysHome
+  const leaveRatio = config.leaveRatioDaysHome / cycleLength
 
   for (const role of Object.keys(baseCapacity.maxOnLeaveByRole)) {
-    const maxForRole = baseCapacity.maxOnLeaveByRole[role]
     const onTaskCount = baseCapacity.onTaskByRole[role]?.size ?? 0
     const alreadyOnLeave = onLeaveByRole[role] ?? 0
     const roleCount = baseCapacity.soldierIdsByRole[role]?.length ?? 0
+    const minRequired = config.minBasePresenceByRole[role] ?? 0
 
-    // Adjust max by task assignments
-    const adjustedMax = Math.max(0, maxForRole - onTaskCount)
+    // Three constraints on max soldiers on leave (matching original logic):
+    // 1. Leave ratio constraint
+    const maxOnLeaveByRatio = Math.floor(roleCount * leaveRatio)
 
-    // Also respect overall capacity (proportional share)
+    // 2. Min presence per role: must keep minRequired in base, minus those on tasks
+    const availableAfterTasksAndMinPresence = roleCount - minRequired - onTaskCount
+    const maxOnLeaveByMinPresence = Math.max(0, availableAfterTasksAndMinPresence)
+
+    // 3. Overall presence: respect the global minBasePresence percentage
     const roleShare = roleCount / baseCapacity.totalActive
     const maxByOverall = Math.floor(overallRemainingCapacity * roleShare) + alreadyOnLeave
 
     // Take most restrictive
-    const effectiveMax = Math.min(adjustedMax, maxByOverall)
+    const maxOnLeave = Math.min(maxOnLeaveByRatio, maxOnLeaveByMinPresence, maxByOverall)
 
-    capacity[role] = Math.max(0, effectiveMax - alreadyOnLeave)
+    capacity[role] = Math.max(0, maxOnLeave - alreadyOnLeave)
   }
 
   return capacity
