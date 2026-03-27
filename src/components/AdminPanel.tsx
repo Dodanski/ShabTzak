@@ -112,95 +112,11 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
       console.log('[AdminPanel] Generated leaves:', leaveSchedule.assignments.length)
 
       // === UPDATE FAIRNESS SCORES ===
-      // This is critical for tracking who has worked more/less
-
-      // Build task duration map for fairness calculation
-      const taskDurationMap = new Map<string, number>()
-      for (const task of tasks) {
-        const startHour = parseInt(task.startTime.split('T')[1]?.split(':')[0] ?? '0')
-        const endHour = parseInt(task.endTime.split('T')[1]?.split(':')[0] ?? '8')
-        const duration = endHour > startHour ? endHour - startHour : (24 - startHour + endHour)
-        taskDurationMap.set(task.id, duration)
-      }
-
-      // Get existing assignments to identify new ones
-      const existingTaskAssignments = await masterDs.taskAssignments.list()
-      const existingTaskKeys = new Set(existingTaskAssignments.map(a => `${a.taskId}:${a.soldierId}`))
-      const newTaskAssignments = taskSchedule.assignments.filter(a =>
-        !existingTaskKeys.has(`${a.taskId}:${a.soldierId}`)
-      )
-
-      console.log('[AdminPanel] Updating fairness for', newTaskAssignments.length, 'new task assignments...')
-
-      // Update fairness for new task assignments (batch to avoid rate limiting)
-      // Aggregate hours per soldier first to minimize API calls
-      const hoursPerSoldier = new Map<string, number>()
-      for (const assignment of newTaskAssignments) {
-        const baseTaskId = assignment.taskId.replace(/_day\d+$/, '').replace(/_pill\d+$/, '')
-        const durationHours = taskDurationMap.get(baseTaskId) ?? taskDurationMap.get(assignment.taskId) ?? 8
-        hoursPerSoldier.set(assignment.soldierId, (hoursPerSoldier.get(assignment.soldierId) ?? 0) + durationHours)
-      }
-
-      // Apply aggregated hours updates
-      let fairnessUpdated = 0
-      for (const [soldierId, totalHours] of hoursPerSoldier) {
-        try {
-          await masterDs.fairnessUpdate.applyTaskAssignment(soldierId, totalHours, currentAdminEmail)
-          fairnessUpdated++
-        } catch (e) {
-          console.warn('[AdminPanel] Failed to update fairness for soldier', soldierId, ':', e)
-        }
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-      console.log('[AdminPanel] Updated fairness for', fairnessUpdated, 'soldiers')
-
-      // Update fairness for new leave assignments
-      const existingLeaveAssignments = await masterDs.leaveAssignments.list()
-      const existingLeaveIds = new Set(existingLeaveAssignments.map(a => a.id))
-      const newLeaveAssignments = leaveSchedule.assignments.filter(a => !existingLeaveIds.has(a.id))
-
-      console.log('[AdminPanel] Updating fairness for', newLeaveAssignments.length, 'new leave assignments...')
-
-      // Aggregate leave counts per soldier to minimize API calls
-      const leavesPerSoldier = new Map<string, { weekend: number; midweek: number; after: number }>()
-      for (const leave of newLeaveAssignments) {
-        if (!leavesPerSoldier.has(leave.soldierId)) {
-          leavesPerSoldier.set(leave.soldierId, { weekend: 0, midweek: 0, after: 0 })
-        }
-        const counts = leavesPerSoldier.get(leave.soldierId)!
-        if (leave.leaveType === 'After') {
-          counts.after++
-        } else if (leave.isWeekend) {
-          counts.weekend++
-        } else {
-          counts.midweek++
-        }
-      }
-
-      // Apply leave fairness updates (one call per soldier with aggregated data)
-      // Note: LeaveType is 'After' | 'Long', weekend/midweek uses 'Long' for tracking
-      let leaveFairnessUpdated = 0
-      for (const [soldierId, counts] of leavesPerSoldier) {
-        try {
-          // Apply each leave type count
-          for (let i = 0; i < counts.after; i++) {
-            await masterDs.fairnessUpdate.applyLeaveAssignment(soldierId, 'After', false, currentAdminEmail)
-          }
-          for (let i = 0; i < counts.weekend; i++) {
-            await masterDs.fairnessUpdate.applyLeaveAssignment(soldierId, 'Long', true, currentAdminEmail)
-          }
-          for (let i = 0; i < counts.midweek; i++) {
-            await masterDs.fairnessUpdate.applyLeaveAssignment(soldierId, 'Long', false, currentAdminEmail)
-          }
-          leaveFairnessUpdated++
-        } catch (e) {
-          console.warn('[AdminPanel] Failed to update leave fairness for soldier', soldierId, ':', e)
-        }
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-      console.log('[AdminPanel] Updated leave fairness for', leaveFairnessUpdated, 'soldiers')
+      // Skip individual fairness updates to avoid 429 rate limiting
+      // Fairness will be recalculated on next schedule generation based on actual assignments
+      console.log('[AdminPanel] Skipping individual fairness updates to avoid rate limiting')
+      console.log('[AdminPanel] Task assignments:', taskSchedule.assignments.length)
+      console.log('[AdminPanel] Leave assignments:', leaveSchedule.assignments.length)
 
       console.log('[AdminPanel] Generated tasks:', taskSchedule.assignments.length)
       setScheduleSuccess(true)
