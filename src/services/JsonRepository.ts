@@ -23,8 +23,8 @@ export abstract class JsonRepository<T extends { id: string }> {
   async create(entity: T): Promise<T> {
     const db = this.context.getData()
     const items = db[this.entityKey] as T[]
-    items.push(entity)
-    this.context.setData({ ...db, [this.entityKey]: items })
+    const newItems = [...items, entity]
+    this.context.setData({ ...db, [this.entityKey]: newItems })
     return entity
   }
 
@@ -33,8 +33,9 @@ export abstract class JsonRepository<T extends { id: string }> {
     const items = db[this.entityKey] as T[]
     const index = items.findIndex(item => item.id === id)
     if (index === -1) throw new Error(`Entity ${id} not found`)
-    items[index] = { ...items[index], ...updates }
-    this.context.setData({ ...db, [this.entityKey]: items })
+    const newItems = [...items]
+    newItems[index] = { ...items[index], ...updates }
+    this.context.setData({ ...db, [this.entityKey]: newItems })
   }
 
   async delete(id: string): Promise<void> {
