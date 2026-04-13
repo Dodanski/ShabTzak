@@ -11,7 +11,7 @@ const BASE_SOLDIER: Soldier = {
 
 const mockRepo = {
   getById: vi.fn(),
-  update: vi.fn(),
+  updateSoldier: vi.fn(),
 }
 
 const mockHistory = {
@@ -24,7 +24,7 @@ describe('FairnessUpdateService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRepo.getById.mockResolvedValue(BASE_SOLDIER)
-    mockRepo.update.mockResolvedValue(undefined)
+    mockRepo.updateSoldier.mockResolvedValue(undefined)
     mockHistory.append.mockResolvedValue(undefined)
     service = new FairnessUpdateService(mockRepo as any, mockHistory as any)
   })
@@ -33,7 +33,7 @@ describe('FairnessUpdateService', () => {
     it('increments hoursWorked and updates currentFairness', async () => {
       await service.applyTaskAssignment('s1', 8, 'admin')
 
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ id: 's1', hoursWorked: 18 })
       )
     })
@@ -43,7 +43,7 @@ describe('FairnessUpdateService', () => {
       // after +8h → fairness = 18
       await service.applyTaskAssignment('s1', 8, 'admin')
 
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ currentFairness: 18 })
       )
     })
@@ -65,7 +65,7 @@ describe('FairnessUpdateService', () => {
     it('increments weekendLeavesCount for weekend Long leave', async () => {
       await service.applyLeaveAssignment('s1', 'Long', true, 'admin')
 
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ id: 's1', weekendLeavesCount: 1 })
       )
     })
@@ -73,7 +73,7 @@ describe('FairnessUpdateService', () => {
     it('increments midweekLeavesCount for non-weekend Long leave', async () => {
       await service.applyLeaveAssignment('s1', 'Long', false, 'admin')
 
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ id: 's1', midweekLeavesCount: 1 })
       )
     })
@@ -81,7 +81,7 @@ describe('FairnessUpdateService', () => {
     it('increments afterLeavesCount for After leave', async () => {
       await service.applyLeaveAssignment('s1', 'After', false, 'admin')
 
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ id: 's1', afterLeavesCount: 1 })
       )
     })
@@ -91,7 +91,7 @@ describe('FairnessUpdateService', () => {
       // after 1 weekend leave → fairness = 10 + 1.5 = 11.5
       await service.applyLeaveAssignment('s1', 'Long', true, 'admin')
 
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ currentFairness: 11.5 })
       )
     })
@@ -101,7 +101,7 @@ describe('FairnessUpdateService', () => {
     it('adds positive delta to currentFairness', async () => {
       mockRepo.getById.mockResolvedValue({ ...BASE_SOLDIER, currentFairness: 5.0 })
       await service.applyManualAdjustment('s1', 2, 'Missed guard duty', 'admin')
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ id: 's1', currentFairness: 7.0 })
       )
     })
@@ -109,7 +109,7 @@ describe('FairnessUpdateService', () => {
     it('subtracts negative delta from currentFairness', async () => {
       mockRepo.getById.mockResolvedValue({ ...BASE_SOLDIER, currentFairness: 5.0 })
       await service.applyManualAdjustment('s1', -3, 'Bonus for extra duty', 'admin')
-      expect(mockRepo.update).toHaveBeenCalledWith(
+      expect(mockRepo.updateSoldier).toHaveBeenCalledWith(
         expect.objectContaining({ id: 's1', currentFairness: 2.0 })
       )
     })
