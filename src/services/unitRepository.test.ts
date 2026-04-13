@@ -1,109 +1,130 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { UnitRepository } from './unitRepository'
-import { SheetCache } from './cache'
+import type { Database } from '../types/Database'
+import type { useDatabase } from '../contexts/DatabaseContext'
 
-const mockSheets = {
-  getValues: vi.fn(),
-  appendValues: vi.fn(),
-  updateValues: vi.fn(),
-  clearValues: vi.fn(),
-}
-
-function makeRepo() {
-  return new UnitRepository(mockSheets as any, 'master-sheet-id', new SheetCache())
-}
-
-beforeEach(() => { vi.clearAllMocks() })
+const createMockDatabase = (): Database => ({
+  version: 1,
+  lastModified: new Date().toISOString(),
+  soldiers: [],
+  tasks: [],
+  units: [],
+  leaveRequests: [],
+  leaveAssignments: [],
+  taskAssignments: [],
+  config: {
+    scheduleStartDate: '2026-01-01',
+    scheduleEndDate: '2026-12-31',
+    leaveRatioDaysInBase: 10,
+    leaveRatioDaysHome: 4,
+    longLeaveMaxDays: 14,
+    weekendDays: ['Friday', 'Saturday'],
+    minBasePresence: 5,
+    minBasePresenceByRole: { Driver: 2, Medic: 1, Commander: 1 },
+    maxDrivingHours: 12,
+    defaultRestPeriod: 8,
+    taskTypeRestPeriods: {},
+    adminEmails: [],
+    leaveBaseExitHour: '16:00',
+    leaveBaseReturnHour: '08:00'
+  },
+  roles: ['Driver', 'Medic', 'Commander', 'Fighter'],
+  admins: [],
+  commanders: []
+})
 
 describe('UnitRepository', () => {
-  it('list() returns empty array when only header row', async () => {
-    mockSheets.getValues.mockResolvedValue([['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy']])
-    expect(await makeRepo().list()).toEqual([])
+  let mockDatabase: Database
+  let mockContext: ReturnType<typeof useDatabase>
+  let repo: UnitRepository
+
+  beforeEach(() => {
+    mockDatabase = createMockDatabase()
+    mockContext = {
+      database: mockDatabase,
+      loading: false,
+      error: null,
+      reload: async () => {},
+      getData: () => mockDatabase,
+      setData: (db: Database) => {
+        Object.assign(mockDatabase, db)
+      }
+    }
+    repo = new UnitRepository(mockContext)
+  })
+  it('list() returns all units', async () => {
+    mockDatabase.units = []
+    expect(await repo.list()).toEqual([])
   })
 
   it('list() parses unit rows correctly', async () => {
-    mockSheets.getValues.mockResolvedValue([
-      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy'],
-      ['unit-1', 'Alpha', 'sheet-abc', '2026-01-01T00:00:00.000Z', 'admin@example.com'],
-    ])
-    const units = await makeRepo().list()
+    mockDatabase.units = [
+      {
+        id: 'unit-1',
+        name: 'Alpha',
+        spreadsheetId: 'sheet-abc',
+        tabPrefix: '',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        createdBy: 'admin@example.com',
+      },
+    ]
+    const units = await repo.list()
     expect(units).toHaveLength(1)
     expect(units[0]).toMatchObject({ id: 'unit-1', name: 'Alpha', spreadsheetId: 'sheet-abc' })
   })
 
-  it('create() appends a row and returns the unit', async () => {
-    mockSheets.getValues.mockResolvedValue([['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy']])
-    mockSheets.appendValues.mockResolvedValue(undefined)
-    const unit = await makeRepo().create({ name: 'Bravo', spreadsheetId: 'sheet-xyz', tabPrefix: 'Bravo' }, 'admin@example.com')
+  it('create() adds unit to database', async () => {
+    const unit = await repo.create({
+      name: 'Bravo',
+      spreadsheetId: 'sheet-xyz',
+      tabPrefix: 'Bravo',
+    })
+
+    expect(mockDatabase.units).toHaveLength(1)
     expect(unit.name).toBe('Bravo')
     expect(unit.spreadsheetId).toBe('sheet-xyz')
-    expect(mockSheets.appendValues).toHaveBeenCalledOnce()
+    expect(unit.tabPrefix).toBe('Bravo')
   })
 
-  it('create() self-heals missing header on empty sheet', async () => {
-    mockSheets.getValues.mockResolvedValue([])
-    mockSheets.updateValues.mockResolvedValue(undefined)
-    mockSheets.appendValues.mockResolvedValue(undefined)
-    await makeRepo().create({ name: 'Bravo', spreadsheetId: 'sheet-xyz', tabPrefix: 'Bravo' }, 'system')
-    expect(mockSheets.updateValues).toHaveBeenCalledWith(
-      'master-sheet-id',
-      expect.stringContaining('A1'),
-      [['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy', 'TabPrefix']]
-    )
-  })
-
-  it('list() parses tabPrefix from column F', async () => {
-    mockSheets.getValues.mockResolvedValue([
-      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy', 'TabPrefix'],
-      ['unit-1', 'Alpha', 'sheet-abc', '2026-01-01T00:00:00.000Z', 'admin@example.com', 'Alpha'],
-    ])
-    const units = await makeRepo().list()
+  it('list() retrieves tabPrefix correctly', async () => {
+    mockDatabase.units = [
+      {
+        id: 'unit-1',
+        name: 'Alpha',
+        spreadsheetId: 'sheet-abc',
+        tabPrefix: 'Alpha',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        createdBy: 'admin@example.com',
+      },
+    ]
+    const units = await repo.list()
     expect(units[0].tabPrefix).toBe('Alpha')
   })
 
-  it('list() defaults tabPrefix to empty string when column F is missing', async () => {
-    mockSheets.getValues.mockResolvedValue([
-      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy'],
-      ['unit-1', 'Alpha', 'sheet-abc', '2026-01-01T00:00:00.000Z', 'admin@example.com'],
-    ])
-    const units = await makeRepo().list()
-    expect(units[0].tabPrefix).toBe('')
-  })
+  it('delete() removes unit from database', async () => {
+    mockDatabase.units = [
+      {
+        id: 'unit-1',
+        name: 'Alpha',
+        spreadsheetId: 'sheet-abc',
+        tabPrefix: '',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        createdBy: 'admin@example.com',
+      },
+      {
+        id: 'unit-2',
+        name: 'Bravo',
+        spreadsheetId: 'sheet-xyz',
+        tabPrefix: 'Bravo',
+        createdAt: '2026-01-02T00:00:00.000Z',
+        createdBy: 'admin@example.com',
+      },
+    ]
 
-  it('create() stores tabPrefix in column F', async () => {
-    mockSheets.getValues.mockResolvedValue([
-      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy', 'TabPrefix'],
-    ])
-    mockSheets.appendValues.mockResolvedValue(undefined)
-    await makeRepo().create({ name: 'Bravo', spreadsheetId: 'sheet-xyz', tabPrefix: 'Bravo' }, 'admin@example.com')
-    const appendedRow = mockSheets.appendValues.mock.calls[0][2][0] as string[]
-    expect(appendedRow[5]).toBe('Bravo')
-  })
+    await repo.delete('unit-1')
 
-  it('remove() clears and rewrites without the removed unit', async () => {
-    mockSheets.getValues.mockResolvedValue([
-      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy'],
-      ['unit-1', 'Alpha', 'sheet-abc', '2026-01-01T00:00:00.000Z', 'admin@example.com'],
-      ['unit-2', 'Bravo', 'sheet-xyz', '2026-01-02T00:00:00.000Z', 'admin@example.com'],
-    ])
-    mockSheets.clearValues.mockResolvedValue(undefined)
-    mockSheets.updateValues.mockResolvedValue(undefined)
-    await makeRepo().remove('unit-1')
-    const writtenRows = mockSheets.updateValues.mock.calls[0][2] as string[][]
-    expect(writtenRows).toHaveLength(2) // header + 1 remaining
-    expect(writtenRows[1][0]).toBe('unit-2')
-  })
-
-  it('remove() preserves tabPrefix when rewriting remaining rows', async () => {
-    mockSheets.getValues.mockResolvedValue([
-      ['UnitID', 'Name', 'SpreadsheetID', 'CreatedAt', 'CreatedBy', 'TabPrefix'],
-      ['unit-1', 'Alpha', 'sheet-abc', '2026-01-01T00:00:00.000Z', 'admin@example.com', 'Alpha'],
-      ['unit-2', 'Bravo', 'sheet-xyz', '2026-01-02T00:00:00.000Z', 'admin@example.com', 'Bravo'],
-    ])
-    mockSheets.clearValues.mockResolvedValue(undefined)
-    mockSheets.updateValues.mockResolvedValue(undefined)
-    await makeRepo().remove('unit-1')
-    const writtenRows = mockSheets.updateValues.mock.calls[0][2] as string[][]
-    expect(writtenRows[1][5]).toBe('Bravo')  // tabPrefix of unit-2 is preserved
+    expect(mockDatabase.units).toHaveLength(1)
+    expect(mockDatabase.units[0].id).toBe('unit-2')
+    expect(mockDatabase.units[0].tabPrefix).toBe('Bravo')
   })
 })

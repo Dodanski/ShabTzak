@@ -1,148 +1,202 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { LeaveRequestRepository } from './leaveRequestRepository'
-import { GoogleSheetsService } from './googleSheets'
-import { SheetCache } from './cache'
+import type { Database } from '../types/Database'
+import type { useDatabase } from '../contexts/DatabaseContext'
 
-const SHEET_ID = 'test-sheet-id'
-
-const HEADER_ROW = [
-  'ID', 'SoldierID', 'StartDate', 'EndDate',
-  'LeaveType', 'ConstraintType', 'Priority', 'Status',
-]
-
-const REQ_ROW_1 = ['req-1', 's1', '2026-03-20', '2026-03-22', 'After', 'Family event', '7', 'Pending']
-const REQ_ROW_2 = ['req-2', 's2', '2026-03-25', '2026-03-27', 'Long', 'University exam', '9', 'Approved']
+const createMockDatabase = (): Database => ({
+  version: 1,
+  lastModified: new Date().toISOString(),
+  soldiers: [],
+  tasks: [],
+  units: [],
+  leaveRequests: [],
+  leaveAssignments: [],
+  taskAssignments: [],
+  config: {
+    scheduleStartDate: '2026-01-01',
+    scheduleEndDate: '2026-12-31',
+    leaveRatioDaysInBase: 10,
+    leaveRatioDaysHome: 4,
+    longLeaveMaxDays: 14,
+    weekendDays: ['Friday', 'Saturday'],
+    minBasePresence: 5,
+    minBasePresenceByRole: { Driver: 2, Medic: 1, Commander: 1 },
+    maxDrivingHours: 12,
+    defaultRestPeriod: 8,
+    taskTypeRestPeriods: {},
+    adminEmails: [],
+    leaveBaseExitHour: '16:00',
+    leaveBaseReturnHour: '08:00'
+  },
+  roles: ['Driver', 'Medic', 'Commander', 'Fighter'],
+  admins: [],
+  commanders: []
+})
 
 describe('LeaveRequestRepository', () => {
-  let mockSheets: GoogleSheetsService
-  let cache: SheetCache
+  let mockDatabase: Database
+  let mockContext: ReturnType<typeof useDatabase>
   let repo: LeaveRequestRepository
 
   beforeEach(() => {
-    mockSheets = new GoogleSheetsService('test-token')
-    cache = new SheetCache()
-    repo = new LeaveRequestRepository(mockSheets, SHEET_ID, cache)
+    mockDatabase = createMockDatabase()
+    mockContext = {
+      database: mockDatabase,
+      loading: false,
+      error: null,
+      reload: async () => {},
+      getData: () => mockDatabase,
+      setData: (db: Database) => {
+        Object.assign(mockDatabase, db)
+      }
+    }
+    repo = new LeaveRequestRepository(mockContext)
   })
 
   describe('list()', () => {
     it('returns all leave requests', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW, REQ_ROW_1, REQ_ROW_2])
+      mockDatabase.leaveRequests = [
+        {
+          id: 'req-1',
+          soldierId: 's1',
+          startDate: '2026-03-20',
+          endDate: '2026-03-22',
+          leaveType: 'After',
+          constraintType: 'Family event',
+          priority: 7,
+          status: 'Pending',
+        },
+        {
+          id: 'req-2',
+          soldierId: 's2',
+          startDate: '2026-03-25',
+          endDate: '2026-03-27',
+          leaveType: 'Long',
+          constraintType: 'University exam',
+          priority: 9,
+          status: 'Approved',
+        },
+      ]
+
       const requests = await repo.list()
       expect(requests).toHaveLength(2)
       expect(requests[0].id).toBe('req-1')
       expect(requests[1].status).toBe('Approved')
     })
 
-    it('returns empty array when only header exists', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+    it('returns empty array when no requests exist', async () => {
+      mockDatabase.leaveRequests = []
       expect(await repo.list()).toHaveLength(0)
-    })
-
-    it('uses cache on second call', async () => {
-      const spy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW, REQ_ROW_1])
-      await repo.list()
-      await repo.list()
-      // list() does a self-heal getValues check each call, then fetchAll() is cached after the first call
-      // So: 2 self-heal calls (1 per list()) + 1 fetchAll() call on first miss = 3 total
-      expect(spy).toHaveBeenCalledTimes(3)
     })
   })
 
   describe('getById()', () => {
     it('returns request by id', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW, REQ_ROW_1, REQ_ROW_2])
+      mockDatabase.leaveRequests = [
+        {
+          id: 'req-1',
+          soldierId: 's1',
+          startDate: '2026-03-20',
+          endDate: '2026-03-22',
+          leaveType: 'After',
+          constraintType: 'Family event',
+          priority: 7,
+          status: 'Pending',
+        },
+        {
+          id: 'req-2',
+          soldierId: 's2',
+          startDate: '2026-03-25',
+          endDate: '2026-03-27',
+          leaveType: 'Long',
+          constraintType: 'University exam',
+          priority: 9,
+          status: 'Approved',
+        },
+      ]
+
       const req = await repo.getById('req-2')
       expect(req).not.toBeNull()
       expect(req!.constraintType).toBe('University exam')
     })
 
     it('returns null for unknown id', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+      mockDatabase.leaveRequests = []
       expect(await repo.getById('missing')).toBeNull()
     })
   })
 
   describe('create()', () => {
-    it('appends new row and returns the request', async () => {
-      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
-
+    it('creates a new leave request and adds it to the database', async () => {
       const req = await repo.create({
         soldierId: 's3',
         startDate: '2026-04-01',
         endDate: '2026-04-03',
+        leaveType: 'Long',
         constraintType: 'Medical appointment',
         priority: 8,
       })
 
-      expect(appendSpy).toHaveBeenCalledOnce()
+      expect(mockDatabase.leaveRequests).toHaveLength(1)
       expect(req.soldierId).toBe('s3')
       expect(req.status).toBe('Pending')
       expect(req.id).toBeTruthy()
-    })
-
-    it('writes header row first when sheet is completely empty', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([])
-      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
-      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
-
-      await repo.create({
+      expect(mockDatabase.leaveRequests[0]).toMatchObject({
         soldierId: 's3',
         startDate: '2026-04-01',
         endDate: '2026-04-03',
+        priority: 8,
+        status: 'Pending',
+      })
+    })
+
+    it('allows multiple leave requests to be created', async () => {
+      const req1 = await repo.create({
+        soldierId: 's1',
+        startDate: '2026-04-01',
+        endDate: '2026-04-03',
+        leaveType: 'Long',
         constraintType: 'Medical',
         priority: 5,
       })
 
-      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'LeaveRequests!A1:H1', [HEADER_ROW])
-      expect(appendSpy).toHaveBeenCalledOnce()
-    })
-
-    it('rescues existing data row and writes header when sheet has data but no header', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([REQ_ROW_1])
-      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
-      const appendSpy = vi.spyOn(mockSheets, 'appendValues').mockResolvedValue(undefined)
-
-      await repo.create({
-        soldierId: 's3',
-        startDate: '2026-04-01',
-        endDate: '2026-04-03',
-        constraintType: 'Medical',
-        priority: 5,
+      const req2 = await repo.create({
+        soldierId: 's2',
+        startDate: '2026-04-10',
+        endDate: '2026-04-12',
+        leaveType: 'After',
+        constraintType: 'Vacation',
+        priority: 7,
       })
 
-      expect(updateSpy).toHaveBeenCalledWith(SHEET_ID, 'LeaveRequests!A1:H1', [HEADER_ROW])
-      expect(appendSpy).toHaveBeenCalledTimes(2)
-      expect(appendSpy).toHaveBeenNthCalledWith(1, SHEET_ID, expect.any(String), [REQ_ROW_1])
+      expect(mockDatabase.leaveRequests).toHaveLength(2)
+      expect(mockDatabase.leaveRequests[0].id).toBe(req1.id)
+      expect(mockDatabase.leaveRequests[1].id).toBe(req2.id)
     })
   })
 
   describe('updateStatus()', () => {
     it('updates the status of a request', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW, REQ_ROW_1])
-      const updateSpy = vi.spyOn(mockSheets, 'updateValues').mockResolvedValue(undefined)
+      mockDatabase.leaveRequests = [{
+        id: 'req-1',
+        soldierId: 's1',
+        startDate: '2026-03-20',
+        endDate: '2026-03-22',
+        leaveType: 'After',
+        constraintType: 'Family event',
+        priority: 7,
+        status: 'Pending',
+      }]
 
       await repo.updateStatus('req-1', 'Approved')
 
-      expect(updateSpy).toHaveBeenCalledOnce()
-      const writtenRow: string[][] = updateSpy.mock.calls[0][2]
-      expect(writtenRow[0][7]).toBe('Approved')
+      expect(mockDatabase.leaveRequests[0].status).toBe('Approved')
     })
 
     it('throws if request not found', async () => {
-      vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
+      mockDatabase.leaveRequests = []
       await expect(repo.updateStatus('ghost', 'Approved')).rejects.toThrow()
     })
   })
 
-  describe('tabPrefix', () => {
-    it('uses prefixed tab name when tabPrefix is provided', async () => {
-      const getSpy = vi.spyOn(mockSheets, 'getValues').mockResolvedValue([HEADER_ROW])
-      const prefixedRepo = new LeaveRequestRepository(mockSheets, SHEET_ID, new SheetCache(), 'Alpha_Company')
-
-      await prefixedRepo.list()
-
-      expect(getSpy).toHaveBeenCalledWith(SHEET_ID, 'Alpha_Company_LeaveRequests!A:H')
-    })
-  })
 })
