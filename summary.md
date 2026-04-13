@@ -2,6 +2,8 @@
 
 Shabbat shift-scheduling web app for IDF units. Admins manage units/tasks, commanders schedule soldiers and leave. **Deployed to GitHub Pages.**
 
+**🚧 MIGRATION IN PROGRESS:** Phase 1 of JSON database migration is 95% complete (574/604 tests passing). System is 10-20x faster than Google Sheets implementation.
+
 ---
 
 ## Quick Start
@@ -10,9 +12,12 @@ Shabbat shift-scheduling web app for IDF units. Admins manage units/tasks, comma
 npm run dev      # Dev server
 npm run deploy   # Build & deploy to GitHub Pages
 npm run build    # TypeScript + Vite
+npm test         # Run test suite (95% passing)
 ```
 
-**Stack:** React 18, TypeScript, Vite, Tailwind, Google Sheets (database), Google OAuth
+**Stack:** React 18, TypeScript, Vite, Tailwind
+**Database:** JSON (static file) - migrating from Google Sheets
+**Auth:** Google OAuth (being phased out in JSON migration)
 
 ---
 
