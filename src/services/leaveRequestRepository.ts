@@ -1,72 +1,14 @@
-import { GoogleSheetsService } from './googleSheets'
-import { SheetCache } from './cache'
-import { parseLeaveRequest } from './parsers'
-import { serializeLeaveRequest } from './serializers'
-import { SHEET_TABS } from '../constants'
-import { prefixTab } from '../utils/tabPrefix'
+import { JsonRepository } from './JsonRepository'
 import type { LeaveRequest, CreateLeaveRequestInput, RequestStatus } from '../models'
-
-const CACHE_KEY = 'leaveRequests'
-
-const HEADER_ROW = [
-  'ID', 'SoldierID', 'StartDate', 'EndDate',
-  'LeaveType', 'ConstraintType', 'Priority', 'Status',
-]
+import type { useDatabase } from '../contexts/DatabaseContext'
 
 function generateId(): string {
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-export class LeaveRequestRepository {
-  private sheets: GoogleSheetsService
-  private spreadsheetId: string
-  private cache: SheetCache
-  private range: string
-  private tabName: string
-
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache, tabPrefix = '') {
-    this.sheets = sheets
-    this.spreadsheetId = spreadsheetId
-    this.cache = cache
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.LEAVE_REQUESTS)
-    this.range = `${this.tabName}!A:H`
-  }
-
-  private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
-    const cached = this.cache.get<{ headers: string[]; rows: string[][] }>(CACHE_KEY)
-    if (cached) return cached
-
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    const headers = allRows[0] ?? []
-    const rows = allRows.slice(1).filter(r => r.length > 0)
-    const result = { headers, rows }
-    this.cache.set(CACHE_KEY, result)
-    return result
-  }
-
-  async list(): Promise<LeaveRequest[]> {
-    // Self-heal: ensure sheet has proper headers
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    if (allRows[0]?.[0] !== 'ID') {
-      const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(
-        this.spreadsheetId,
-        `${this.tabName}!A1:H1`,
-        [HEADER_ROW]
-      )
-      if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
-      }
-      this.cache.invalidate(CACHE_KEY)
-    }
-
-    const { headers, rows } = await this.fetchAll()
-    return rows.map(row => parseLeaveRequest(row, headers))
-  }
-
-  async getById(id: string): Promise<LeaveRequest | null> {
-    const requests = await this.list()
-    return requests.find(r => r.id === id) ?? null
+export class LeaveRequestRepository extends JsonRepository<LeaveRequest> {
+  constructor(context: ReturnType<typeof useDatabase>) {
+    super(context, 'leaveRequests')
   }
 
   async create(input: CreateLeaveRequestInput): Promise<LeaveRequest> {
@@ -80,47 +22,14 @@ export class LeaveRequestRepository {
       priority: input.priority,
       status: 'Pending',
     }
-
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    if (allRows[0]?.[0] !== 'ID') {
-      const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:H1`, [HEADER_ROW])
-      if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
-      }
-    }
-
-    const row = serializeLeaveRequest(request)
-    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
-    this.cache.invalidate(CACHE_KEY)
-    return request
+    return super.create(request)
   }
 
   async updateStatus(id: string, status: RequestStatus): Promise<void> {
-    const { headers, rows } = await this.fetchAll()
-
-    // Find ID column with case-insensitive + whitespace-tolerant matching
-    const idIdx = headers.findIndex(h => h.toLowerCase().trim() === 'id')
-    if (idIdx === -1) {
-      throw new Error('ID column not found in headers')
-    }
-
-    const rowIndex = rows.findIndex(r => r[idIdx] === id)
-
-    if (rowIndex === -1) {
+    const existing = await this.getById(id)
+    if (!existing) {
       throw new Error(`Leave request with id "${id}" not found`)
     }
-
-    const existing = parseLeaveRequest(rows[rowIndex], headers)
-    const updated: LeaveRequest = { ...existing, status }
-    const updatedRow = serializeLeaveRequest(updated)
-    const sheetRow = rowIndex + 2
-
-    await this.sheets.updateValues(
-      this.spreadsheetId,
-      `${this.tabName}!A${sheetRow}:H${sheetRow}`,
-      [updatedRow]
-    )
-    this.cache.invalidate(CACHE_KEY)
+    await super.update(id, { status })
   }
 }

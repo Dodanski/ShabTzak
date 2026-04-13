@@ -95,7 +95,13 @@ export function scheduleTasks(
   for (const task of sortedTasks) {
     for (const requirement of task.roleRequirements) {
       // Get acceptable roles for this requirement (handle both old and new formats)
-      const rolesAccepted = requirement.roles ?? (requirement.role ? [requirement.role] : []) as (typeof requirement.roles)
+      const rolesAccepted = requirement.roles ?? (requirement.role ? [requirement.role] : [])
+
+      // Validate role requirement is not empty
+      if (!rolesAccepted || rolesAccepted.length === 0) {
+        console.warn(`[taskScheduler] Task ${task.id} role requirement has no roles specified, skipping`)
+        continue
+      }
 
       // Count already-assigned soldiers for this requirement on this task
       const alreadyAssigned = result.filter(a => {

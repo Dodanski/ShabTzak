@@ -1,5 +1,4 @@
-import { GoogleSheetsService } from './googleSheets'
-import { SheetCache } from './cache'
+import { useDatabase } from '../contexts/DatabaseContext'
 import { AdminRepository } from './adminRepository'
 import { UnitRepository } from './unitRepository'
 import { CommanderRepository } from './commanderRepository'
@@ -14,18 +13,7 @@ import { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository
 import { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
 import { ScheduleService } from './scheduleService'
 import { FairnessUpdateService } from './fairnessUpdateService'
-import { MASTER_SHEET_TABS } from '../constants'
 import type { Unit } from '../models'
-
-const ADMIN_TAB_HEADERS: Record<string, string[][]> = {
-  [MASTER_SHEET_TABS.TASKS]: [['ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours', 'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays']],
-  [MASTER_SHEET_TABS.CONFIG]: [['Key', 'Value']],
-  [MASTER_SHEET_TABS.HISTORY]: [['Timestamp', 'Action', 'EntityType', 'EntityID', 'ChangedBy', 'Details']],
-  [MASTER_SHEET_TABS.ROLES]: [['RoleName']],
-  [MASTER_SHEET_TABS.LEAVE_REQUESTS]: [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'ConstraintType', 'Priority', 'Status']],
-  [MASTER_SHEET_TABS.TASK_SCHEDULE]: [['ScheduleID', 'TaskID', 'SoldierID', 'AssignedRole', 'AssignedUnitID', 'IsLocked', 'CreatedAt', 'CreatedBy']],
-  [MASTER_SHEET_TABS.LEAVE_SCHEDULE]: [['ID', 'SoldierID', 'StartDate', 'EndDate', 'LeaveType', 'IsWeekend', 'IsLocked', 'RequestID', 'CreatedAt']],
-}
 
 export type ResolvedRole =
   | { role: 'admin' }
@@ -47,27 +35,22 @@ export class MasterDataService {
   readonly leaveAssignments: MasterLeaveAssignmentRepository
   readonly scheduleService: ScheduleService
   readonly fairnessUpdate: FairnessUpdateService
-  readonly sheets: GoogleSheetsService
-  private spreadsheetId: string
 
-  constructor(accessToken: string, spreadsheetId: string) {
-    this.sheets = new GoogleSheetsService(accessToken)
-    this.spreadsheetId = spreadsheetId
-    const cache = new SheetCache()
-    this.admins = new AdminRepository(this.sheets, spreadsheetId, cache)
-    this.units = new UnitRepository(this.sheets, spreadsheetId, cache)
-    this.commanders = new CommanderRepository(this.sheets, spreadsheetId, cache)
-    this.tasks = new TaskRepository(this.sheets, spreadsheetId, cache)
-    this.config = new ConfigRepository(this.sheets, spreadsheetId)
-    this.history = new HistoryService(this.sheets, spreadsheetId)
+  constructor(
+    dbContext: ReturnType<typeof useDatabase>,
+  ) {
+    this.admins = new AdminRepository(dbContext)
+    this.units = new UnitRepository(dbContext)
+    this.commanders = new CommanderRepository(dbContext)
+    this.tasks = new TaskRepository(dbContext)
+    this.config = new ConfigRepository(dbContext)
+    this.history = new HistoryService()
     this.taskService = new TaskService(this.tasks, this.history)
-    this.roles = new RolesService(this.sheets, spreadsheetId)
-    this.soldiers = new SoldierRepository(this.sheets, spreadsheetId, cache, 'Soldiers')
-    // LeaveRequests now stored in admin spreadsheet (not per-unit)
-    // Use empty tabPrefix so it looks for "LeaveRequests" sheet directly (not "X_LeaveRequests")
-    this.leaveRequests = new LeaveRequestRepository(this.sheets, spreadsheetId, cache, '')
-    this.taskAssignments = new MasterTaskAssignmentRepository(this.sheets, spreadsheetId, cache)
-    this.leaveAssignments = new MasterLeaveAssignmentRepository(this.sheets, spreadsheetId, cache)
+    this.roles = new RolesService()
+    this.soldiers = new SoldierRepository(dbContext)
+    this.leaveRequests = new LeaveRequestRepository(dbContext)
+    this.taskAssignments = new MasterTaskAssignmentRepository(dbContext)
+    this.leaveAssignments = new MasterLeaveAssignmentRepository(dbContext)
     this.scheduleService = new ScheduleService(
       this.soldiers,
       this.leaveRequests,
@@ -78,41 +61,12 @@ export class MasterDataService {
     this.fairnessUpdate = new FairnessUpdateService(this.soldiers, this.history)
 
     if (import.meta.env.DEV) {
-      console.log('[MasterDataService] Initialized master repositories (TaskSchedule, LeaveSchedule)')
+      console.log('[MasterDataService] Initialized master repositories with DatabaseContext')
     }
   }
 
   /**
-   * Creates missing master tabs and seeds the first admin from env.
-   * Idempotent — safe to call on every app load.
-   */
-  async initialize(firstAdminEmail: string): Promise<void> {
-    const titles = await this.sheets.getSheetTitles(this.spreadsheetId)
-    const needed = Object.values(MASTER_SHEET_TABS)
-    const missing = needed.filter(t => !titles.includes(t))
-
-    if (missing.length > 0) {
-      const requests = missing.map(title => ({
-        addSheet: { properties: { title } },
-      }))
-      await this.sheets.batchUpdate(this.spreadsheetId, requests)
-
-      for (const tabName of missing) {
-        const headers = ADMIN_TAB_HEADERS[tabName]
-        if (headers) {
-          await this.sheets.updateValues(this.spreadsheetId, `${tabName}!A1`, headers)
-        }
-      }
-    }
-
-    const admins = await this.admins.list()
-    if (admins.length === 0 && firstAdminEmail) {
-      await this.admins.create({ email: firstAdminEmail }, 'system')
-    }
-  }
-
-  /**
-   * Determines the role of the given email by checking the master spreadsheet.
+   * Determines the role of the given email by checking the master data.
    * Returns null if the email is not authorized.
    */
   async resolveRole(email: string): Promise<ResolvedRole> {

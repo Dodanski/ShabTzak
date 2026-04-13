@@ -5,6 +5,7 @@ export interface Soldier {
   firstName: string
   lastName: string
   role: SoldierRole
+  phone?: string
   unit?: string
   serviceStart: string // ISO date
   serviceEnd: string // ISO date
@@ -23,6 +24,7 @@ export interface CreateSoldierInput {
   firstName: string
   lastName: string
   role: SoldierRole
+  phone?: string
   unit?: string
   serviceStart: string
   serviceEnd: string
@@ -34,6 +36,7 @@ export interface UpdateSoldierInput {
   firstName?: string
   lastName?: string
   role?: SoldierRole
+  phone?: string
   unit?: string
   serviceStart?: string
   serviceEnd?: string

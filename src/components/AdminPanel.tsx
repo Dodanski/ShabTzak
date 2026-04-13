@@ -169,7 +169,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     if (!newAdminEmail) return
     setError(null)
     try {
-      await masterDs.admins.create({ email: newAdminEmail }, currentAdminEmail)
+      await masterDs.admins.createAdmin({ email: newAdminEmail }, currentAdminEmail)
       setNewAdminEmail('')
       await reload()
     } catch {
@@ -191,7 +191,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     if (!newUnitName || !newUnitSheetId) return
     setError(null)
     try {
-      await masterDs.units.create({ name: newUnitName, spreadsheetId: newUnitSheetId, tabPrefix: deriveTabPrefix(newUnitName) }, currentAdminEmail)
+      await masterDs.units.createUnit({ name: newUnitName, spreadsheetId: newUnitSheetId, tabPrefix: deriveTabPrefix(newUnitName) }, currentAdminEmail)
       setNewUnitName(''); setNewUnitSheetId('')
       await reload()
     } catch {
@@ -213,7 +213,7 @@ export default function AdminPanel({ masterDs, currentAdminEmail, onEnterUnit }:
     if (!newCmdEmail || !newCmdUnitId) return
     setError(null)
     try {
-      await masterDs.commanders.create({ email: newCmdEmail, unitId: newCmdUnitId }, currentAdminEmail)
+      await masterDs.commanders.createCommander({ email: newCmdEmail, unitId: newCmdUnitId }, currentAdminEmail)
       setNewCmdEmail(''); setNewCmdUnitId('')
       await reload()
     } catch {

@@ -1,17 +1,6 @@
-import { GoogleSheetsService } from './googleSheets'
-import { SheetCache } from './cache'
-import { parseTask } from './parsers'
-import { serializeTask } from './serializers'
-import { MASTER_SHEET_TABS } from '../constants'
-import { prefixTab } from '../utils/tabPrefix'
+import { JsonRepository } from './JsonRepository'
 import type { Task, CreateTaskInput, UpdateTaskInput } from '../models'
-
-const CACHE_KEY = 'tasks'
-
-const HEADER_ROW = [
-  'ID', 'TaskType', 'StartTime', 'EndTime', 'DurationHours',
-  'RoleRequirements', 'MinRestAfter', 'IsSpecial', 'SpecialDurationDays',
-]
+import type { useDatabase } from '../contexts/DatabaseContext'
 
 function generateId(taskType: string): string {
   // Use taskType (task name) as the ID - this is editable and user-friendly
@@ -24,44 +13,12 @@ function calcDurationHours(startTime: string, endTime: string): number {
   return Math.round((end - start) / (1000 * 60 * 60))
 }
 
-export class TaskRepository {
-  private sheets: GoogleSheetsService
-  private spreadsheetId: string
-  private cache: SheetCache
-  private range: string
-  private tabName: string
-
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache, tabPrefix = '') {
-    this.sheets = sheets
-    this.spreadsheetId = spreadsheetId
-    this.cache = cache
-    this.tabName = prefixTab(tabPrefix, MASTER_SHEET_TABS.TASKS)
-    this.range = `${this.tabName}!A:I`
+export class TaskRepository extends JsonRepository<Task> {
+  constructor(context: ReturnType<typeof useDatabase>) {
+    super(context, 'tasks')
   }
 
-  private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
-    const cached = this.cache.get<{ headers: string[]; rows: string[][] }>(CACHE_KEY)
-    if (cached) return cached
-
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    const headers = allRows[0] ?? []
-    const rows = allRows.slice(1).filter(r => r.length > 0)
-    const result = { headers, rows }
-    this.cache.set(CACHE_KEY, result)
-    return result
-  }
-
-  async list(): Promise<Task[]> {
-    const { headers, rows } = await this.fetchAll()
-    return rows.map(row => parseTask(row, headers))
-  }
-
-  async getById(id: string): Promise<Task | null> {
-    const tasks = await this.list()
-    return tasks.find(t => t.id === id) ?? null
-  }
-
-  async create(input: CreateTaskInput): Promise<Task> {
+  async createTask(input: CreateTaskInput): Promise<Task> {
     const task: Task = {
       id: generateId(input.taskType),
       taskType: input.taskType,
@@ -73,38 +30,15 @@ export class TaskRepository {
       isSpecial: input.isSpecial ?? false,
       specialDurationDays: input.specialDurationDays,
     }
-
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    if (allRows[0]?.[0] !== 'ID') {
-      const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:I1`, [HEADER_ROW])
-      if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
-      }
-    }
-
-    const row = serializeTask(task)
-    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
-    this.cache.invalidate(CACHE_KEY)
-    return task
+    return super.create(task)
   }
 
-  async update(input: UpdateTaskInput): Promise<void> {
-    const { headers, rows } = await this.fetchAll()
-
-    // Find ID column with case-insensitive + whitespace-tolerant matching
-    const idIdx = headers.findIndex(h => h.toLowerCase().trim() === 'id')
-    if (idIdx === -1) {
-      throw new Error('ID column not found in headers')
-    }
-
-    const rowIndex = rows.findIndex(r => r[idIdx] === input.id)
-
-    if (rowIndex === -1) {
+  async updateTask(input: UpdateTaskInput): Promise<void> {
+    const existing = await this.getById(input.id)
+    if (!existing) {
       throw new Error(`Task with id "${input.id}" not found`)
     }
 
-    const existing = parseTask(rows[rowIndex], headers)
     const updated: Task = {
       ...existing,
       ...(input.taskType !== undefined && { taskType: input.taskType }),
@@ -117,13 +51,6 @@ export class TaskRepository {
       ...(input.specialDurationDays !== undefined && { specialDurationDays: input.specialDurationDays }),
     }
 
-    const updatedRow = serializeTask(updated)
-    const sheetRow = rowIndex + 2 // +2: 1-based and row 1 is header
-    await this.sheets.updateValues(
-      this.spreadsheetId,
-      `${this.tabName}!A${sheetRow}:I${sheetRow}`,
-      [updatedRow]
-    )
-    this.cache.invalidate(CACHE_KEY)
+    await super.update(input.id, updated)
   }
 }

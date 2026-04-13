@@ -1,9 +1,13 @@
-import { GoogleSheetsService } from './googleSheets'
-import { SheetCache } from './cache'
+import { useDatabase } from '../contexts/DatabaseContext'
 import { SoldierRepository } from './soldierRepository'
 import { LeaveRequestRepository } from './leaveRequestRepository'
 import { LeaveAssignmentRepository } from './leaveAssignmentRepository'
 import { TaskAssignmentRepository } from './taskAssignmentRepository'
+import { TaskRepository } from './taskRepository'
+import { UnitRepository } from './unitRepository'
+import { AdminRepository } from './adminRepository'
+import { CommanderRepository } from './commanderRepository'
+import { ConfigRepository } from './configRepository'
 import type { HistoryService } from './historyService'
 import type { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
 import type { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
@@ -14,42 +18,43 @@ import { FairnessUpdateService } from './fairnessUpdateService'
 
 /**
  * Single entry point for per-unit data operations.
- * Wires together the 4 unit repositories and services sharing one cache instance.
+ * Wires together all unit repositories and services using DatabaseContext.
  * Receives HistoryService injected from MasterDataService.
  * Optionally receives master assignment repositories for shared multi-unit scheduling.
  * When master repositories are provided, they override unit-specific ones for shared schedule access.
  */
 export class DataService {
-  readonly sheets: GoogleSheetsService
   readonly soldiers: SoldierRepository
+  readonly tasks: TaskRepository
   readonly leaveRequests: LeaveRequestRepository
   readonly leaveAssignments: LeaveAssignmentRepository | MasterLeaveAssignmentRepository
   readonly taskAssignments: TaskAssignmentRepository | MasterTaskAssignmentRepository
+  readonly units: UnitRepository
+  readonly admins: AdminRepository
+  readonly commanders: CommanderRepository
+  readonly config: ConfigRepository
   readonly soldierService: SoldierService
   readonly leaveRequestService: LeaveRequestService
   readonly scheduleService: ScheduleService
   readonly fairnessUpdate: FairnessUpdateService
 
-  private cache: SheetCache
-
   constructor(
-    accessToken: string,
-    spreadsheetId: string,
-    tabPrefix = '',
+    dbContext: ReturnType<typeof useDatabase>,
     private historyService: HistoryService,
     masterLeaveAssignments?: MasterLeaveAssignmentRepository,
     masterTaskAssignments?: MasterTaskAssignmentRepository,
   ) {
-    const sheets = new GoogleSheetsService(accessToken)
-    this.sheets = sheets
-    this.cache = new SheetCache()
-
-    this.soldiers = new SoldierRepository(sheets, spreadsheetId, this.cache, tabPrefix)
-    this.leaveRequests = new LeaveRequestRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    this.soldiers = new SoldierRepository(dbContext)
+    this.tasks = new TaskRepository(dbContext)
+    this.leaveRequests = new LeaveRequestRepository(dbContext)
+    this.units = new UnitRepository(dbContext)
+    this.admins = new AdminRepository(dbContext)
+    this.commanders = new CommanderRepository(dbContext)
+    this.config = new ConfigRepository(dbContext)
 
     // Use master repositories if provided (shared multi-unit scheduling), otherwise unit-specific ones
-    const unitLeaveAssignments = new LeaveAssignmentRepository(sheets, spreadsheetId, this.cache, tabPrefix)
-    const unitTaskAssignments = new TaskAssignmentRepository(sheets, spreadsheetId, this.cache, tabPrefix)
+    const unitLeaveAssignments = new LeaveAssignmentRepository(dbContext)
+    const unitTaskAssignments = new TaskAssignmentRepository(dbContext)
 
     this.leaveAssignments = masterLeaveAssignments || unitLeaveAssignments
     this.taskAssignments = masterTaskAssignments || unitTaskAssignments
@@ -70,10 +75,5 @@ export class DataService {
       this.taskAssignments as any,
       this.historyService,
     )
-  }
-
-  /** Clears all cached data, forcing fresh fetches on next access. */
-  invalidateAll(): void {
-    this.cache.invalidateAll()
   }
 }

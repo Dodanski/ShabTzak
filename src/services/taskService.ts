@@ -12,7 +12,7 @@ export class TaskService {
   ) {}
 
   async create(input: CreateTaskInput, changedBy: string): Promise<Task> {
-    const task = await this.repo.create(input)
+    const task = await this.repo.createTask(input)
     await this.history.append('CREATE', 'Task', task.id, changedBy, `Created task ${task.taskType}`)
     return task
   }
@@ -22,7 +22,7 @@ export class TaskService {
   }
 
   async update(input: UpdateTaskInput, changedBy: string): Promise<void> {
-    await this.repo.update(input)
+    await this.repo.updateTask(input)
     await this.history.append('UPDATE', 'Task', input.id, changedBy, `Updated task`)
   }
 }

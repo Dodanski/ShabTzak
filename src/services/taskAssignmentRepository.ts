@@ -1,15 +1,5 @@
-import { GoogleSheetsService } from './googleSheets'
-import { SheetCache } from './cache'
-import { SHEET_TABS } from '../constants'
-import { prefixTab } from '../utils/tabPrefix'
 import type { TaskAssignment, SoldierRole } from '../models'
-
-const CACHE_KEY = 'taskAssignments'
-
-const HEADER_ROW = [
-  'ScheduleID', 'TaskID', 'SoldierID', 'AssignedRole',
-  'IsLocked', 'CreatedAt', 'CreatedBy',
-]
+import type { useDatabase } from '../contexts/DatabaseContext'
 
 function generateId(): string {
   // Generate plain text ID: sched_YYYYMMDD_HHMM_RANDOM
@@ -20,68 +10,28 @@ function generateId(): string {
   return `sched_${date}_${time}_${random}`
 }
 
-interface CreateTaskAssignmentInput {
+export interface CreateTaskAssignmentInput {
   taskId: string
   soldierId: string
   assignedRole: SoldierRole
   createdBy: string
 }
 
-function parseAssignment(row: string[], headers: string[]): TaskAssignment {
-  const get = (name: string) => row[headers.indexOf(name)] ?? ''
-  return {
-    scheduleId: get('ScheduleID'),
-    taskId: get('TaskID'),
-    soldierId: get('SoldierID'),
-    assignedRole: get('AssignedRole') as SoldierRole,
-    isLocked: get('IsLocked').toLowerCase() === 'true',
-    createdAt: get('CreatedAt'),
-    createdBy: get('CreatedBy'),
-  }
-}
-
-function serializeAssignment(a: TaskAssignment): string[] {
-  return [
-    a.scheduleId,
-    a.taskId,
-    a.soldierId,
-    a.assignedRole,
-    String(a.isLocked),
-    a.createdAt,
-    a.createdBy,
-  ]
-}
-
 export class TaskAssignmentRepository {
-  private sheets: GoogleSheetsService
-  private spreadsheetId: string
-  private cache: SheetCache
-  private range: string
-  private tabName: string
+  private context: ReturnType<typeof useDatabase>
 
-  constructor(sheets: GoogleSheetsService, spreadsheetId: string, cache: SheetCache, tabPrefix = '') {
-    this.sheets = sheets
-    this.spreadsheetId = spreadsheetId
-    this.cache = cache
-    this.tabName = prefixTab(tabPrefix, SHEET_TABS.TASK_SCHEDULE)
-    this.range = `${this.tabName}!A:G`
-  }
-
-  private async fetchAll(): Promise<{ headers: string[]; rows: string[][] }> {
-    const cached = this.cache.get<{ headers: string[]; rows: string[][] }>(CACHE_KEY)
-    if (cached) return cached
-
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    const headers = allRows[0] ?? []
-    const rows = allRows.slice(1).filter(r => r.length > 0)
-    const result = { headers, rows }
-    this.cache.set(CACHE_KEY, result)
-    return result
+  constructor(context: ReturnType<typeof useDatabase>) {
+    this.context = context
   }
 
   async list(): Promise<TaskAssignment[]> {
-    const { headers, rows } = await this.fetchAll()
-    return rows.map(row => parseAssignment(row, headers))
+    const db = this.context.getData()
+    return [...(db.taskAssignments ?? [])]
+  }
+
+  async getByScheduleId(scheduleId: string): Promise<TaskAssignment | null> {
+    const items = await this.list()
+    return items.find(item => item.scheduleId === scheduleId) ?? null
   }
 
   async listByTask(taskId: string): Promise<TaskAssignment[]> {
@@ -99,26 +49,12 @@ export class TaskAssignmentRepository {
       createdAt: new Date().toISOString(),
       createdBy: input.createdBy,
     }
-
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    if (allRows[0]?.[0] !== 'ScheduleID') {
-      const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:G1`, [HEADER_ROW])
-      if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
-      }
-    }
-
-    const row = serializeAssignment(assignment)
-    await this.sheets.appendValues(this.spreadsheetId, this.range, [row])
-    this.cache.invalidate(CACHE_KEY)
+    const db = this.context.getData()
+    const items = [...(db.taskAssignments ?? []), assignment]
+    this.context.setData({ ...db, taskAssignments: items })
     return assignment
   }
 
-  /**
-   * Batch create task assignments (more efficient than individual creates)
-   * Appends multiple rows in one API call with delay between batches
-   */
   async createBatch(inputs: CreateTaskAssignmentInput[], onProgress?: (completed: number, total: number) => void): Promise<TaskAssignment[]> {
     const assignments: TaskAssignment[] = inputs.map(input => ({
       scheduleId: generateId(),
@@ -130,104 +66,41 @@ export class TaskAssignmentRepository {
       createdBy: input.createdBy,
     }))
 
-    const allRows = await this.sheets.getValues(this.spreadsheetId, this.range)
-    if (allRows[0]?.[0] !== 'ScheduleID') {
-      const rescuedRows = allRows.filter(r => r.length > 0)
-      await this.sheets.updateValues(this.spreadsheetId, `${this.tabName}!A1:G1`, [HEADER_ROW])
-      if (rescuedRows.length > 0) {
-        await this.sheets.appendValues(this.spreadsheetId, this.range, rescuedRows)
-      }
-    }
+    const db = this.context.getData()
+    const items = [...(db.taskAssignments ?? []), ...assignments]
+    this.context.setData({ ...db, taskAssignments: items })
 
-    // Batch in groups of 20 with minimal delay between batches
-    // Exponential backoff retry in googleSheets.ts handles any 429 rate limit errors
+    // Simulate progress callbacks for batch operations
     const BATCH_SIZE = 20
-    const DELAY_MS = 300  // Minimal delay to avoid overwhelming API
-    const PROGRESS_UPDATE_FREQUENCY = 3 // Update progress every 3 batches to reduce flashing
-
     for (let i = 0; i < assignments.length; i += BATCH_SIZE) {
-      const batch = assignments.slice(i, i + BATCH_SIZE)
-      const rows = batch.map(serializeAssignment)
-      await this.sheets.appendValues(this.spreadsheetId, this.range, rows)
-
       const completed = Math.min(i + BATCH_SIZE, assignments.length)
-      const batchNumber = Math.floor(i / BATCH_SIZE)
-
-      // Only call onProgress every N batches to reduce UI flashing
-      if (batchNumber % PROGRESS_UPDATE_FREQUENCY === 0 || completed === assignments.length) {
-        onProgress?.(completed, assignments.length)
-      }
-
-      // Delay between batches except after the last one
-      if (completed < assignments.length) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
-      }
+      onProgress?.(completed, assignments.length)
     }
 
-    this.cache.invalidate(CACHE_KEY)
     return assignments
   }
 
   async setLocked(scheduleId: string, locked: boolean): Promise<void> {
-    const { headers, rows } = await this.fetchAll()
-    const idIdx = headers.indexOf('ScheduleID')
-    const rowIndex = rows.findIndex(r => r[idIdx] === scheduleId)
-
-    if (rowIndex === -1) {
+    const existing = await this.getByScheduleId(scheduleId)
+    if (!existing) {
       throw new Error(`Task assignment with scheduleId "${scheduleId}" not found`)
     }
-
-    const existing = parseAssignment(rows[rowIndex], headers)
-    const updated: TaskAssignment = { ...existing, isLocked: locked }
-    const updatedRow = serializeAssignment(updated)
-    const sheetRow = rowIndex + 2
-
-    await this.sheets.updateValues(
-      this.spreadsheetId,
-      `${this.tabName}!A${sheetRow}:G${sheetRow}`,
-      [updatedRow]
-    )
-    this.cache.invalidate(CACHE_KEY)
+    const db = this.context.getData()
+    const items = [...(db.taskAssignments ?? [])]
+    const index = items.findIndex(item => item.scheduleId === scheduleId)
+    if (index !== -1) {
+      items[index] = { ...items[index], isLocked: locked }
+      this.context.setData({ ...db, taskAssignments: items })
+    }
   }
 
-  /**
-   * Delete task assignments by their schedule IDs.
-   * Clears the row content (keeping rows to avoid shifting) for each matching ID.
-   */
   async deleteByScheduleIds(scheduleIds: string[]): Promise<void> {
     if (scheduleIds.length === 0) return
 
-    const { headers, rows } = await this.fetchAll()
-    const idIdx = headers.indexOf('ScheduleID')
-    if (idIdx === -1) return
-
-    const idsToDelete = new Set(scheduleIds)
-    const rowIndicesToClear: number[] = []
-
-    for (let i = 0; i < rows.length; i++) {
-      if (idsToDelete.has(rows[i][idIdx])) {
-        rowIndicesToClear.push(i + 2) // +2 for header row and 1-based indexing
-      }
-    }
-
-    // Clear rows in batches
-    const BATCH_SIZE = 50
-    const DELAY_MS = 300
-
-    for (let i = 0; i < rowIndicesToClear.length; i += BATCH_SIZE) {
-      const batch = rowIndicesToClear.slice(i, i + BATCH_SIZE)
-      for (const rowNum of batch) {
-        await this.sheets.updateValues(
-          this.spreadsheetId,
-          `${this.tabName}!A${rowNum}:G${rowNum}`,
-          [['', '', '', '', '', '', '']]
-        )
-      }
-      if (i + BATCH_SIZE < rowIndicesToClear.length) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
-      }
-    }
-
-    this.cache.invalidate(CACHE_KEY)
+    const db = this.context.getData()
+    const items = [...(db.taskAssignments ?? [])]
+    const idsSet = new Set(scheduleIds)
+    const filtered = items.filter(item => !idsSet.has(item.scheduleId))
+    this.context.setData({ ...db, taskAssignments: filtered })
   }
 }

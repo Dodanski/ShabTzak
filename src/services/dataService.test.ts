@@ -17,7 +17,7 @@ describe('DataService', () => {
     const service = new DataService('token', 'id', '', makeHistory())
     expect(service.soldiers).toBeDefined()
     expect(service.soldiers.list).toBeDefined()
-    expect(service.soldiers.create).toBeDefined()
+    expect(service.soldiers.createSoldier).toBeDefined()
   })
 
   it('exposes leaveRequests repository', () => {

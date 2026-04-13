@@ -25,7 +25,7 @@ export class FairnessUpdateService {
     const updated = { ...soldier, hoursWorked: newHoursWorked }
     const newFairness = combinedFairnessScore(updated)
 
-    await this.repo.update({
+    await this.repo.updateSoldier({
       id: soldierId,
       hoursWorked: newHoursWorked,
       currentFairness: newFairness,
@@ -60,7 +60,7 @@ export class FairnessUpdateService {
     const updated = { ...soldier, weekendLeavesCount, midweekLeavesCount, afterLeavesCount }
     const newFairness = combinedFairnessScore(updated)
 
-    await this.repo.update({
+    await this.repo.updateSoldier({
       id: soldierId,
       weekendLeavesCount,
       midweekLeavesCount,
@@ -84,7 +84,7 @@ export class FairnessUpdateService {
 
     const newFairness = soldier.currentFairness + delta
 
-    await this.repo.update({ id: soldierId, currentFairness: newFairness })
+    await this.repo.updateSoldier({ id: soldierId, currentFairness: newFairness })
     await this.history.append(
       'MANUAL_ADJUSTMENT', 'Soldier', soldierId, changedBy,
       `Manual adjustment: delta=${delta}, reason=${reason}`

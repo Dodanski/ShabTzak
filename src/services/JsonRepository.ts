@@ -12,7 +12,7 @@ export abstract class JsonRepository<T extends { id: string }> {
 
   async list(): Promise<T[]> {
     const db = this.context.getData()
-    return db[this.entityKey] as T[]
+    return (db[this.entityKey] ?? []) as unknown as T[]
   }
 
   async getById(id: string): Promise<T | null> {
@@ -22,26 +22,26 @@ export abstract class JsonRepository<T extends { id: string }> {
 
   async create(entity: T): Promise<T> {
     const db = this.context.getData()
-    const items = db[this.entityKey] as T[]
+    const items = ((db[this.entityKey] ?? []) as unknown as T[])
     const newItems = [...items, entity]
-    this.context.setData({ ...db, [this.entityKey]: newItems })
+    this.context.setData({ ...db, [this.entityKey]: newItems as unknown as any })
     return entity
   }
 
   async update(id: string, updates: Partial<T>): Promise<void> {
     const db = this.context.getData()
-    const items = db[this.entityKey] as T[]
+    const items = ((db[this.entityKey] ?? []) as unknown as T[])
     const index = items.findIndex(item => item.id === id)
     if (index === -1) throw new Error(`Entity ${id} not found`)
     const newItems = [...items]
     newItems[index] = { ...items[index], ...updates }
-    this.context.setData({ ...db, [this.entityKey]: newItems })
+    this.context.setData({ ...db, [this.entityKey]: newItems as unknown as any })
   }
 
   async delete(id: string): Promise<void> {
     const db = this.context.getData()
-    const items = db[this.entityKey] as T[]
+    const items = ((db[this.entityKey] ?? []) as unknown as T[])
     const filtered = items.filter(item => item.id !== id)
-    this.context.setData({ ...db, [this.entityKey]: filtered })
+    this.context.setData({ ...db, [this.entityKey]: filtered as unknown as any })
   }
 }

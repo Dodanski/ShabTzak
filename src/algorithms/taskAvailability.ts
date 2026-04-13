@@ -95,9 +95,13 @@ export function isTaskAvailable(
   const taskStart = new Date(task.startTime)
 
   // Check if soldier is within their service dates
-  // Compare dates as strings to avoid timezone issues
-  if (taskDate < soldier.serviceStart || taskDate > soldier.serviceEnd) {
-    if (debug) console.log(`[taskAvailability] ${soldier.id} filtered: outside service dates (taskDate=${taskDate}, serviceStart=${soldier.serviceStart}, serviceEnd=${soldier.serviceEnd})`)
+  // Normalize all dates to YYYY-MM-DD format to avoid timezone issues
+  const taskDateOnly = taskDate.split('T')[0]
+  const serviceStartOnly = soldier.serviceStart.split('T')[0]
+  const serviceEndOnly = soldier.serviceEnd.split('T')[0]
+
+  if (taskDateOnly < serviceStartOnly || taskDateOnly > serviceEndOnly) {
+    if (debug) console.log(`[taskAvailability] ${soldier.id} filtered: outside service dates (taskDate=${taskDateOnly}, serviceStart=${serviceStartOnly}, serviceEnd=${serviceEndOnly})`)
     return false
   }
 

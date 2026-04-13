@@ -74,6 +74,7 @@ export function parseSoldier(row: string[], headers: string[]): Soldier {
     firstName,
     lastName,
     role: get(row, headers, 'Role') as Soldier['role'],
+    phone: safeGet(row, headers, 'Phone') || undefined, // Optional: reads if Phone column exists
     unit: safeGet(row, headers, 'Unit') || undefined, // Optional: reads if Unit column exists
     serviceStart: get(row, headers, 'ServiceStart'),
     serviceEnd: get(row, headers, 'ServiceEnd'),
@@ -124,6 +125,7 @@ export function parseSoldierFromAdmin(row: string[], headers: string[]): Soldier
     firstName,
     lastName,
     role: get(row, headers, 'Role') as Soldier['role'],
+    phone: safeGet(row, headers, 'Phone') || undefined,
     unit: safeGet(row, headers, 'Unit') || undefined,
     serviceStart: get(row, headers, 'ServiceStart'),
     serviceEnd: get(row, headers, 'ServiceEnd'),

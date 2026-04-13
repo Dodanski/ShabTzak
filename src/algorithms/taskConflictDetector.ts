@@ -53,15 +53,18 @@ export function detectTaskConflicts(
   // --- NO_ROLE_AVAILABLE ---
   for (const task of tasks) {
     for (const requirement of task.roleRequirements) {
+      // Get acceptable roles for this requirement (handle both old and new formats)
+      const rolesAccepted = requirement.roles ?? (requirement.role ? [requirement.role] : [])
+
       const assigned = schedule.assignments.filter(a => {
         if (a.taskId !== task.id) return false
-        if (requirement.role === 'Any') return true
-        return a.assignedRole === requirement.role
+        if (rolesAccepted.includes('Any')) return true
+        return rolesAccepted.includes(a.assignedRole)
       })
       if (assigned.length < requirement.count) {
         conflicts.push({
           type: 'NO_ROLE_AVAILABLE',
-          message: `Task ${task.id} needs ${requirement.count} ${requirement.role} but has ${assigned.length}`,
+          message: `Task ${task.id} needs ${requirement.count} ${rolesAccepted.join('|')} but has ${assigned.length}`,
           affectedSoldierIds: [],
           affectedTaskIds: [task.id],
           suggestions: ['Add soldiers with the required role', 'Adjust role requirements'],
