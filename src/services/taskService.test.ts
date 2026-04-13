@@ -12,7 +12,7 @@ const MOCK_TASK: Task = {
 const mockRepo = {
   list: vi.fn(),
   getById: vi.fn(),
-  create: vi.fn(),
+  createTask: vi.fn(),
 }
 
 const mockHistory = {
@@ -25,7 +25,7 @@ describe('TaskService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRepo.create.mockResolvedValue(MOCK_TASK)
+    mockRepo.createTask.mockResolvedValue(MOCK_TASK)
     mockRepo.list.mockResolvedValue([MOCK_TASK])
     mockHistory.append.mockResolvedValue(undefined)
     service = new TaskService(mockRepo as any, mockHistory as any)
@@ -41,7 +41,7 @@ describe('TaskService', () => {
       }
       const result = await service.create(input, 'admin')
 
-      expect(mockRepo.create).toHaveBeenCalledWith(input)
+      expect(mockRepo.createTask).toHaveBeenCalledWith(input)
       expect(mockHistory.append).toHaveBeenCalledWith(
         'CREATE', 'Task', MOCK_TASK.id, 'admin', expect.any(String)
       )
