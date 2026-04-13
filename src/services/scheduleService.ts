@@ -3,9 +3,9 @@ import { scheduleTasks } from '../algorithms/taskScheduler'
 import { generateCyclicalLeaves } from '../algorithms/cyclicalLeaveScheduler'
 import type { SoldierRepository } from './soldierRepository'
 import type { LeaveRequestRepository } from './leaveRequestRepository'
-import type { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
-import type { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
-import type { HistoryService } from './historyService'
+import type { MasterLeaveAssignmentRepositoryJson } from './masterLeaveAssignmentRepositoryJson'
+import type { MasterTaskAssignmentRepositoryJson } from './masterTaskAssignmentRepositoryJson'
+import type { IHistoryService } from './IHistoryService'
 import type { LeaveSchedule, TaskSchedule, Task, AppConfig, LeaveAssignment, Soldier, TaskAssignment } from '../models'
 // Task type is used for looking up task dates when calculating leave capacity
 
@@ -18,9 +18,9 @@ export class ScheduleService {
   constructor(
     private soldiers: SoldierRepository,
     private leaveRequests: LeaveRequestRepository,
-    private leaveAssignments: MasterLeaveAssignmentRepository,
-    private taskAssignments: MasterTaskAssignmentRepository,
-    private history: HistoryService,
+    private leaveAssignments: MasterLeaveAssignmentRepositoryJson,
+    private taskAssignments: MasterTaskAssignmentRepositoryJson,
+    private history: IHistoryService,
   ) {}
 
   async generateLeaveSchedule(

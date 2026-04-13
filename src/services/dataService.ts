@@ -8,9 +8,9 @@ import { UnitRepository } from './unitRepository'
 import { AdminRepository } from './adminRepository'
 import { CommanderRepository } from './commanderRepository'
 import { ConfigRepository } from './configRepository'
-import type { HistoryService } from './historyService'
-import type { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
-import type { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
+import type { IHistoryService } from './IHistoryService'
+import type { MasterLeaveAssignmentRepositoryJson } from './masterLeaveAssignmentRepositoryJson'
+import type { MasterTaskAssignmentRepositoryJson } from './masterTaskAssignmentRepositoryJson'
 import { SoldierService } from './soldierService'
 import { LeaveRequestService } from './leaveRequestService'
 import { ScheduleService } from './scheduleService'
@@ -27,8 +27,8 @@ export class DataService {
   readonly soldiers: SoldierRepository
   readonly tasks: TaskRepository
   readonly leaveRequests: LeaveRequestRepository
-  readonly leaveAssignments: LeaveAssignmentRepository | MasterLeaveAssignmentRepository
-  readonly taskAssignments: TaskAssignmentRepository | MasterTaskAssignmentRepository
+  readonly leaveAssignments: LeaveAssignmentRepository | MasterLeaveAssignmentRepositoryJson
+  readonly taskAssignments: TaskAssignmentRepository | MasterTaskAssignmentRepositoryJson
   readonly units: UnitRepository
   readonly admins: AdminRepository
   readonly commanders: CommanderRepository
@@ -40,9 +40,9 @@ export class DataService {
 
   constructor(
     dbContext: ReturnType<typeof useDatabase>,
-    private historyService: HistoryService,
-    masterLeaveAssignments?: MasterLeaveAssignmentRepository,
-    masterTaskAssignments?: MasterTaskAssignmentRepository,
+    private historyService: IHistoryService,
+    masterLeaveAssignments?: MasterLeaveAssignmentRepositoryJson,
+    masterTaskAssignments?: MasterTaskAssignmentRepositoryJson,
   ) {
     this.soldiers = new SoldierRepository(dbContext)
     this.tasks = new TaskRepository(dbContext)

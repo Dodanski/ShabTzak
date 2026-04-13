@@ -1,5 +1,5 @@
 import type { TaskRepository } from './taskRepository'
-import type { HistoryService } from './historyService'
+import type { IHistoryService } from './IHistoryService'
 import type { Task, CreateTaskInput, UpdateTaskInput } from '../models'
 
 /**
@@ -8,7 +8,7 @@ import type { Task, CreateTaskInput, UpdateTaskInput } from '../models'
 export class TaskService {
   constructor(
     private repo: TaskRepository,
-    private history: HistoryService,
+    private history: IHistoryService,
   ) {}
 
   async create(input: CreateTaskInput, changedBy: string): Promise<Task> {

@@ -1,6 +1,6 @@
 import { combinedFairnessScore } from '../algorithms/fairness'
 import type { SoldierRepository } from './soldierRepository'
-import type { HistoryService } from './historyService'
+import type { IHistoryService } from './IHistoryService'
 import type { LeaveType } from '../models'
 
 /**
@@ -10,7 +10,7 @@ import type { LeaveType } from '../models'
 export class FairnessUpdateService {
   constructor(
     private repo: SoldierRepository,
-    private history: HistoryService,
+    private history: IHistoryService,
   ) {}
 
   async applyTaskAssignment(

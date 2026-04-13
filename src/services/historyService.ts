@@ -1,17 +1,9 @@
 import { GoogleSheetsService } from './googleSheets'
 import { MASTER_SHEET_TABS } from '../constants'
 import { prefixTab } from '../utils/tabPrefix'
+import type { IHistoryService, HistoryEntry } from './IHistoryService'
 
-export interface HistoryEntry {
-  timestamp: string
-  action: string
-  entityType: string
-  entityId: string
-  changedBy: string
-  details: string
-}
-
-export class HistoryService {
+export class HistoryService implements IHistoryService {
   private sheets: GoogleSheetsService
   private spreadsheetId: string
   private tabName: string

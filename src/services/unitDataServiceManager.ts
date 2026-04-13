@@ -1,6 +1,7 @@
 import { DataService } from './dataService'
 import type { Unit, TaskAssignment, Soldier } from '../models'
-import type { HistoryService } from './historyService'
+import type { IHistoryService } from './IHistoryService'
+import type { useDatabase } from '../contexts/DatabaseContext'
 
 /**
  * Manages DataServices for all units
@@ -10,8 +11,8 @@ export class UnitDataServiceManager {
   private serviceMap = new Map<string, DataService>()
 
   constructor(
-    private accessToken: string,
-    private historyService: HistoryService
+    private dbContext: ReturnType<typeof useDatabase>,
+    private historyService: IHistoryService
   ) {}
 
   /**
@@ -20,9 +21,7 @@ export class UnitDataServiceManager {
   initializeUnits(units: Unit[]) {
     for (const unit of units) {
       const ds = new DataService(
-        this.accessToken,
-        unit.spreadsheetId,
-        unit.tabPrefix || unit.name,
+        this.dbContext,
         this.historyService
       )
       this.serviceMap.set(unit.name, ds)

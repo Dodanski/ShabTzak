@@ -16,12 +16,12 @@ import { useMissingTabs } from './hooks/useMissingTabs'
 import { useToast } from './hooks/useToast'
 import { useScheduleGenerator } from './hooks/useScheduleGenerator'
 import ErrorBanner from './components/ErrorBanner'
-import { config } from './config/env'
 import { MasterDataService } from './services/masterDataService'
 import AccessDeniedPage from './components/AccessDeniedPage'
 import LoginPage from './components/LoginPage'
 import AdminPanel from './components/AdminPanel'
-import type { HistoryEntry } from './services/historyService'
+import { useDatabase } from './contexts/DatabaseContext'
+import type { HistoryEntry } from './services/IHistoryService'
 import type { CreateLeaveRequestInput, CreateSoldierInput, UpdateSoldierInput, CreateTaskInput, Unit, Task, AppConfig } from './models'
 import type { SoldierRole, SoldierStatus } from './constants'
 
@@ -416,6 +416,7 @@ type AppMode = 'loading' | 'admin' | 'unit' | 'denied'
 
 function AppContent() {
   const { auth } = useAuth()
+  const dbContext = useDatabase()
   const [appMode, setAppMode] = useState<AppMode>('loading')
   const [masterDs, setMasterDs] = useState<MasterDataService | null>(null)
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null)
@@ -428,10 +429,18 @@ function AppContent() {
       setAppMode('loading')
       return
     }
-    const master = new MasterDataService(auth.accessToken, config.spreadsheetId)
+    if (dbContext.loading) {
+      setAppMode('loading')
+      return
+    }
+    if (dbContext.error) {
+      setAppMode('denied')
+      return
+    }
+
+    const master = new MasterDataService(dbContext)
     setMasterDs(master)
-    master.initialize(config.adminEmail)
-      .then(() => master.resolveRole(auth.email!))
+    master.resolveRole(auth.email!)
       .then(resolved => {
         if (!resolved) { setAppMode('denied'); return null }
         if (resolved.role === 'admin') { setAppMode('admin') }
@@ -449,7 +458,7 @@ function AppContent() {
         setRoles(loadedRoles ?? [])
       })
       .catch(() => setAppMode('denied'))
-  }, [auth.isAuthenticated, auth.email, auth.accessToken])
+  }, [auth.isAuthenticated, auth.email, auth.accessToken, dbContext.loading, dbContext.error])
 
   if (!auth.isAuthenticated) return <LoginPage />
   if (appMode === 'loading') return (

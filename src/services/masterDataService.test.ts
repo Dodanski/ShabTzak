@@ -1,20 +1,62 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MasterDataService } from './masterDataService'
+import type { Database } from '../types/Database'
+import type { useDatabase } from '../contexts/DatabaseContext'
 
 // Mock the repositories
 vi.mock('./adminRepository')
 vi.mock('./unitRepository')
 vi.mock('./commanderRepository')
-vi.mock('./googleSheets')
 vi.mock('./taskRepository')
 vi.mock('./configRepository')
-vi.mock('./historyService')
-vi.mock('./taskService')
 
 import { AdminRepository } from './adminRepository'
 import { UnitRepository } from './unitRepository'
 import { CommanderRepository } from './commanderRepository'
-import { GoogleSheetsService } from './googleSheets'
+
+const makeMockDatabase = (): Database => ({
+  version: 1,
+  lastModified: new Date().toISOString(),
+  soldiers: [],
+  tasks: [],
+  units: [],
+  leaveRequests: [],
+  leaveAssignments: [],
+  taskAssignments: [],
+  config: {
+    scheduleStartDate: '2026-01-01',
+    scheduleEndDate: '2026-12-31',
+    leaveRatioDaysInBase: 10,
+    leaveRatioDaysHome: 4,
+    longLeaveMaxDays: 14,
+    weekendDays: ['Friday', 'Saturday'],
+    minBasePresence: 5,
+    minBasePresenceByRole: {},
+    maxDrivingHours: 12,
+    defaultRestPeriod: 8,
+    taskTypeRestPeriods: {},
+    adminEmails: [],
+    leaveBaseExitHour: '16:00',
+    leaveBaseReturnHour: '08:00'
+  },
+  roles: [],
+  admins: [],
+  commanders: []
+})
+
+const makeMockContext = (): ReturnType<typeof useDatabase> => {
+  const mockDatabase = makeMockDatabase()
+  return {
+    database: mockDatabase,
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+    getData: () => mockDatabase,
+    setData: (db: Database) => {
+      Object.assign(mockDatabase, db)
+    }
+  }
+}
 
 beforeEach(() => { vi.clearAllMocks() })
 
@@ -27,7 +69,7 @@ describe('MasterDataService', () => {
       vi.mocked(CommanderRepository.prototype.list).mockResolvedValue([])
       vi.mocked(UnitRepository.prototype.list).mockResolvedValue([])
 
-      const svc = new MasterDataService('token', 'master-id')
+      const svc = new MasterDataService(makeMockContext())
       const result = await svc.resolveRole('admin@example.com')
       expect(result).toEqual({ role: 'admin' })
     })
@@ -41,7 +83,7 @@ describe('MasterDataService', () => {
         { id: 'unit-1', name: 'Alpha', spreadsheetId: 'sheet-abc', createdAt: '', createdBy: '' }
       ])
 
-      const svc = new MasterDataService('token', 'master-id')
+      const svc = new MasterDataService(makeMockContext())
       const result = await svc.resolveRole('cmd@example.com')
       expect(result).toEqual({
         role: 'commander',
@@ -55,7 +97,7 @@ describe('MasterDataService', () => {
       vi.mocked(CommanderRepository.prototype.list).mockResolvedValue([])
       vi.mocked(UnitRepository.prototype.list).mockResolvedValue([])
 
-      const svc = new MasterDataService('token', 'master-id')
+      const svc = new MasterDataService(makeMockContext())
       const result = await svc.resolveRole('unknown@example.com')
       expect(result).toBeNull()
     })
@@ -67,7 +109,7 @@ describe('MasterDataService', () => {
       ])
       vi.mocked(UnitRepository.prototype.list).mockResolvedValue([])
 
-      const svc = new MasterDataService('token', 'master-id')
+      const svc = new MasterDataService(makeMockContext())
       const result = await svc.resolveRole('cmd@example.com')
       expect(result).toBeNull()
     })
@@ -75,7 +117,7 @@ describe('MasterDataService', () => {
 
   describe('admin repositories', () => {
     it('exposes tasks, config, history, taskService', () => {
-      const svc = new MasterDataService('token', 'master-id')
+      const svc = new MasterDataService(makeMockContext())
       expect(svc.tasks).toBeDefined()
       expect(svc.config).toBeDefined()
       expect(svc.history).toBeDefined()
@@ -83,75 +125,4 @@ describe('MasterDataService', () => {
     })
   })
 
-  describe('initialize()', () => {
-    it('seeds first admin when admins tab is empty', async () => {
-      vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins', 'Units', 'Commanders'])
-      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([])
-      vi.mocked(AdminRepository.prototype.create).mockResolvedValue({
-        id: 'a1', email: 'admin@example.com', addedAt: '', addedBy: ''
-      })
-
-      const svc = new MasterDataService('token', 'master-id')
-      await svc.initialize('admin@example.com')
-      expect(AdminRepository.prototype.create).toHaveBeenCalledWith(
-        { email: 'admin@example.com' }, 'system'
-      )
-    })
-
-    it('does not seed admin when admins already exist', async () => {
-      vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins', 'Units', 'Commanders'])
-      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([
-        { id: 'a1', email: 'admin@example.com', addedAt: '', addedBy: '' }
-      ])
-
-      const svc = new MasterDataService('token', 'master-id')
-      await svc.initialize('admin@example.com')
-      expect(AdminRepository.prototype.create).not.toHaveBeenCalled()
-    })
-
-    it('creates missing tabs when some are absent', async () => {
-      vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins'])
-      vi.mocked(GoogleSheetsService.prototype.batchUpdate).mockResolvedValue(undefined)
-      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([
-        { id: 'a1', email: 'admin@example.com', addedAt: '', addedBy: '' }
-      ])
-
-      const svc = new MasterDataService('token', 'master-id')
-      await svc.initialize('admin@example.com')
-      expect(GoogleSheetsService.prototype.batchUpdate).toHaveBeenCalledWith(
-        'master-id',
-        expect.arrayContaining([
-          { addSheet: { properties: { title: 'Units' } } },
-          { addSheet: { properties: { title: 'Commanders' } } },
-          { addSheet: { properties: { title: 'Tasks' } } },
-          { addSheet: { properties: { title: 'Config' } } },
-          { addSheet: { properties: { title: 'History' } } },
-        ])
-      )
-    })
-
-    it('writes headers to newly created admin tabs', async () => {
-      // All admin tabs are missing
-      vi.mocked(GoogleSheetsService.prototype.getSheetTitles).mockResolvedValue(['Admins'])
-      vi.mocked(GoogleSheetsService.prototype.batchUpdate).mockResolvedValue(undefined)
-      const updateValuesSpy = vi.mocked(GoogleSheetsService.prototype.updateValues)
-      updateValuesSpy.mockResolvedValue(undefined as any)
-      vi.mocked(AdminRepository.prototype.list).mockResolvedValue([
-        { id: 'a1', email: 'admin@test.com', addedAt: '', addedBy: '' }
-      ])
-
-      const svc = new MasterDataService('token', 'master-id')
-      await svc.initialize('admin@test.com')
-
-      expect(updateValuesSpy).toHaveBeenCalledWith(
-        'master-id', 'Tasks!A1', expect.any(Array)
-      )
-      expect(updateValuesSpy).toHaveBeenCalledWith(
-        'master-id', 'Config!A1', expect.any(Array)
-      )
-      expect(updateValuesSpy).toHaveBeenCalledWith(
-        'master-id', 'History!A1', expect.any(Array)
-      )
-    })
-  })
 })

@@ -1,5 +1,5 @@
 import type { LeaveRequestRepository } from './leaveRequestRepository'
-import type { HistoryService } from './historyService'
+import type { IHistoryService } from './IHistoryService'
 import type { LeaveRequest, CreateLeaveRequestInput } from '../models'
 
 /**
@@ -8,7 +8,7 @@ import type { LeaveRequest, CreateLeaveRequestInput } from '../models'
 export class LeaveRequestService {
   constructor(
     private repo: LeaveRequestRepository,
-    private history: HistoryService,
+    private history: IHistoryService,
   ) {}
 
   async submit(input: CreateLeaveRequestInput, changedBy: string): Promise<LeaveRequest> {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { DataService } from '../services/dataService'
 import { useAuth } from '../context/AuthContext'
+import { useDatabase } from '../contexts/DatabaseContext'
 import type { Soldier, LeaveRequest, TaskAssignment, LeaveAssignment } from '../models'
 import type { MasterDataService } from '../services/masterDataService'
 
@@ -18,11 +19,12 @@ export interface UseDataServiceResult {
 
 export function useDataService(
   spreadsheetId: string,
-  tabPrefix = '',
+  _tabPrefix = '',
   masterDs: MasterDataService | null,
   loadAllSoldiers = false  // NEW parameter
 ): UseDataServiceResult {
   const { auth } = useAuth()
+  const dbContext = useDatabase()
   const [soldiers, setSoldiers] = useState<Soldier[]>([])
   const [allSoldiers, setAllSoldiers] = useState<Soldier[]>([])  // NEW
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
@@ -33,16 +35,14 @@ export function useDataService(
   const [tick, setTick] = useState(0)
 
   const ds = useMemo(() => {
-    if (!auth.accessToken || !spreadsheetId || !masterDs) return null
+    if (!auth.accessToken || !spreadsheetId || !masterDs || dbContext.loading) return null
     return new DataService(
-      auth.accessToken,
-      spreadsheetId,
-      tabPrefix,
+      dbContext,
       masterDs.history,
       masterDs.leaveAssignments,  // Pass master leave assignments for shared schedule
       masterDs.taskAssignments,   // Pass master task assignments for shared schedule
     )
-  }, [auth.accessToken, spreadsheetId, tabPrefix, masterDs])
+  }, [auth.accessToken, spreadsheetId, masterDs, dbContext])
 
   useEffect(() => {
     if (!ds) return

@@ -1,5 +1,5 @@
 import type { SoldierRepository } from './soldierRepository'
-import type { HistoryService } from './historyService'
+import type { IHistoryService } from './IHistoryService'
 import type { Soldier, CreateSoldierInput, SoldierStatus, UpdateSoldierInput } from '../models'
 
 /**
@@ -8,7 +8,7 @@ import type { Soldier, CreateSoldierInput, SoldierStatus, UpdateSoldierInput } f
 export class SoldierService {
   constructor(
     private repo: SoldierRepository,
-    private history: HistoryService,
+    private history: IHistoryService,
   ) {}
 
   async create(input: CreateSoldierInput, changedBy: string): Promise<Soldier> {

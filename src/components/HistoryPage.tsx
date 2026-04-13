@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { HistoryEntry } from '../services/historyService'
+import type { HistoryEntry } from '../services/IHistoryService'
 import { useIsMobile } from '../hooks/useIsMobile'
 
 interface HistoryPageProps {

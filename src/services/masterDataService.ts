@@ -4,13 +4,13 @@ import { UnitRepository } from './unitRepository'
 import { CommanderRepository } from './commanderRepository'
 import { TaskRepository } from './taskRepository'
 import { ConfigRepository } from './configRepository'
-import { HistoryService } from './historyService'
+import { HistoryServiceStub } from './historyServiceStub'
 import { TaskService } from './taskService'
-import { RolesService } from './rolesService'
+import { RolesServiceStub } from './rolesServiceStub'
 import { SoldierRepository } from './soldierRepository'
 import { LeaveRequestRepository } from './leaveRequestRepository'
-import { MasterTaskAssignmentRepository } from './masterTaskAssignmentRepository'
-import { MasterLeaveAssignmentRepository } from './masterLeaveAssignmentRepository'
+import { MasterTaskAssignmentRepositoryJson } from './masterTaskAssignmentRepositoryJson'
+import { MasterLeaveAssignmentRepositoryJson } from './masterLeaveAssignmentRepositoryJson'
 import { ScheduleService } from './scheduleService'
 import { FairnessUpdateService } from './fairnessUpdateService'
 import type { Unit } from '../models'
@@ -26,13 +26,13 @@ export class MasterDataService {
   readonly commanders: CommanderRepository
   readonly tasks: TaskRepository
   readonly config: ConfigRepository
-  readonly history: HistoryService
+  readonly history: HistoryServiceStub
   readonly taskService: TaskService
-  readonly roles: RolesService
+  readonly roles: RolesServiceStub
   readonly soldiers: SoldierRepository
   readonly leaveRequests: LeaveRequestRepository
-  readonly taskAssignments: MasterTaskAssignmentRepository
-  readonly leaveAssignments: MasterLeaveAssignmentRepository
+  readonly taskAssignments: MasterTaskAssignmentRepositoryJson
+  readonly leaveAssignments: MasterLeaveAssignmentRepositoryJson
   readonly scheduleService: ScheduleService
   readonly fairnessUpdate: FairnessUpdateService
 
@@ -44,13 +44,13 @@ export class MasterDataService {
     this.commanders = new CommanderRepository(dbContext)
     this.tasks = new TaskRepository(dbContext)
     this.config = new ConfigRepository(dbContext)
-    this.history = new HistoryService()
+    this.history = new HistoryServiceStub()
     this.taskService = new TaskService(this.tasks, this.history)
-    this.roles = new RolesService()
+    this.roles = new RolesServiceStub(dbContext)
     this.soldiers = new SoldierRepository(dbContext)
     this.leaveRequests = new LeaveRequestRepository(dbContext)
-    this.taskAssignments = new MasterTaskAssignmentRepository(dbContext)
-    this.leaveAssignments = new MasterLeaveAssignmentRepository(dbContext)
+    this.taskAssignments = new MasterTaskAssignmentRepositoryJson(dbContext)
+    this.leaveAssignments = new MasterLeaveAssignmentRepositoryJson(dbContext)
     this.scheduleService = new ScheduleService(
       this.soldiers,
       this.leaveRequests,
