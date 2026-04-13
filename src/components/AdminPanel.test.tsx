@@ -37,6 +37,7 @@ const mockMasterDs = {
   tasks: { list: vi.fn().mockResolvedValue([
     { id: 't1', taskType: 'Guard', startTime: '06:00', endTime: '14:00', durationHours: 8, roleRequirements: [], minRestAfter: 6, isSpecial: false }
   ]) },
+  taskAssignments: { list: vi.fn().mockResolvedValue([]) },
   config: { read: vi.fn().mockResolvedValue({ leaveRatioDaysInBase: 10, minRestBetweenShifts: 8, minDaysInBaseBeforeLeave: 30, maxConsecutiveShifts: 3, weekendLeaveWeight: 1.5, afterLeaveWeight: 0.5, longWeekendLeaveWeight: 2, midweekLeaveWeight: 0.8, specialDutyBaseChance: 0.3 }) },
   taskService: { create: vi.fn().mockResolvedValue({}) },
   soldiers: { list: vi.fn().mockResolvedValue([]) },
